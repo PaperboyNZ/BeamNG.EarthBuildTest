@@ -8908,6 +8908,8 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
             b.write_collision(os.path.join(out_dir, shape))
             data["walkcol"] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
     boxes = collider_boxes(walks if data.get("walk") else None, chunks if data.get("deck") else None)
+    if boxes.get("walk"):
+        sidewalks.extend_collider_heights(boxes["walk"], b.arrays(), b.origin)
     if "walk" in boxes and data.get("walkcol"):
         boxes["walkcol"] = boxes["walk"]
     if bld is not None:             # buildings.road_tile: the tile's buildings, colliding ("bld")

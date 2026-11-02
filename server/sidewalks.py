@@ -502,6 +502,17 @@ def clear_terrain(mesh, origin, ground):
                                            np.asarray(textures), np.asarray(materials,np.int64))])
 
 
+def extend_collider_heights(boxes, mesh, origin):
+    """Occupancy guards include pavement raised by terrain clearance."""
+    p = mesh[0]
+    if len(p):
+        low = float(p[:, 2].min()+origin[2]-.1)
+        high = float(p[:, 2].max()+origin[2]+.1)
+        for box in boxes:
+            box[2] = min(box[2], low)
+            box[5] = max(box[5], high)
+
+
 def clean_corner_outer(outer):
     """Remove zero-length rear edges before native ear clipping.
 

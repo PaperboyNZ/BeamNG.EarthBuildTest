@@ -1480,6 +1480,7 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
                     data["walkcol"] = {"shape": f"{vfs_dir}/{names['walkcol']}", "pos": list(origin)}
                 boxes = roadsmod.collider_boxes(walks, None)
                 if boxes.get("walk"):
+                    sidewalksmod.extend_collider_heights(boxes["walk"], b.arrays(), origin)
                     data["colliders"] = {"walk": boxes["walk"]}
                     if "walkcol" in data:
                         data["colliders"]["walkcol"] = boxes["walk"]
