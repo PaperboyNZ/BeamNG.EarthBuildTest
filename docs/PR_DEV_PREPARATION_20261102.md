@@ -1,5 +1,10 @@
 # Four staged PRs: dev preparation, 2 November 2026
 
+Latest update: [shared admission removed, upstream scheduling restored, native
+loading observations and remaining timeout](SCHEDULING_ROLLBACK_20261102.md).
+PR #2's tested rollback is `96a906de`; the combined tested code is `410b4b2f`.
+The earlier gate-enabled native failure below is historical evidence.
+
 All four PR branches include upstream `TecnaGamer/BeamNG.Earth:dev` at
 `b41b4b04edffab6083e78b0c2ef41982869287b2`. The fork's dev remains aligned with
 that upstream commit. These are preparation PRs, not a release or native acceptance.
@@ -38,7 +43,7 @@ that upstream commit. These are preparation PRs, not a release or native accepta
 
 The staging branch `prepare/20261102-final-integration` preserves all four PR
 histories. Its validated production-code commit is
-`c40643b499b1a56485ca5f18fda6fa11814e1978`; later documentation-only commits may
+`410b4b2f460cc990664fc650b26bdea43f775951`; later documentation-only commits may
 advance the branch without changing that code. It is separate from dev.
 
 PRs #1 and #3 can land independently. Review #2 against the profiler branch,
@@ -97,7 +102,7 @@ PR-triggered workflow runs or inline review threads at the initial audit heads.
 
 ## Remaining acceptance
 
-Draft status is retained. The matching native playtest at `f948b5a0` failed its
+Draft status is retained. The earlier native playtest at `f948b5a0` failed its
 150-second coverage deadline: 30 samples showed zero resident road/building tiles
 and zero imports, with repeated aggregate worker backpressure. The parking fix is
 included in that revision; it does not resolve the whole-world loading blocker.

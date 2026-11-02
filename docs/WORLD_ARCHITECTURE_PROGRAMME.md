@@ -143,10 +143,11 @@ Further implementation currently under verification:
   programme artifacts. The P6 route/native measurement row remains open.
 - Projected facade demand uses the existing pose camera FOV/resolution, travel
   speed and hysteresis. A free camera can demand detail independently of the car.
-- Aggregate admission extends the existing worker pools and `budget.py`. It bounds
-  outstanding jobs and estimated incremental working sets, with reserved essential
-  and far-coverage capacity. Estimates are not measured RSS or final hardware
-  calibration. Completion, exceptions, cancellation and recycling release credits.
+- The experimental shared aggregate admission gate was removed after it starved
+  idle road workers when distant jobs held queued reservations. Worker scheduling
+  again follows upstream; existing process/cache budgets, low-priority queues,
+  cancellation and recycling remain. A replacement aggregate scheduler is deferred
+  until it has measured costs and demonstrated fairness under native loading.
 - The offline exact-vertex experiment writes new content-addressed candidates
   after normals/tangents are finalized. Every triangle-corner record and primitive
   is retained, including hard edges, both UV sets and colours. Extra rewrite work
