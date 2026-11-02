@@ -6,8 +6,8 @@ that upstream commit. These are preparation PRs, not a release or native accepta
 
 | PR | Scope | Review base | Validated code revision |
 | --- | --- | --- | --- |
-| [1](https://github.com/PaperboyNZ/BeamNG.EarthBuildTest/pull/1) | Resource-tab profiler | dev | `a7b1c024` |
-| [2](https://github.com/PaperboyNZ/BeamNG.EarthBuildTest/pull/2) | Building/site generation, lean quality tiers and parking protection | testing/runtime-profiler | `1e2ad48b` |
+| [1](https://github.com/PaperboyNZ/BeamNG.EarthBuildTest/pull/1) | Resource-tab profiler | dev | `2192e9ab` |
+| [2](https://github.com/PaperboyNZ/BeamNG.EarthBuildTest/pull/2) | Building/site generation, lean quality tiers and parking protection | testing/runtime-profiler | `1e2ad48b` + profiler `2192e9ab` |
 | [3](https://github.com/PaperboyNZ/BeamNG.EarthBuildTest/pull/3) | Lane-input and bridge preparation reuse | dev | `739ceca8` |
 | [4](https://github.com/PaperboyNZ/BeamNG.EarthBuildTest/pull/4) | Shared decoded map inputs and road-job telemetry | dev | `e248ff78` |
 
@@ -23,6 +23,8 @@ that upstream commit. These are preparation PRs, not a release or native accepta
   never enter the new cache. The isolated 100-road/49-patch comparison retained
   byte-identical protection geometry; its roughly 6x preparation reduction is not
   a whole-world or frame-rate measurement.
+- The final remote refresh also incorporated the newly published Server profiler
+  tab and Essential-mode reset at each settings load into PR #2 and the combination.
 - PR #4 aligns its shared bridge-cache implementation with PR #3. Optional
   dependency telemetry now tolerates absent worker state so it cannot replace the
   original build exception or bypass existing failure cleanup.
@@ -36,7 +38,7 @@ that upstream commit. These are preparation PRs, not a release or native accepta
 
 The staging branch `prepare/20261102-final-integration` preserves all four PR
 histories. Its validated production-code commit is
-`f948b5a0d4aac40c8480996f3988bfb7ef9bd47d`; later documentation-only commits may
+`c40643b499b1a56485ca5f18fda6fa11814e1978`; later documentation-only commits may
 advance the branch without changing that code. It is separate from dev.
 
 PRs #1 and #3 can land independently. Review #2 against the profiler branch,
@@ -64,8 +66,8 @@ The local audit is `artifacts/pr-final-preparation-20261102` in the workspace.
 It records immutable source snapshots, per-module logs, the local-change inventory,
 exact branch ancestry, failure logs and focused reruns. Broad checks cover 142
 Python modules plus affected-module and worker reruns: 1,871 cases across 146
-modules, 1,861 passed and 10 optional skips. The 4,113 combined Lua assertions
-include LuaJIT scoping. The independent profiler also passes 1,034 Lua assertions.
+modules, 1,861 passed and 10 optional skips. The 4,117 combined Lua assertions
+include LuaJIT scoping. The independent profiler also passes 1,038 Lua assertions.
 These are selected regressions, not the full repository suite. Counts deduplicate
 module reruns within each branch; branch counts must not be added as unique coverage.
 
@@ -95,10 +97,18 @@ PR-triggered workflow runs or inline review threads at the initial audit heads.
 
 ## Remaining acceptance
 
-Draft status is retained. Latest native visual, profiler mouse-interaction,
-streaming and driving acceptance must be recorded separately. A cold Christchurch
-playtest exposed expensive repeated parking-road protection preparation and worker
-backpressure; the new parking fix requires a fresh native run before acceptance.
+Draft status is retained. The matching native playtest at `f948b5a0` failed its
+150-second coverage deadline: 30 samples showed zero resident road/building tiles
+and zero imports, with repeated aggregate worker backpressure. The parking fix is
+included in that revision; it does not resolve the whole-world loading blocker.
+Quality handovers, resident Simple/Advanced replacements and driving checks were
+therefore blocked, not passed. Evidence is in the workspace at
+`artifacts/lean-buildings-20261102/native-acceptance.json` and `playtest-result.json`.
+
+The later `c40643b4` changes only the profiler UI/settings and documentation;
+its server code is identical to `f948b5a0`. The Server tab and Essential startup
+reset pass Lua checks, but latest native visual and mouse-interaction acceptance
+is still outstanding. These PRs are source-prepared, not approved to merge.
 PR #4's repeated cold/warm benchmarks, expanded geometry corpus, attribution and
 memory measurements remain open as described in
 [ROAD_PREPARATION_STAGE_ONE.md](ROAD_PREPARATION_STAGE_ONE.md). No FPS claim follows
