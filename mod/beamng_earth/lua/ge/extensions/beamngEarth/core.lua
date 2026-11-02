@@ -1483,6 +1483,8 @@ local function updateWorld(dt)
       sessions = M.heldSessions(),
       slotsGone = slotsGoneNow(), -- pooled shape slots let go (server/matslots.py)
       foci = poseFoci(),          -- other vehicles' collision islands (collisionfoci.lua; earthd parse_foci)
+      -- the edge guard holds the car for its ground: the server takes every core meanwhile (earthd hold_boost)
+      guardHold = st.guard.mode == 'hold' or nil,
       cam = c and { x = c.x, y = c.y, z = c.z, fx = c.fx, fy = c.fy, fz = c.fz, fovDeg = c.fovDeg, h = c.h } or nil })
   end
 
