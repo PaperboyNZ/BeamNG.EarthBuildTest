@@ -4,6 +4,7 @@ See docs/BUILDING_DETAIL_ENGINEERING.md for references and modeling assumptions.
 All terrain is sampled by access.resolve's single batch. Difficult grades remain
 unresolved instead of generating retaining walls or changing downloaded terrain.
 """
+from runtimeprofiler import step as profile_step
 from dataclasses import dataclass
 import math
 import os
@@ -28,6 +29,8 @@ class Route:
 
 def candidate(spec, goal):
     from .access import basis
+    from sitegen.shared_courts import managed
+    if managed(spec):return None
     if os.environ.get('BNE_BUILDING_PATHS','auto')=='off' or goal is None or spec.inference.use.value not in ('residential','commercial','civic','mixed','industrial'):
         return None
     origin, tangent, normal = basis(spec,*spec.door)
@@ -148,6 +151,8 @@ def _overlap(a,b):
     return Polygon([p[:2] for p in a.top]).intersection(Polygon([p[:2] for p in b.top])).area>1e-7
 
 
+
+@profile_step('Building site coordination')
 def coordinate(items):
     """Commit optional groundcover after all accepted physical routes/surfaces.
 

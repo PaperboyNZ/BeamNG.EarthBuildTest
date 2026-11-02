@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from sitegen.adapters import LegacySiteAdapter
 
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +118,7 @@ class BuildingPlan:
     church: ChurchArchitecture | None = None
     city: CityArchitecture | None = None
     roof_outline: Footprint | None = None
+    weather_exposure: tuple | None = None
 
     def __post_init__(self):
         for field in fields(self):

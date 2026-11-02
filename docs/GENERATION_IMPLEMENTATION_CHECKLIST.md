@@ -1,5 +1,13 @@
 # Integrated building and site implementation checklist
 
+Latest landscaping/access continuation: [shared grounds and curved access](SHARED_GROUNDS_PROGRESS.md).
+Implemented: bounded interface-led multi-member layouts, pedestrian/service/customer
+reservations, connected parking, surveyed residual planting, pinned continuous
+surface heights, canonical sector fragments and resident revision protection;
+curved residential mouths and independently checked receiving areas. These do not
+close automatic global site discovery, heavy-truck circulation, arbitrary complex
+topology, atomic cross-sector revision changes or native-game acceptance gates.
+
 Current regional detail authoring: [25 architectural modifiers and spawn rates](REGIONAL_ARCHITECTURAL_MODIFIERS.md).
 
 Current roof authoring: [roof proportions, attic windows and dormers](ROOF_PROPORTIONS_AND_ATTICS.md). Shared inference limits apply across all 64 regional profiles and five contemporary families; tall eligible roofs receive fitted attic details. Historical checkpoint statements below retain their original scope.
@@ -777,3 +785,13 @@ existing native game shrub/rock assets.
 The 2 November texture compatibility correction is documented in [the weathering hotfix](WEATHERING_HOTFIX.md). Native loading and performance acceptance remain pending.
 
 The latest pass removes unsupported facade posts and synchronizes relocated prop collision: [facade and collision fix](FACADE_PROP_COLLISION_FIX.md).
+
+
+## Six-level building quality — 2 November 2026
+
+The six-level visual ladder and per-level adaptive performance are implemented.
+See [Building quality policy and audit](BUILDING_QUALITY.md) and workspace
+`artifacts/building-quality/measurements.md`. Ultra preserves the prior geometry;
+quality changes reuse accepted physical products. Further detail work must use
+the documented cost, identity, cache, streaming and native acceptance gates.
+Native BeamNG performance and visual acceptance remain pending.

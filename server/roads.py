@@ -8298,6 +8298,10 @@ class GeoTracker:
         if speed >= 22.0:self.fast_buildings=True
         elif speed <= 12.0:self.fast_buildings=False
         mode=getattr(conn,'building_quality','full')
+        from buildgen.quality import PROFILES
+        # Six-tier pressure also needs coverage and free-camera state, resolved
+        # once below in on_pose. Do not arm recovery twice on the same pose.
+        if mode in PROFILES:return mode
         return 'lite' if mode=='lite' or (mode=='adaptive' and self.fast_buildings) else 'full'
 
     def close(self):
@@ -8408,11 +8412,23 @@ class GeoTracker:
                 others.setdefault((a, b), d)
         wanted = set(car) | set(seen) | set(others)
         demand={}
-        if getattr(conn,'building_quality','full')=='adaptive':
+        from buildgen import quality as building_quality
+        ceiling=getattr(conn,'building_quality','full')
+        profile=building_quality.PROFILES.get(ceiling)
+        adaptive=profile is not None and getattr(conn,'building_adaptive',True)
+        if profile:
+            # Reserve capacity for physical coverage and stalled work. Optional
+            # visual jobs by themselves must not keep the recovery timer armed.
+            busy=ground_busy or bool(wanted-self.sent) or any(
+                time.monotonic()-self.started.get(k,time.monotonic())>5. for k in self.building)
+            detail=building_quality.adaptive_target(self,conn,s,busy=busy,
+                now=time.monotonic(),free_camera=view is not None)
+        if ceiling=='adaptive' or adaptive:
             from buildgen import detail_demand
             camera=detail_demand.camera(getattr(conn,'cam',None),aid,getattr(conn,'cam_aid',None))
+            reach=min(getattr(conn,'building_detail_m',350.),profile.reach) if profile else getattr(conn,'building_detail_m',350.)
             for k in wanted:
-                close=min(car.get(k,1e9),seen.get(k,1e9))<=getattr(conn,'building_detail_m',350.)
+                close=min(car.get(k,1e9),seen.get(k,1e9))<=reach
                 if camera is not None:
                     cx,cy,cz,fov,height=camera
                     distance=geotiles.quad_dist(geotiles.quad(frame,*k),cx,cy)
@@ -8425,11 +8441,14 @@ class GeoTracker:
                         low=min(v[0] for v in spans);high=max(v[1] for v in spans)
                         distance=math.hypot(distance,max(0.,low-cz,cz-high))
                     close=detail_demand.wanted(distance,self.building_demand.get(k,False),fov=fov,height=height,
-                        reach=getattr(conn,'building_detail_m',350.),fast=self.fast_buildings,
-                        free_camera=view is not None)
+                        reach=reach,fast=self.quality_fast if profile else self.fast_buildings,
+                        free_camera=view is not None,feature=profile.feature_m if profile else detail_demand.FEATURE_M)
                 elif detail=='lite':close=False
-                demand[k]='full' if close else 'lite'
-            self.building_demand={k:q=='full' for k,q in demand.items()}
+                if profile:
+                    close=close and detail==ceiling
+                    demand[k]=ceiling if close else profile.fallback
+                else:demand[k]='full' if close else 'lite'
+            self.building_demand={k:q==(ceiling if profile else 'full') for k,q in demand.items()}
         else:
             demand={k:detail for k in wanted};self.building_demand={}
         start = {(a, b) for a, b, _ in geotiles.tiles_near(frame, x, y, SEND_M)} if ground_busy else wanted
@@ -8455,7 +8474,10 @@ class GeoTracker:
             make = self.need.get((k, self.aid)) or None
             if k not in self.skins or make:
                 jobs.append((k, False, k not in self.skins, make))
-            elif (getattr(conn,'building_progress',False) and demand.get(k,detail)=='full'
+            elif (profile is not None and getattr(conn,'building_progress',False)
+                  and building_quality.needs_rebuild(self.info.get(k,{}).get('buildingDetail'),demand.get(k,detail),ceiling)):
+                jobs.append((k, True, True, 'auto'))
+            elif (profile is None and getattr(conn,'building_progress',False) and demand.get(k,detail)=='full'
                   and self.info.get(k,{}).get('buildingDetail')=='lite'
                   and (getattr(conn,'building_quality','full')=='adaptive' or
                        min(car.get(k,1e9),seen.get(k,1e9)) <= getattr(conn,'building_detail_m',350.0))):
@@ -8485,7 +8507,8 @@ class GeoTracker:
         jobs.sort(key=lambda job:(job[1] and job[0] in self.sent,order(job)))
         from buildgen import progressive
         for progress_key,job in list(getattr(self, '_building_progress', {}).items()):
-            if demand.get(progress_key,detail)=='lite' and not job.get('limited') and self._progress_out_dir:
+            limited=demand.get(progress_key,detail) in ('lite','very_low','low')
+            if limited and not job.get('limited') and self._progress_out_dir:
                 job['limited']=progressive.limit_detail(self._progress_out_dir,job['token'])
             progressive.poll(self, conn, aid, progress_key)
         for k, content, skin, make in jobs[:max(0, BUILD_PER_POSE - len(self.building))]:

@@ -925,6 +925,24 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
             P.props = roadside_clearance.clear(P.props, wires=wires, areas=[*furniture_areas,*common],
                 walks=walks,items=items,lines=lines,origin=(x0,y0),bounds=box,
                 ground=lambda xy: roadmeshmod.drawn_ground(frame,drawn,xy,q))
+            from sitegen import shared_layouts
+            from shapely.geometry import LineString
+            from shapely.ops import unary_union
+            shared=[c for c in P.shared_courts if isinstance(c,shared_layouts.SharedLayout)]
+            if shared:
+                import math
+                occupied=unary_union(common)
+                def parked_shape(row):
+                    angle=math.radians(row[3]);u=np.array([math.cos(angle),math.sin(angle)])*3.
+                    v=np.array([-math.sin(angle),math.cos(angle)])*1.25;p=np.array(row[:2])
+                    return Polygon([p-u-v,p+u-v,p+u+v,p-u+v])
+                P.park=[p for p in P.park or () if not occupied.intersects(parked_shape(p))]
+                # Existing marking emitters retain ownership outside shared sites.
+                P.chunks=[c for c in P.chunks if c.get('m')!='line_white' or len(c.get('n',()))<2
+                          or not occupied.intersects(LineString(np.asarray(c['n'])[:,:2]))]
+                for layout in shared:
+                    parking,paint,planting=shared_layouts.additions(layout,frame,elev)
+                    P.park.extend(parking);P.chunks.extend(paint);P.props.extend(planting)
     mark('shared_courts')
     return P
 
@@ -1508,7 +1526,8 @@ def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, l
     watch = _stack_watch(f"road geotile {gx}_{gy}")
     from buildgen.progressive import ACTIVE, DETAIL, Publisher
     import geotiles
-    detail_state = DETAIL.set(building_detail if building_detail in ('full','lite') else 'full')
+    from buildgen.quality import WORKER_VALUES
+    detail_state = DETAIL.set(building_detail if isinstance(building_detail,str) and building_detail in WORKER_VALUES else 'full')
     progress_state = ACTIVE.set(Publisher(out_dir,vfs_dir,geotiles.geobox(gx,gy),progress_token)
                                 if progress_token else None)
     try:

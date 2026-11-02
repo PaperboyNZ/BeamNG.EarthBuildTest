@@ -388,7 +388,8 @@ def draw(mesh,spec,gmin,gmax,lite=False,collision=False):
     draw_roof(mesh,spec,top,mats,detail=not lite and not collision)
     if spec.access is not None:
         from .access import draw as draw_access
-        draw_access(mesh,spec,collision,detail=not lite)
+        from .quality import current
+        draw_access(mesh,spec,collision,detail=not lite and current().rank >= 3)
     return True
 
 

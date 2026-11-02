@@ -1,4 +1,5 @@
 """Persistent accepted plans, physical products and independent visual upgrades."""
+from runtimeprofiler import step as profile_step
 from pathlib import Path
 import hashlib,json,math,os,pickle,re
 from productcache import Store,identity
@@ -94,6 +95,8 @@ def retain(worker,tile,key,dependencies,P,out_dir,vfs_dir,n,info,watched):
     return result.status=='ready'
 
 
+
+@profile_step('Building visual refinement')
 def refine(worker,tile,key,out_dir,vfs_dir,detail):
     """Return a complete tile using only accepted plans plus changed visuals.
 
@@ -130,7 +133,7 @@ def refine(worker,tile,key,out_dir,vfs_dir,detail):
             parts[what]=info;blobs[name]=blob;hashes[what]=hashlib.sha256(blob).hexdigest()
         quality=ACTIVE.get().detail if ACTIVE.get() else detail
         return dict(entries=entries,files=blobs,parts=parts,hashes=hashes,groups=groups,detail=quality)
-    visual=store.get_or_build('visual-'+detail,visual_key,build_visual,
+    visual=store.get_or_build('visual-'+detail.replace('_','-'),visual_key,build_visual,
                              valid=lambda:inputwatch.current(plan.value['inputs']) and
                                  (ACTIVE.get() is None or ACTIVE.get().detail==detail))
     if visual.value is None:return None

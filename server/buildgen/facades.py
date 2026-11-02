@@ -3,6 +3,7 @@
 Coordinates are metres along an oriented boundary and above the volume's base.
 Near/lite geometry use the same apertures; only reveal/trim depth is simplified.
 """
+from runtimeprofiler import step as profile_step
 from dataclasses import dataclass, replace
 import math
 
@@ -83,6 +84,8 @@ def entrance(spec, length, setback):
     return door, (float(gc), width, min(2.3, spec.floor_h - .35))
 
 
+
+@profile_step('Building facade layout')
 def plan(spec, gmin, gmax):
     import buildings as b
     if getattr(spec, 'city', None) is not None:
@@ -343,9 +346,12 @@ def shallow_openings(spec,elevation,block_profile,regional_profile,lite):
                      and not op.assembly and (op.depth is None or op.depth<=REVEAL))
 
 
+@profile_step('Building facade geometry')
 def draw(mesh, spec, gmin, gmax, bottom, lite=False):
     import buildings as b
     from . import components as templates
+    from .quality import current
+    quality = current()
     if getattr(spec, 'city', None) is not None:
         from .city import draw as draw_city
         return draw_city(mesh, spec, gmin, gmax, bottom, lite=lite)
@@ -356,8 +362,10 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
     shared=commercial.derive_programme(spec)
     glazing_grids={}
     from . import commercial_detail
-    detail_plan=commercial_detail.plan(spec,layout,shared,commercial.detail_family(spec))
-    detail_elevations={(e.boundary,e.edge):e.components for e in detail_plan.elevations}
+    # Very Low keeps the accepted aperture grid and regional paint; avoid
+    # planning small commercial trim which will never be emitted.
+    detail_plan=commercial_detail.plan(spec,layout,shared,commercial.detail_family(spec)) if quality.rank else None
+    detail_elevations={(e.boundary,e.edge):e.components for e in detail_plan.elevations} if detail_plan else {}
     base = b.base_z(spec, gmin, gmax) + (spec.min_h or 0.)
     mats = b._Looks(spec.seed)
     body = mats[spec.facade] if spec.inference.facade.value != "glass" else mats[layout.trim]
@@ -421,15 +429,19 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
         # faces instead of full trim and sill components. Street rows and deep
         # structural openings retain their original construction.
         shallow=shallow_openings(spec,elevation,block_profile,regional_profile,lite)
+        if quality.rank == 2:shallow=frozenset()
         # Close/middle share aperture positions. Assemblies and deep recesses
         # retain holes and closed returns; only shallow openings use overlays.
         deep=frozenset(op for op in openings if (op.depth if op.depth is not None else reveal)>=MIDDLE_RECESS_M)
         structural=[op for op in openings if op.assembly or op in deep]
+        structural_set=frozenset(structural) if quality.rank == 2 else ()
+        cuts=([op for op in openings if op.floor < 2 or op in structural_set]
+              if quality.rank == 2 else openings)
         cells = (wall_cells(length,zbottom,spec.height,structural) if lite and structural else
                  [(0., length, zbottom, spec.height)] if lite else
                  wall_cells(length,zbottom,spec.height,
                     [replace(op,left=op.left-frame,right=op.right+frame,bottom=op.bottom-frame,top=op.top+frame)
-                     if op in shallow else op for op in openings]))
+                     if op in shallow else op for op in cuts]))
         for s0, s1, z0, z1 in cells:
             if block_profile:
                 for a,c,lo,hi,material in blocks.paint_cells(spec,block_profile,elevation,(s0,s1,z0,z1),block_looks,
@@ -452,6 +464,10 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
                              regional.components(spec,elevation,regional_profile,regional_budget))
         regional_budget-=len(regional_components)
         components=components+regional_components+residential.frame_components(spec,elevation,dwelling)
+        if quality.rank == 0:
+            # Broad bands and structural timber carry regional identity.
+            components=tuple(c for c in components if c.kind in (
+                'deep_beam','upper_cornice','floor_band','corner_board','dwelling_frame','block_screen'))
         band_at=None
         def detail(component):
             nonlocal band_at
@@ -466,7 +482,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
             point=band_at if wrap else at
             corners=((s0,z0),(s1,z0),(s1,z1),(s0,z1))
             mesh.quad(*(point(*p,depth) for p in corners),(0,0),((s1-s0)/3,0),((s1-s0)/3,(z1-z0)/3),(0,(z1-z0)/3),material)
-            if not lite and component.kind not in (
+            if not lite and quality.rank >= 3 and component.kind not in (
                     'sash','mullion','recess_panel','transom','spandrel','block_lower_panel'):
                 # Closed shallow returns keep strips solid from oblique views.
                 # Inset surface patterns need only their textured face; 12 mm
@@ -484,14 +500,15 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
                          mats[b.custom_look(b.PANEL, (.25, .28, .29))], .025)
         for op in openings:
             x0, x1, z0, z1 = op.left, op.right, op.bottom, op.top
+            opening_lite=lite or (quality.rank == 2 and op.floor >= 2 and op not in structural_set)
             from .regional_facade_details import draw_opening as draw_modifier_opening
             if draw_modifier_opening(mesh,spec,op,at,quad,lower_body if op.floor==0 else upper_body,
-                                     trim,window,lite=lite):continue
+                                     trim,window,lite=opening_lite):continue
             if residential.draw_opening(mesh,spec,op,at,quad,
-                    lower_body if op.floor==0 else upper_body,trim,window,lite=lite,elevation=elevation):continue
+                    lower_body if op.floor==0 else upper_body,trim,window,lite=opening_lite,elevation=elevation):continue
             arch=regional.aperture_shape(spec,regional_profile,elevation,op) if allow_arches else 'rectangular'
             opening_reveal=op.depth if op.depth is not None else reveal
-            flattened=lite and op not in deep
+            flattened=opening_lite and op not in deep
             depth = .02 if flattened else -opening_reveal
             if op.kind == 'staff_door':
                 quad(x0,x1,z0,z1,mats[b.custom_look(b.PANEL,(.25,.28,.29))],depth)
@@ -522,9 +539,9 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
                 from .regional_openings import draw_arch
                 arch_wall=lower_body if op.floor==0 else upper_body
                 su,sv=materials.wall_scale('stone' if b.MATERIALS[arch_wall[0]] in (b.STONE,b.BRICK_WALL) else 'render')
-                draw_arch(mesh,op,at,arch_wall,trim,opening_reveal,frame,arch,lite,
+                draw_arch(mesh,op,at,arch_wall,trim,opening_reveal,frame,arch,opening_lite,
                           lambda s,z:((run+s)/su,z/sv),retain_depth=not flattened)
-            if lite and not flattened and arch=='rectangular':
+            if not flattened and (lite or (quality.rank < 3 and op not in shallow)) and arch=='rectangular':
                 # Four plain returns keep the deep opening closed from oblique
                 # views, without close-tier surround strips, sills or hoods.
                 corners=((x0,z0),(x1,z0),(x1,z1),(x0,z1))
@@ -542,7 +559,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
                     k=(j+1)%4
                     mesh.quad(at(*outer[j]),at(*outer[k]),at(*inner[k],depth),at(*inner[j],depth),
                               (0,0),(1,0),(1,.1),(0,.1),trim)
-            if not lite and op not in shallow and arch=='rectangular':
+            if not lite and quality.rank >= 3 and op not in shallow and arch=='rectangular':
                 su,sv=layout.wall_scale
                 if trim in (lower_body,upper_body):
                     su,sv=materials.wall_scale('stone' if b.MATERIALS[trim[0]] in (b.STONE,b.BRICK_WALL) else 'render')
@@ -571,6 +588,6 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
         from .regional_facade_details import draw_surface_details
         draw_surface_details(mesh,spec,elevation,at,quad,mats,lite=lite)
         run += length
-    if not lite:
+    if not lite and quality.rank >= 3:
         from .details import corners
         corners(mesh,spec,base,layout,mats)

@@ -340,7 +340,7 @@ def oriented_box(p):
 class Spec:
     """What is built for one footprint (decided by plan())."""
     __slots__ = ("ring", "floors", "floor_h", "height", "roof", "roof_mat", "facade", "band", "shop", "plain", "min_h", "wall", "door", "windows", "front", "steeple", "stoop",
-                 "sign", "porch", "cls", "seed", "deck", "pitch", "portal", "gring", "ship", "evidence", "footprint", "diagnostics", "inference", "facades", "garage_opening", "access", "site", "garage_access", "terminal", "church", "city", "roof_outline")
+                 "sign", "porch", "cls", "seed", "deck", "pitch", "portal", "gring", "ship", "evidence", "footprint", "diagnostics", "inference", "facades", "garage_opening", "access", "site", "garage_access", "terminal", "church", "city", "roof_outline", "weather_exposure")
 
     def __init__(self, **kw):
         for k in self.__slots__:
@@ -495,6 +495,8 @@ def plan(ring, attrs, neighbours=0, lat=None, lon=None, look=None, town=False, d
         spec = compiler.plan(ring, planning_attrs, look)
     else:
         spec = _legacy_plan(ring, planning_attrs, neighbours, lat, lon, look, town, dense, west_town, alpine)
+    from buildgen.weathering import exposure
+    spec.weather_exposure = exposure(planning_attrs.get('_context'), lat, lon)
     spec.evidence = attrs.get("_evidence") or normalise_attributes(attrs)
     spec.site = attrs.get('_site')
     if (spec.site is not None and spec.site.owner_footprint is not None and
@@ -941,7 +943,8 @@ class Mesh:
         self.component_jobs.clear()
 
     def weather(self, spec, gmin, gmax):
-        self.weather_ranges.append((self.n,spec.seed,base_z(spec,gmin,gmax)+(spec.min_h or 0.),spec.height))
+        self.weather_ranges.append((self.n,spec.seed,base_z(spec,gmin,gmax)+(spec.min_h or 0.),
+                                    spec.height,spec.weather_exposure))
 
     def quad(self, a, b, c, d, uva, uvb, uvc, uvd, mat):
         """Corners counter-clockwise seen from outside."""
@@ -1716,10 +1719,13 @@ GARAGE_DRIVE_W = 6.5        # m: a garage entrance's two lanes
 GARAGE_DRIVE_MAX_M = 25.0   # m from the outline to a road's edge at most
 
 
+@profile_step('Building visual mesh')
 def build(specs_and_ground, lite=False):
     """The tile's mesh from [(Spec, ground z min, ground z max)] with rings in the tile's local frame:
     (positions, uvs, tris, tri material indices, MATERIALS) or None if empty. lite (far tiles): no
     cornices, whole walls instead of one quad per bay."""
+    from buildgen.quality import current
+    lite = lite or current().rank < 2
     m = Mesh()
     for spec, gmin, gmax in specs_and_ground:
         m.weather(spec,gmin,gmax)
@@ -1808,6 +1814,7 @@ def _steel_frame(m, spec, gmin, mat, lite=False, legs_only=False):
                 _box(m, c + v * sy * (hw - t), u, hl - 2 * t, b, z - b, z + b, mat)
 
 
+@profile_step('Building collision')
 def collision_mesh(specs_and_ground):
     """The tile's buildings for physics only: one quad per wall and a flat lid at the eaves (pitched roofs on their
     oriented box), parking decks as drawn; (positions, uvs, tris, tri materials, MATERIALS, colours) or None.
@@ -2602,7 +2609,7 @@ def tile_buildings(frame, x0, y0, x1, y1, layers, elev, water=None, part_layers=
     OSM) on a road bridge, over water or on a public road (roads_xy, or ml_roads_xy for that test alone: the far
     buildings) is a deck, a boat or a vehicle, left out (_ml_false). skip: ids of buildings left out (a gas station's
     canopy, drawn by the mod from the stock levels' props: gasstations.tile_sites). min_size (min height m, min
-    footprint m²): only buildings at least that tall or that large (the skyline tiles: skyline_tile), tested before
+    footprint mÂ²): only buildings at least that tall or that large (the skyline tiles: skyline_tile), tested before
     any other work on a building."""
     parts_of = _PartsOf(frame, part_layers)     # building id -> [(ring in the anchor frame, (own height, bottom))]
     v2 = building_ingest.enabled()
@@ -3075,6 +3082,7 @@ def garage_sound_boxes(items, x0, y0, kind):
 BLD_LOD_PX = 2700.0
 
 
+@profile_step('Building shape export')
 def write(path, mesh, collision_only=False):
     """The tile's .cdae (cdae.encode with one primitive per material; collision_only: a never-drawn collision detail).
     A mesh with a 7th element (build_parts with_lod) gets that lite mesh as its coarse detail below BLD_LOD_PX."""
@@ -3552,7 +3560,7 @@ def visual_products(items):
     groups = None
     if progress is not None:
         meshes, groups = progress.build(items)
-    elif DETAIL.get()=='lite':
+    elif DETAIL.get()=='lite' or DETAIL.get() in ('very_low','low'):
         mesh=build(items,lite=True)
         meshes=split_mesh(mesh,V2_IMPORT_VERTS) if mesh is not None else []
     else:
@@ -4054,7 +4062,7 @@ def photo_mask(frame, x0, y0, size, px, md):
 
 
 def _photo_candidates(f, frame, x0, y0, size):
-    """Rows of f (a cell's buildings) whose outer ring's box meets the square [x0, x0 + size]² and that come first
+    """Rows of f (a cell's buildings) whose outer ring's box meets the square [x0, x0 + size]Â² and that come first
     among the rows of their id, ascending, with their outer rings' coordinate ranges [a, b): photo_mask's buildings, its test made for all rows at once (one ring at a
     time it was ~19k Python steps a block, most of a block photo's roof mask; 2026-10-23)."""
     m = len(f.kind)

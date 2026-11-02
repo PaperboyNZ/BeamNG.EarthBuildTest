@@ -5,6 +5,7 @@ Orthogonal hips first use bounded wing decomposition. The remaining forms use
 the clipped envelope, not a cross-gable or straight-skeleton solver.
 Courtyards and notches remain open in every LOD.
 """
+from runtimeprofiler import step as profile_step
 from dataclasses import dataclass
 from functools import lru_cache
 import math
@@ -128,6 +129,8 @@ def variant(spec):
     return getattr(spec.inference,'roof_variant','standard') if spec.inference is not None and not spec.church else 'standard'
 
 
+
+@profile_step('Building roof solution')
 def for_spec(spec, footprint=None):
     if footprint is None and getattr(spec,'roof_outline',None) is not None:
         from .roof_edges import extended

@@ -59,6 +59,7 @@ class StreetPortal:
     height: float | None = None
     crossfall: float = 0.
     crossing: tuple | None = None
+    rear: tuple = ()
 
     def __post_init__(self):
         if self.kind not in ('sidewalk','road'):raise ValueError('unsupported street interface')
@@ -75,6 +76,10 @@ class StreetPortal:
             values=tuple(self.crossing)
             if len(values)!=3 or type(values[0]) is not int or values[0]<0:raise ValueError('invalid sidewalk reference')
             object.__setattr__(self,'crossing',(values[0],_finite(values[1]),_finite(values[2])))
+        rear=tuple(tuple(round(_finite(v),9) for v in p) for p in self.rear)
+        if rear and (not 3<=len(rear)<=17 or any(len(p)!=3 for p in rear)):
+            raise ValueError('curved portal requires bounded rear XYZ samples')
+        object.__setattr__(self,'rear',rear)
 
     @property
     def rank_key(self):
@@ -102,11 +107,13 @@ class RouteProposal:
     portal: StreetPortal
     sections: tuple
     branch: tuple | None = None
+    mode: str = 'connected'
 
     def __post_init__(self):
         if type(self.portal) is not StreetPortal:raise TypeError('route requires a street proposal')
         points=np.asarray(self.sections,float)
-        if points.ndim!=3 or points.shape[1:]!=(3,2) or not 2<=len(points)<=33 or not np.isfinite(points).all():
+        if points.ndim!=3 or points.shape[2]!=2 or not 3<=points.shape[1]<=17 or not 2<=len(points)<=33 or not np.isfinite(points).all():
             raise ValueError('route requires bounded left/centre/right XY sections')
+        if self.mode not in ('connected','crossing_only'):raise ValueError('unsupported route mode')
         object.__setattr__(self,'sections',_freeze(points))
         object.__setattr__(self,'branch',_freeze(self.branch))

@@ -36,7 +36,7 @@ local d = settings.defaults()
 T.check(#warn == 0, 'no file: no warnings')
 local same = true
 for k, v in pairs(d) do
-  if vals[k] ~= v and k ~= 'quality' and k ~= 'qualityDetected' then same = false end
+  if vals[k] ~= v and k ~= 'quality' and k ~= 'qualityDetected' and k ~= 'buildingQuality' then same = false end
 end
 T.check(same, 'no file: every value is its default (but the quality, picked from the hardware)')
 T.check(vals.quality == 'high', 'no file, no GPU info: the High preset (= the old defaults)')
@@ -52,7 +52,7 @@ for _, p in ipairs(settings.PRESET_ORDER) do
   end
 end
 for _, k in ipairs(settings.PRESET_KEYS) do
-  T.check(settings.PRESETS.high[k] == d[k], 'High is the old default of ' .. k)
+  T.check(settings.PRESETS.high[k] == (k == 'buildingQuality' and 'high' or d[k]), 'High preset maps ' .. k)
 end
 T.check(d.rebaseDistance == rebase.DEFAULT_DISTANCE and d.skyMode == 'real' and d.clouds == true
   and d.viewDistanceMode == 'horizon' and d.viewDistanceKm == 100 and d.hudVisible == false,
@@ -529,5 +529,22 @@ files[settings.FILE] = { version = 1, groundCover = false, rocks = false, trees 
   groundCoverDensity = 'low', viewDistanceMode = 'fixed', viewDistanceKm = 40 }
 local v3 = settings.load()
 T.check(v3.quality == 'custom' or v3.quality == 'low', 'old knobs that match no preset stay theirs')
+files[settings.FILE] = nil
+-- Six visual ceilings retain old saved intent and send adaptation separately.
+for _, q in ipairs({'very_low','low','medium','high','very_high','ultra'}) do
+  T.check(settings.set('buildingQuality', q).ok, 'accept quality ' .. q)
+  settings.set('buildingAdaptive', true)
+  local graphics = settings.serverGraphics()
+  T.check(graphics.buildingQuality == q and graphics.buildingAdaptive == true, 'send tier and adaptation ' .. q)
+end
+for _, old in ipairs({'lite','adaptive','full'}) do
+  files[settings.FILE] = {version=1,quality='custom',buildingQuality=old}
+  local migrated, warnings = settings.load()
+  T.check(#warnings == 0, 'old quality migrates ' .. old)
+  T.check(migrated.buildingQuality == (old == 'lite' and 'low' or 'ultra'), 'old quality ceiling ' .. old)
+  T.check(migrated.buildingAdaptive == (old ~= 'full'), 'old Full retains forced detail ' .. old)
+end
+files[settings.FILE] = {version=1,quality='custom',buildingQuality='ultra',buildingAdaptive=false}
+T.check(settings.load().buildingAdaptive == false, 'explicit nonadaptive setting persists')
 files[settings.FILE] = nil
 T.done('test_settings')

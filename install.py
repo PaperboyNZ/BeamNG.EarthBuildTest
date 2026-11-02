@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import building_fade_shader
+import weathering_shader
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MOD_SRC = os.path.join(ROOT, "mod", "beamng_earth")
@@ -200,7 +201,7 @@ def tree_hash(path):
         for name in sorted(filenames):
             full = os.path.join(dirpath, name)
             relative = os.path.relpath(full, path).replace(os.sep, "/")
-            if relative in building_fade_shader.GENERATED:
+            if relative in building_fade_shader.GENERATED or relative in weathering_shader.GENERATED:
                 continue
             h.update(relative.encode())
             with open(full, "rb") as f:
@@ -245,6 +246,22 @@ def install_building_fade(dest):
     return False
 
 
+def install_weathering(dest):
+    games = [os.environ['BNGE_GAME_DIR']] if os.environ.get('BNGE_GAME_DIR') else []
+    games += [os.path.join(root, 'steamapps', 'common', 'BeamNG.drive') for root in _steam_roots()]
+    for game in games:
+        if os.path.isfile(os.path.join(game, weathering_shader.HOOK)):
+            try:
+                return weathering_shader.install(dest, game)
+            except (OSError, ValueError) as error:
+                weathering_shader.remove(dest)
+                say(f'Roof-stain blend unavailable; using organic weathering: {error}')
+                return False
+    weathering_shader.remove(dest)
+    say('Roof-stain blend unavailable: game shaders not found; using organic weathering.')
+    return False
+
+
 def install_mod(user_dir, assume_yes, dry_run, quiet=False):
     """Copy the mod into the user folder. Returns 'current', 'enabled' (current, but it had been turned off in the
     game's mod list), 'updated', 'installed', 'kept' or None (dry run); quiet: no messages but the notes (the launcher
@@ -263,9 +280,12 @@ def install_mod(user_dir, assume_yes, dry_run, quiet=False):
         say("Mod: it had been turned off in the game's mod list (a BeamMP server does that); turned it back on.")
     if os.path.isdir(dest):
         if tree_hash(dest) == tree_hash(MOD_SRC):
-            if not dry_run and install_building_fade(dest):
-                note('Building dissolve shaders updated; restart BeamNG to load them.')
-                return 'updated'
+            if not dry_run:
+                fade_changed=install_building_fade(dest)
+                weather_changed=install_weathering(dest)
+                if fade_changed or weather_changed:
+                    note('Building shaders updated; restart BeamNG to load them.')
+                    return 'updated'
             note(f"Mod: already up to date in {dest}")
             return "enabled" if enabled else "current"
         if not (assume_yes and quiet) and not ask(f"Mod: an older copy is installed in {dest}. Replace it?", assume_yes):
@@ -285,6 +305,7 @@ def install_mod(user_dir, assume_yes, dry_run, quiet=False):
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     shutil.copytree(MOD_SRC, dest, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store"))
     install_building_fade(dest)
+    install_weathering(dest)
     if status == "updated":
         _stamp_times(dest, old_times)
     note(f"Mod: installed to {dest}")

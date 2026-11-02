@@ -1,5 +1,9 @@
 # Explicit shared-court pilot
 
+The 2 November continuation adds interface-led shared layouts and canonical
+sector fragments. See [shared grounds progress](SHARED_GROUNDS_PROGRESS.md).
+The original interface-free pilot described below retains its existing limits.
+
 `sitegen.shared_courts` fits supplied, source-linked common ground pavement. It
 does not infer property boundaries, courtyard holes, roads, entrances or parking.
 It is bundled with the schema 23 r6 playtest and disabled in its normal launchers.

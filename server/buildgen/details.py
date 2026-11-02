@@ -1,4 +1,5 @@
 """Small closed construction details, separate from primary collision shells."""
+from runtimeprofiler import step as profile_step
 import math
 import numpy as np
 
@@ -126,11 +127,12 @@ def roof_seams(spec,top):
     return tuple(seams)
 
 
+@profile_step('Building roof flashing')
 def roof_caps(mesh,spec,top,mats):
     import buildings as b
     from .materials import roof_scale
     if spec.footprint.vertex_count>64 or spec.footprint.is_rectangle():
-        # On simple roofs the 2–6 mm folded overlays duplicate the existing
+        # On simple roofs the 2â€“6 mm folded overlays duplicate the existing
         # roof-covering normal maps and hard plane crease. Preserve actual roof
         # shape, fascia and gutters; retain explicit flashing on complex valleys.
         return
@@ -157,7 +159,9 @@ def eave_runs(roof):
     return tuple(runs)
 
 
-def rainwater(mesh,spec,top,mats,gmin,gmax):
+
+@profile_step('Building rainwater detail')
+def rainwater(mesh,spec,top,mats,gmin,gmax,detail=True):
     """Gutter channels/outlets and wall-following downpipes on low pitched roofs.
 
 Sizing is a visual recipe, not a catchment/rainfall capacity calculation. Downpipes
@@ -219,6 +223,18 @@ end at visible receiver collars; underground drainage remains unknown.
                 outlet=position
                 break
         if attachment is None:
+            continue
+        if not detail:
+            # Very High keeps the gutter/downpipe silhouette as closed beams;
+            # Ultra adds the channel, falls, elbows, receiver and brackets.
+            beam(mesh,(*a,base-.07),(*c,base-.07),.055,mat,sides=4)
+            distance,edge,along,foot,normal=attachment
+            pipe=foot+normal*.07
+            ground=b.door_ground(spec,edge,along,gmax)
+            if base-.13-ground >= .6:
+                beam(mesh,(*pipe,base-.13),(*pipe,ground+.08),.04,mat,sides=4)
+            count+=1
+            if count>=12:break
             continue
         drop=.002*min(outlet,length-outlet)
         cuts=(0.,outlet,length)

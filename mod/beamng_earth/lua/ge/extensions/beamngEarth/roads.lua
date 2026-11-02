@@ -107,6 +107,7 @@ local progressFrame = 0
 M.FAR_IMPORT_EVERY = 4
 M.BUILDING_PROGRESS = 1
 local sectorManifest = require('beamngEarth/sector_manifest')
+local sharedSites = require('beamngEarth/shared_sites')
 M.SECTOR_MANIFEST = 1
 local sectorManifestRequired = false
 function M.setSectorManifest(version) sectorManifestRequired = version == M.SECTOR_MANIFEST end
@@ -997,6 +998,10 @@ function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
   end
   local key = staged and staged.key or geoKey(msg.key)
   local old = tiles[key]
+  if not staged and not old and not sharedSites.compatible(data,tiles,key) then
+    lastError='shared site surface revision waits for resident neighbours'
+    return false
+  end
   local h = msg.h or data.h
   local filesPresent=old and old.geo and not filesGone(old.parts, old.exactShape)
   local reuse=filesPresent and data.physicalHash and old.data.physicalHash==data.physicalHash
@@ -2387,6 +2392,7 @@ physicalHandover=require('beamngEarth/physicalhandover').new({
   ready=function(r)
     local t=r.tile
     if not t or t.importFailed or (t.queued or 0)>0 then return false end
+    if not sharedSites.compatible(t.data,tiles,r.parent) then return false end
     for what in pairs(t.parts) do if not t[what] then return false end end
     if r.needsSkin and (not t.skin or t.skin.pending>0 or t.skin.anchor~=t.anchor) then return false end
     return not t.skin or t.skin.pending==0

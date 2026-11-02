@@ -133,52 +133,52 @@ def _lot_rows(hw):
     return out
 
 
-def lot_spots(rings, box, z_at, blockers=()):
-    """Rows [x, y, z, heading, 1] of the stalls of parking lots (rings: (k, 2) arrays in the anchor frame)
-    whose centres are in the tile box: rows along each lot's long side, every stall wholly inside the lot and
-    its centre in none of the blockers (building footprints: a garage's ground floor). z_at(x, y) -> the
-    ground (arrays). Deterministic."""
+def _polygons(rings):
+    from shapely.geometry import Polygon
+    return [p for r in rings if len(r) >= 3
+            for p in [Polygon(np.asarray(r)[:, :2]).buffer(0)] if not p.is_empty]
+
+
+def _lot_layout(rings, blockers=()):
+    """One layout for overlapping mapped lots; test the whole stall, including obstacles."""
     import buildings
-    x0, y0, x1, y1 = box
-    cand = []
-    for ring in rings:
-        ring = np.asarray(ring, np.float64)
-        if len(ring) < 3:
-            continue
-        if ring[:, 0].max() < x0 or ring[:, 0].min() >= x1 or ring[:, 1].max() < y0 or ring[:, 1].min() >= y1:
-            continue
+    from shapely.geometry import Polygon
+    from shapely.ops import unary_union
+    shape = unary_union(_polygons(rings))
+    blocked = unary_union(_polygons(blockers))
+    parts = [shape] if shape.geom_type == "Polygon" else list(getattr(shape, "geoms", ()))
+    for area in sorted(parts, key=lambda p: (*p.bounds, p.area)):
+        ring = np.asarray(area.exterior.coords)
         c, u, hl, hw = buildings.oriented_box(ring)
-        if hw < LOT_SPOT_D_M / 2 or hl < LOT_SPOT_W_M:
-            continue
         v = np.array([-u[1], u[0]])
-        path = Path(ring)
-        n_along = int((2 * hl - 2 * LOT_MARGIN_M) // LOT_SPOT_W_M)
-        if n_along < 1:
+        count = int((2 * hl - 2 * LOT_MARGIN_M) // LOT_SPOT_W_M)
+        if count < 1:
             continue
-        along = (np.arange(n_along) - (n_along - 1) / 2) * LOT_SPOT_W_M
-        for off, nose in _lot_rows(hw):
-            centres = c[None] + along[:, None] * u[None] + (off - hw) * v[None]
-            hx, hy = u * (LOT_SPOT_W_M / 2 - 0.1), v * (LOT_SPOT_D_M / 2 - 0.1)
-            ok = np.ones(len(centres), bool)
-            for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
-                ok &= path.contains_points(centres + sx * hx + sy * hy)
-            heading = math.degrees(math.atan2(nose * v[1], nose * v[0])) % 360.0
-            for q in centres[ok]:
-                if _owns(box, q[0], q[1]):
-                    cand.append((float(q[0]), float(q[1]), heading))
+        along = (np.arange(count) - (count - 1) / 2) * LOT_SPOT_W_M
+        rows = _lot_rows(hw)
+        paired = {round(off + LOT_SPOT_D_M, 3) for off, nose in rows if nose > 0}
+        for off, nose in rows:
+            centres = c + along[:, None] * u + (off - hw) * v
+            hx, hy = u * LOT_SPOT_W_M / 2, v * LOT_SPOT_D_M / 2
+            ok = np.array([area.covers(stall) and not blocked.intersects(stall)
+                           for q in centres for stall in [Polygon([q-hx-hy, q+hx-hy, q+hx+hy, q-hx+hy])]])
+            yield c, u, v, along, off, hw, nose, ok, round(off, 3) not in paired
+
+
+def lot_spots(rings, box, z_at, blockers=()):
+    """Non-overlapping stalls, wholly inside the mapped lot and clear of buildings."""
+    cand = []
+    for c, u, v, along, off, hw, nose, ok, _ in _lot_layout(rings, blockers):
+        heading = math.degrees(math.atan2(nose * v[1], nose * v[0])) % 360.0
+        for q in (c + along[:, None] * u + (off - hw) * v)[ok]:
+            if _owns(box, *q):
+                cand.append((*q, heading))
+    cand = cand[:LOT_MAX_PER_TILE]
     if not cand:
         return []
-    pts = np.array([(x, y) for x, y, _ in cand])
-    keep = np.ones(len(cand), bool)
-    for b in blockers:
-        b = np.asarray(b, np.float64)
-        if len(b) >= 3:
-            keep &= ~Path(b).contains_points(pts)
-    cand = [cnd for cnd, k in zip(cand, keep) if k][:LOT_MAX_PER_TILE]
-    if not cand:
-        return []
-    z = np.asarray(z_at(np.array([x for x, _, _ in cand]), np.array([y for _, y, _ in cand])), np.float64)
-    return [[round(x, 2), round(y, 2), round(float(zz), 2), round(h, 1), 1] for (x, y, h), zz in zip(cand, z)]
+    z = z_at(np.array([x for x, y, h in cand]), np.array([y for x, y, h in cand]))
+    return [[round(float(x), 2), round(float(y), 2), round(float(zz), 2), round(h, 1), 1]
+            for (x, y, h), zz in zip(cand, z)]
 
 
 def lot_unpaved(feats, i):
@@ -190,7 +190,58 @@ def lot_unpaved(feats, i):
     return str(surf[i] or "").strip().lower() in LOT_UNPAVED
 
 
-def lot_rings(frame, feats_list, paved_only=False):
+def resolved_lots(feats_list, road_feats):
+    """Resolve an untagged lot once from its mapped aisles, never from patchy imagery.
+
+    Explicit polygon surfaces win. Otherwise the predominant in-lot aisle surface
+    applies to the entire lot, including both markings and terrain painters.
+    """
+    import copy
+    import roads
+    from shapely.geometry import Polygon, LineString
+    from shapely.strtree import STRtree
+    lines, kinds, seen = [], [], set()
+    for f in road_feats:
+        if f is None:
+            continue
+        for i, sp in enumerate(roads.road_specs(f)):
+            if sp is None or str(f.ids[i]) in seen or roads._rule_value(f.rules.get("subclass"), i) != "parking_aisle":
+                continue
+            seen.add(str(f.ids[i]))
+            for ring in roads.ground_parts(f, i):
+                lines.append(LineString(np.asarray(ring)[:, :2]))
+                kinds.append("asphalt" if sp.kind in ("paved", "cobble") else sp.kind)
+    if not lines:
+        return list(feats_list)
+    tree = STRtree(lines)
+    out = []
+    for f in feats_list:
+        if f is None or "class" not in f.attrs:
+            out.append(f)
+            continue
+        surfaces = np.array(f.attrs.get("surface", [""] * len(f)), dtype=object, copy=True)
+        changed = False
+        for i in range(len(f)):
+            if f.kind[i] != 3 or str(f.attrs["class"][i]) not in LOT_CLASSES or str(surfaces[i] or "").strip():
+                continue
+            votes = {}
+            for part in f.parts(i):
+                if not part or len(part[0]) < 3:
+                    continue
+                area = Polygon(part[0], part[1:]).buffer(0)
+                for j in tree.query(area, predicate="intersects"):
+                    votes[kinds[j]] = votes.get(kinds[j], 0.) + area.intersection(lines[j]).length
+            if votes and max(votes.values()) > 0.:
+                surfaces[i] = min(votes, key=lambda k: (-votes[k], k))
+                changed = True
+        if changed:
+            f = copy.copy(f)
+            f.attrs = dict(f.attrs, surface=surfaces)
+        out.append(f)
+    return out
+
+
+def lot_rings(frame, feats_list, paved_only=False, unpaved_only=False, holes=False):
     """The parking lot polygons (outer rings) of Overture infrastructure Features, in the anchor frame.
     paved_only: grass and gravel lots left out (the stall lines)."""
     out, seen = [], set()
@@ -201,18 +252,54 @@ def lot_rings(frame, feats_list, paved_only=False):
         if cls is None:
             continue
         for i in np.flatnonzero(np.isin(cls.astype(str), list(LOT_CLASSES)) & (f.kind == 3)):
-            if paved_only and lot_unpaved(f, i):
+            if (paved_only and lot_unpaved(f, i)) or (unpaved_only and not lot_unpaved(f, i)):
                 continue
             fid = f.ids[i]
             if fid in seen:
                 continue
             seen.add(fid)
             for part in f.parts(i):
-                if part and len(part[0]) >= 3:
-                    ll = np.asarray(part[0], np.float64)
-                    e, n, _ = frame.geodetic_to_enu(ll[:, 1], ll[:, 0], 0.0)
-                    out.append(np.stack([e, n], 1))
+                for ring in (part[1:] if holes else part[:1]):
+                    if len(ring) >= 3:
+                        ll = np.asarray(ring, np.float64)
+                        e, n, _ = frame.geodetic_to_enu(ll[:, 1], ll[:, 0], 0.0)
+                        out.append(np.stack([e, n], 1))
     return out
+
+
+def _item_blockers(items, origin):
+    out = []
+    for spec, *_ in items or ():
+        if getattr(spec, "ring", None) is not None:
+            out.append(np.asarray(spec.ring) + origin)
+        access = getattr(spec, "access", None)
+        for solid in getattr(access, "solids", ()):
+            if len(solid.top) >= 3:
+                out.append(np.asarray(solid.top)[:, :2] + origin)
+    return out
+
+
+def _lot_context(frame, tx, ty, md):
+    import roads
+    from shapely.geometry import LineString
+    feats, corridors, road_feats = [], [], []
+    for k in roads.cells_of_tile(frame, tx, ty, margin=20.0):
+        layers = md.cell(k, layers=("infrastructure", "roads"), kind="demand").layers
+        feats.append(layers.get("infrastructure"))
+        f = layers.get("roads")
+        road_feats.append(f)
+        if f is None:
+            continue
+        for i, sp in enumerate(roads.road_specs(f)):
+            if sp is None:
+                continue
+            for ring in roads.ground_parts(f, i):
+                e, n, _ = frame.geodetic_to_enu(ring[:, 1], ring[:, 0], 0.)
+                area = LineString(np.c_[e, n]).buffer(sp.width / 2 + .15, cap_style=2)
+                if not area.is_empty:
+                    corridors.append(np.asarray(area.exterior.coords))
+    feats = resolved_lots(feats, road_feats)
+    return feats, corridors + lot_rings(frame, feats, holes=True)
 
 
 def tile_lot_spots(frame, tx, ty, md, elev, items=None, existing=None):
@@ -223,66 +310,106 @@ def tile_lot_spots(frame, tx, ty, md, elev, items=None, existing=None):
     import roads
     existing = list(existing or [])
     box = roads.tile_bbox(tx, ty)
-    blockers = [spec.ring + np.array(box[:2]) for spec, *_ in (items or ())]
+    blockers = _item_blockers(items, np.array(box[:2]))
     try:
-        feats = [md.cell(k, layers=("infrastructure",), kind="demand").layers.get("infrastructure")
-                 for k in roads.cells_of_tile(frame, tx, ty, margin=0.0)]
+        feats, corridors = _lot_context(frame, tx, ty, md)
         rings = lot_rings(frame, feats)
     except Exception:
-        rings = []
-    paths = [Path(np.asarray(b, np.float64)) for b in blockers + rings if len(b) >= 3]
-    if paths and existing:
-        pts = np.array([r[:2] for r in existing], np.float64)
-        drop = np.zeros(len(existing), bool)
-        for pa in paths:
-            drop |= pa.contains_points(pts)
-        existing = [r for r, d in zip(existing, drop) if not (d and len(r) > 4 and r[4] == 1)]
+        rings, corridors = [], []
+    from shapely.geometry import Polygon
+    from shapely.ops import unary_union
+    occupied = unary_union(_polygons(blockers + rings))
+    kept = []
+    for row in existing:
+        if len(row) < 5 or row[4] != 1:
+            kept.append(row)
+            continue
+        angle = math.radians(row[3])
+        h = np.array([math.cos(angle), math.sin(angle)]) * LOT_SPOT_D_M / 2
+        v = np.array([-math.sin(angle), math.cos(angle)]) * LOT_SPOT_W_M / 2
+        q = np.array(row[:2])
+        if not occupied.intersects(Polygon([q-h-v, q+h-v, q+h+v, q-h+v])):
+            kept.append(row)
+    existing = kept
     if not rings:
         return existing
 
     def z_at(x, y):                 # the anchor frame's up, as the ground drawn (the Earth's curve: raw heights stood a
         la, lo, _ = frame.enu_to_geodetic(x, y, 0.0)    # spot ~6 m up 10 km from the anchor, 18 m at 15 km)
         return frame.geodetic_to_enu(la, lo, np.asarray(elev(la, lo), np.float64))[2]
-    return existing + lot_spots(rings, box, z_at, blockers)
+    return existing + lot_spots(rings, box, z_at, blockers + corridors)
 
 
 AISLE_END_M = 6.0           # stalls kept this far from an aisle's ends (its junctions)
 
 
-def aisle_spots(roads, aisles, box, blockers=(), lots=()):
-    """Rows [x, y, z, heading, 1] of 90-degree stalls along both sides of the parking aisles (aisles: their
-    fids; Overture maps many lots by their aisles alone), LOT_SPOT_W_M apart at stations of the aisle, clear
-    of its ends, of other roads, of buildings (blockers) and of mapped lots (lots: lot_spots covers those);
-    nose in, away from the aisle."""
-    x0, y0, x1, y1 = box
-    import fast
-    others = fast.Others([(fid, spec.width / 2, pts) for fid, spec, pts, _ in roads if fid not in aisles])
-    paths = [Path(np.asarray(b, np.float64)) for b in list(blockers) + list(lots) if len(b) >= 3]
-    out = []
-    for fid, spec, line, _ in roads:
+def _aisle_layout(roads, aisles, blockers=(), lots=()):
+    """Shared stall footprints: reject crossings, neighbouring aisles and folded bend bays.
+
+    Resolve the complete source lines before tile clipping so order and tile boundaries
+    cannot select competing layouts. A spatial hash keeps overlap checks local.
+    """
+    from shapely.geometry import Polygon, LineString
+    from shapely.ops import unary_union
+    blocked = unary_union(_polygons(list(blockers) + list(lots)))
+    from shapely.strtree import STRtree
+    ordered = sorted((r for r in roads if len(r[2]) >= 2), key=lambda r: (str(r[0]), tuple(np.asarray(r[2])[0])))
+    corridors = [(fid, LineString(np.asarray(line)[:, :2]).buffer(spec.width / 2 + .08, cap_style=2))
+                 for fid, spec, line, _ in ordered]
+    corridor_tree = STRtree([p for _, p in corridors])
+    inner_corridors = [p.buffer(-.12) for _, p in corridors]
+    occupied = {}
+    for fid, spec, line, _ in ordered:
         if fid not in aisles or len(line) < 2:
             continue
-        L = furniture._arclen(line)[-1]
-        if L < 2 * AISLE_END_M + LOT_SPOT_W_M:
-            continue
+        line = np.asarray(line, np.float64)
+        length = furniture._arclen(line)[-1]
         phase = furniture._h01(fid, "aisle") * LOT_SPOT_W_M
-        st = np.arange(AISLE_END_M + phase, L - AISLE_END_M, LOT_SPOT_W_M)
+        st = np.arange(AISLE_END_M + phase, length - AISLE_END_M, LOT_SPOT_W_M)
         if not len(st):
             continue
         P, D = furniture._at(line, st)
-        for side in (1.0, -1.0):
+        ends = np.c_[st - LOT_SPOT_W_M / 2, st + LOT_SPOT_W_M / 2]
+        E, T = furniture._at(line, ends.ravel())
+        E, T = E.reshape(-1, 2, 3), T.reshape(-1, 2, 2)
+        for side in (1., -1.):
             n = np.stack([-D[:, 1], D[:, 0]], 1) * side
             Q = P[:, :2] + n * (spec.width / 2 + LOT_SPOT_D_M / 2)
-            for q, nn, p in zip(Q, n, P):
-                if not (_owns(box, q[0], q[1])):
+            normal = np.stack([-T[:, :, 1], T[:, :, 0]], 2) * side
+            inner = E[:, :, :2] + normal * (spec.width / 2)
+            outer = E[:, :, :2] + normal * (spec.width / 2 + LOT_SPOT_D_M)
+            keep = np.zeros(len(st), bool)
+            footprints = []
+            for i in range(len(st)):
+                poly = Polygon([inner[i, 0], inner[i, 1], outer[i, 1], outer[i, 0]])
+                footprints.append(poly)
+                if not poly.is_valid or poly.area < LOT_SPOT_W_M * LOT_SPOT_D_M * .65:
                     continue
-                if not furniture._clear(np.array([q[0], q[1], p[2]]), others, fid):
+                if blocked.intersects(poly) or any(
+                        corridors[j][0] != fid or inner_corridors[j].intersects(poly)
+                        for j in corridor_tree.query(poly, predicate="intersects")):
                     continue
-                if _hit(paths, q):
+                # Inset only for shared borders: adjacent stalls may touch, never overlap.
+                core = poly.buffer(-.015)
+                x0, y0, x1, y1 = poly.bounds
+                cells = [(x, y) for x in range(math.floor(x0/8), math.floor(x1/8)+1)
+                         for y in range(math.floor(y0/8), math.floor(y1/8)+1)]
+                if any(core.intersects(old) for cell in cells for old in occupied.get(cell, ())):
                     continue
+                for cell in cells:
+                    occupied.setdefault(cell, []).append(core)
+                keep[i] = True
+            yield spec, line, st, side, Q, n, P, keep, footprints
+
+
+def aisle_spots(roads, aisles, box, blockers=(), lots=()):
+    out = []
+    for spec, line, st, side, Q, normals, P, keep, _ in _aisle_layout(roads, aisles, blockers, lots):
+        for q, n, p, yes in zip(Q, normals, P, keep):
+            if yes and _owns(box, *q):
                 out.append([round(float(q[0]), 2), round(float(q[1]), 2), round(float(p[2]), 2),
-                            round(math.degrees(math.atan2(nn[1], nn[0])) % 360.0, 1), 1])
-    return out
+                            round(math.degrees(math.atan2(n[1], n[0])) % 360., 1), 1])
+    return out[:LOT_MAX_PER_TILE]
 
 
 def _hit(paths, q):
@@ -419,51 +546,9 @@ def lot_markings(rings, box, z_at, blockers=()):
     between stalls and a line across their heads, each stall wholly inside its lot and its centre in none of
     the blockers (a garage). A back-to-back pair shares one head line. Clipped to the tile box. z_at(x, y)
     the ground. Deterministic."""
-    import buildings
-    x0, y0, x1, y1 = box
-    pad = LOT_SPOT_D_M
-    ex0, ey0, ex1, ey1 = x0 - pad, y0 - pad, x1 + pad, y1 + pad
-    segs, n_stalls = [], 0
-    blocks = [Path(np.asarray(b, np.float64)) for b in blockers if len(np.asarray(b)) >= 3]
-    for ring in rings:
-        if n_stalls >= LOT_MAX_PER_TILE:
-            break
-        ring = np.asarray(ring, np.float64)
-        if len(ring) < 3:
-            continue
-        if ring[:, 0].max() < x0 or ring[:, 0].min() >= x1 or ring[:, 1].max() < y0 or ring[:, 1].min() >= y1:
-            continue
-        c, u, hl, hw = buildings.oriented_box(ring)
-        if hw < LOT_SPOT_D_M / 2 or hl < LOT_SPOT_W_M:
-            continue
-        v = np.array([-u[1], u[0]])
-        path = Path(ring)
-        n_along = int((2 * hl - 2 * LOT_MARGIN_M) // LOT_SPOT_W_M)
-        if n_along < 1:
-            continue
-        along = (np.arange(n_along) - (n_along - 1) / 2) * LOT_SPOT_W_M
-        rows = _lot_rows(hw)
-        paired = {round(off + LOT_SPOT_D_M, 3) for off, nose in rows if nose > 0}
-        for off, nose in rows:
-            if n_stalls >= LOT_MAX_PER_TILE:
-                break
-            centres = c[None] + along[:, None] * u[None] + (off - hw) * v[None]
-            hx, hy = u * (LOT_SPOT_W_M / 2 - 0.1), v * (LOT_SPOT_D_M / 2 - 0.1)
-            ok = np.ones(len(centres), bool)
-            for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
-                ok &= path.contains_points(centres + sx * hx + sy * hy)
-            ok &= (centres[:, 0] >= ex0) & (centres[:, 0] < ex1) & (centres[:, 1] >= ey0) & (centres[:, 1] < ey1)
-            for pa in blocks:
-                ok &= ~pa.contains_points(centres)
-            room = LOT_MAX_PER_TILE - n_stalls
-            if int(ok.sum()) > room:
-                idx = np.flatnonzero(ok)
-                ok[:] = False
-                ok[idx[:room]] = True
-            n_stalls += int(ok.sum())
-            if not ok.any():
-                continue
-            segs.extend(_row_segs(c, u, v, along, off, hw, nose, ok, round(off, 3) not in paired))
+    segs = []
+    for c, u, v, along, off, hw, nose, ok, back in _lot_layout(rings, blockers):
+        segs.extend(_row_segs(c, u, v, along, off, hw, nose, ok, back))
     chunks = _boxed_chunks(segs, box)
     if not chunks:
         return []
@@ -500,65 +585,40 @@ def aisle_markings(roads, aisles, box, blockers=(), lots=()):
     """line_white chunks of the stall lines along both sides of the parking aisles (aisles: their fids),
     the rows aisle_spots parks in: clear of the aisle's ends, of other roads, of buildings and of mapped
     lots. Nose away from the aisle. Clipped to the tile box. Deterministic."""
-    x0, y0, x1, y1 = box
-    import fast
-    others = fast.Others([(fid, spec.width / 2, pts) for fid, spec, pts, _ in roads if fid not in aisles])
-    paths = [Path(np.asarray(b, np.float64)) for b in list(blockers) + list(lots) if len(np.asarray(b)) >= 3]
-    pad = LOT_SPOT_D_M
-    ex0, ey0, ex1, ey1 = x0 - pad, y0 - pad, x1 + pad, y1 + pad
-    segs, n_stalls = [], 0
-    for fid, spec, line, _ in roads:
-        if n_stalls >= LOT_MAX_PER_TILE or fid not in aisles or len(line) < 2:
+    out = []
+    for spec, line, st, side, Q, normals, P, keep, footprints in _aisle_layout(roads, aisles, blockers, lots):
+        if spec.kind != "paved":
             continue
-        L = furniture._arclen(line)[-1]
-        if L < 2 * AISLE_END_M + LOT_SPOT_W_M:
-            continue
-        phase = furniture._h01(fid, "aisle") * LOT_SPOT_W_M
-        st = np.arange(AISLE_END_M + phase, L - AISLE_END_M, LOT_SPOT_W_M)
-        if not len(st):
-            continue
-        P, D = furniture._at(line, st)
-        for side in (1.0, -1.0):
-            if n_stalls >= LOT_MAX_PER_TILE:
-                break
-            n = np.stack([-D[:, 1], D[:, 0]], 1) * side
-            Q = P[:, :2] + n * (spec.width / 2 + LOT_SPOT_D_M / 2)
-            keep = np.ones(len(st), bool)
-            for i, (q, p) in enumerate(zip(Q, P)):
-                if not (ex0 <= q[0] < ex1 and ey0 <= q[1] < ey1):
-                    keep[i] = False
-                    continue
-                if not furniture._clear(np.array([q[0], q[1], p[2]]), others, fid):
-                    keep[i] = False
-                    continue
-                if _hit(paths, q):
-                    keep[i] = False
-            room = LOT_MAX_PER_TILE - n_stalls
-            if int(keep.sum()) > room:
-                idx = np.flatnonzero(keep)
-                keep[:] = False
-                keep[idx[:room]] = True
-            n_stalls += int(keep.sum())
-            if keep.any():
-                segs.extend(_aisle_side_segs(line, spec, st, keep, side))
-    return _boxed_chunks(segs, box)
+        # Carry each bay's footprint until buildings and mapped lots are available.
+        for i in np.flatnonzero(keep):
+            one = np.zeros(len(st), bool)
+            one[i] = True
+            for ch in _boxed_chunks(_aisle_side_segs(line, spec, st, one, side), box):
+                ch["_parking_footprint"] = list(footprints[i].exterior.coords)
+                out.append(ch)
+    return out
 
 
 def drop_covered(chunks, rings):
-    """The line chunks whose midpoint lies in none of the rings (a mapped lot or a building: that ground
+    """The line chunks whose entire bay (or segment) intersects none of the rings (a mapped lot or a building: that ground
     is marked by lot_markings, or is indoors)."""
-    paths = [Path(np.asarray(r, np.float64)) for r in rings if len(np.asarray(r)) >= 3]
-    if not paths:
-        return list(chunks or [])
-    kept = []
+    from shapely.geometry import LineString, Polygon
+    from shapely.ops import unary_union
+    blocked = unary_union(_polygons(rings))
+    kept, seen = [], set()
     for ch in chunks or ():
-        n = ch.get("n") or []
-        if len(n) < 2:
+        nodes = ch.get("n") or []
+        if len(nodes) < 2:
             continue
-        mid = ((n[0][0] + n[1][0]) / 2.0, (n[0][1] + n[1][1]) / 2.0)
-        if _hit(paths, mid):
+        footprint = ch.get("_parking_footprint")
+        shape = Polygon(footprint) if footprint else LineString(np.asarray(nodes)[:, :2])
+        if not blocked.is_empty and blocked.intersects(shape):
             continue
-        kept.append(ch)
+        clean = {k: v for k, v in ch.items() if k != "_parking_footprint"}
+        key = tuple(sorted(tuple(n) for n in nodes))
+        if key not in seen:
+            seen.add(key)
+            kept.append(clean)
     return kept
 
 
@@ -567,16 +627,24 @@ def finish_markings(frame, tx, ty, md, elev, items=None, marks=()):
     building or a mapped lot, plus lot_markings of the paved lots under the tile. elev(lat, lon) the ground."""
     import roads
     box = roads.tile_bbox(tx, ty)
-    blockers = [spec.ring + np.array(box[:2]) for spec, *_ in (items or ()) if getattr(spec, "ring", None) is not None]
+    blockers = _item_blockers(items, np.array(box[:2]))
     try:
-        feats = [md.cell(k, layers=("infrastructure",), kind="demand").layers.get("infrastructure")
-                 for k in roads.cells_of_tile(frame, tx, ty, margin=0.0)]
+        feats, corridors = _lot_context(frame, tx, ty, md)
         rings = lot_rings(frame, feats, paved_only=True)
+        all_rings = lot_rings(frame, feats)
+        unpaved = lot_rings(frame, feats, unpaved_only=True)
     except Exception:
-        rings = []
+        rings, all_rings, unpaved, corridors = [], [], [], []
 
     def z_at(x, y):
         la, lo, _ = frame.enu_to_geodetic(np.asarray(x, np.float64), np.asarray(y, np.float64), 0.0)
         return frame.geodetic_to_enu(la, lo, np.asarray(elev(la, lo), np.float64))[2]
 
-    return drop_covered(marks, blockers + rings) + lot_markings(rings, box, z_at, blockers)
+    out = drop_covered(marks, blockers + all_rings) + lot_markings(rings, box, z_at, blockers + unpaved + corridors)
+    # Heights at the actual markings, not the aisle centre (including subtle lot grading).
+    if out:
+        pts = np.array([node[:2] for ch in out for node in ch["n"]])
+        z = z_at(pts[:, 0], pts[:, 1])
+        for i, ch in enumerate(out):
+            ch["n"] = [[*node[:2], round(float(zz), 3)] for node, zz in zip(ch["n"], z[2*i:2*i+2])]
+    return out

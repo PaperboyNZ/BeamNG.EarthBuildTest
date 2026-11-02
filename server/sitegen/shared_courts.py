@@ -1,8 +1,8 @@
-"""Bounded canonical mapped ground courts, hosted by one closed geotile.
+"""Runtime boundary for explicit canonical courts and interface-led shared sites.
 
-Only explicit source-linked SiteGraphs are accepted. No parcel, route, parking,
-height or membership is inferred. Cross-sector retention requires a later
-protocol and is rejected here, rather than splitting a common physical surface.
+Interface-free courts keep their single-sector contract. Observed-interface
+plans use the bounded shared-layout solver and canonical contact fragments.
+Property ownership and membership always come from the supplied source records.
 """
 from dataclasses import dataclass
 from functools import lru_cache
@@ -64,6 +64,9 @@ class FittedCourt:
 
 def reason(plan):
     """Capability check; a declaration is not a fitted physical surface."""
+    if plan.interfaces:
+        from .shared_layouts import capability
+        return capability(plan)
     e = plan.evidence
     if e.frame.kind != 'canonical_enu': return 'shared_court_requires_canonical_frame'
     if abs(e.frame.frame.latitude_e7) > 850_000_000: return 'shared_court_unsupported_latitude'
@@ -143,6 +146,13 @@ def catalogue():
     accepted, diagnostics = [], []
     for plan in graph.sites:
         why = reason(plan)
+        if plan.interfaces and not why:
+            from .shared_layouts import sectors
+            owners=sectors(plan)
+            if not owners:why='shared_layout_sector_budget'
+            else:
+                accepted.extend((owner,plan) for owner in owners)
+                continue
         owner = None if why else host(plan)
         if not why and owner is None: why = 'shared_court_cross_sector_requires_retention'
         if why: diagnostics.append((plan.evidence.identity, why))
@@ -241,6 +251,12 @@ def project_points(points, source, target, origin=(0., 0., 0.)):
 
 def compile(courts, target, origin=(0., 0., 0.)):
     """Closed court meshes, using the same accepted plane for visual and contact."""
+    from . import shared_layouts
+    layouts=[c for c in courts if isinstance(c,shared_layouts.SharedLayout)]
+    if layouts:
+        result=compile(tuple(c for c in courts if not isinstance(c,shared_layouts.SharedLayout)),target,origin)
+        for layout in layouts:result=combine(result,shared_layouts.compile(layout,target,origin))
+        return result
     import roadmesh
     P, T, UV = [], [], []
     for court in courts:
@@ -275,7 +291,7 @@ def combine(a, b):
 
 
 def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)):
-    """Live boundary for explicit pilot catalogues; never split or truncate sites."""
+    """Fit complete source sites; emit only their canonically owned contact."""
     import inputwatch
     path = os.environ.get('BNE_SHARED_SITE_RECORDS')
     if path: inputwatch.paths((path,))
@@ -293,7 +309,8 @@ def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)
     # Stable ordering makes conflict outcomes independent of record/source order.
     selected.sort(key=lambda p: (p.evidence.identity.namespace, p.evidence.identity.feature_id))
     accepted, notes = [], []
-    remaining = MAX_TILE_POINTS
+    from . import shared_layouts
+    remaining = shared_layouts.MAX_PROBES if any(p.interfaces for p in selected) else MAX_TILE_POINTS
     for plan in selected:
         source = _frame(plan)
         physical = []
@@ -327,6 +344,24 @@ def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)
             for solid in getattr(getattr(spec, 'access', None), 'landscape', ()):
                 xyz = [(x+origin[0], y+origin[1], z) for x, y, z in solid.top]
                 physical.append(Polygon(project_points(xyz, frame, source)[:, :2]))
+        if plan.interfaces:
+            # Fit the complete source plan identically in every participating
+            # sector. Local obstacles can reject a proposal, never change its
+            # geometry or create a different height solution on the other side.
+            layout,why=shared_layouts.fit(plan,elev,point_budget=remaining)
+            if layout is None:
+                notes.append(why);continue
+            fragment=shared_layouts.partition(layout,tile.gx,tile.gy)
+            surfaces=unary_union([Polygon(np.asarray(s.top)[:,:2]) for s in fragment.surfaces])
+            if any(surfaces.intersection(p).area>1e-5 for p in physical):
+                notes.append('shared_layout_existing_physical_conflict');continue
+            for old in accepted:
+                _,_,old_masks=metadata((old,),source)
+                if any(surfaces.intersection(Polygon(m['rings'][0],m['rings'][1:])).area>1e-5 for m in old_masks):
+                    notes.append('shared_layout_duplicate_physical_owner');break
+            else:
+                accepted.append(fragment);remaining-=layout.terrain_points
+            continue
         boundary = shape(plan.evidence.association_extent).buffer(.001)
         if any(m.member.kind == 'building' and (m.member.identity.feature_id not in member_shapes or
                not boundary.covers(unary_union(member_shapes[m.member.identity.feature_id]))) for m in plan.evidence.memberships):
@@ -334,11 +369,15 @@ def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)
         # Previously accepted sites retain their actual plane heights during
         # projection; lower-priority sites cannot claim the same ground.
         for old in accepted:
+            if isinstance(old,shared_layouts.SharedLayout):
+                _,_,old_masks=metadata((old,),source)
+                physical.extend(Polygon(m['rings'][0],m['rings'][1:]) for m in old_masks)
+                continue
             for extent in old.plan.evidence.physical_extents:
                 p = extent.boundary
                 xyz = [(x, y, old.plane[0]*x+old.plane[1]*y+old.plane[2]) for x, y in p.outer]
                 physical.append(Polygon(project_points(xyz, _frame(old.plan), source)[:, :2]))
-        court, why = fit(plan, elev, obstacles=physical, point_budget=remaining)
+        court, why = fit(plan, elev, obstacles=physical, point_budget=min(remaining,MAX_TILE_POINTS))
         if court is None: notes.append(why)
         else:
             accepted.append(court); remaining -= court.terrain_points
@@ -366,6 +405,11 @@ def metadata(courts, target):
     """Exact provenance and host-frame contact masks alongside the compiled mesh."""
     sites, boxes, masks = [], [], []
     for court in courts:
+        from . import shared_layouts
+        if isinstance(court,shared_layouts.SharedLayout):
+            s,b,m=shared_layouts.metadata(court,target)
+            sites.extend(s);boxes.extend(b);masks.extend(m)
+            continue
         source = _frame(court.plan)
         e = court.plan.evidence
         sites.append(dict(identity=e.identity.to_dict(), frame=e.frame.frame.to_dict(), revision=court.revision,
@@ -386,3 +430,13 @@ def metadata(courts, target):
                           float(xy[:, 0].max()), float(xy[:, 1].max()), zmax, plain])
             masks.append(dict(rings=plain, min_z=zmin-.1, max_z=zmax+.4, kind='hardscape'))
     return sites, boxes, masks
+
+
+def managed(spec):
+    """Explicit shared membership supersedes optional per-building frontage work."""
+    if not os.environ.get('BNE_SHARED_SITE_RECORDS'):return False
+    source=getattr(getattr(spec,'evidence',None),'source_id',None)
+    if not source:return False
+    return any(plan.interfaces and any(m.member.kind=='building' and
+               m.member.identity.namespace==BUILDING_NAMESPACE and m.member.identity.feature_id==str(source)
+               for m in plan.evidence.memberships) for _,plan in catalogue()[1])

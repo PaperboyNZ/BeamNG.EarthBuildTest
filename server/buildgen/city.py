@@ -199,6 +199,8 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
     """
     import buildings as b
     from .facades import wall_cells
+    # Each pane in a row clips against identical accepted door reservations.
+    # Reuse that sweep within this building; never retain plans globally.
     arch = spec.city
     layout_ = spec.facades or layout(spec, gmin, gmax)
     elevations = {(e.boundary,e.edge):e for e in layout_.elevations}
@@ -246,6 +248,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
             # One row is fitted around the accepted door, including raised
             # thresholds extending past the first nominal floor datum.
             reserved = tuple(op for op in elevation.openings if op.bottom < z1 and op.top > z0)
+            pane_cells = tuple(wall_cells(run.length,lo,hi,reserved))
             if not lite:
                 for l,r,a,c in wall_cells(run.length,z0,lo,reserved):
                     quad(max(left,l),min(right,r),a,c,body)
@@ -259,10 +262,10 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
             cursor = left
             for l,r in spans:
                 if not lite:
-                    for a,c,low,high in wall_cells(run.length,lo,hi,reserved):
+                    for a,c,low,high in pane_cells:
                         quad(max(cursor,a),min(l,c),low,high,body)
                 # Door reservation clips each pane, never its physical route.
-                for a,c,low,high in wall_cells(run.length,lo,hi,reserved):
+                for a,c,low,high in pane_cells:
                     a,c = max(l,a),min(r,c)
                     if c-a <= 1e-8:
                         continue
@@ -284,7 +287,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
                         detail_budget -= 4
                 cursor = r
             if not lite:
-                for a,c,low,high in wall_cells(run.length,lo,hi,reserved):
+                for a,c,low,high in pane_cells:
                     quad(max(cursor,a),min(right,c),low,high,body)
             # Floor division occupies solid wall, no collision projection.
             band = .12 if ribbon else .07
@@ -296,13 +299,14 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
             # Full-height pier masks preserve the exact near aperture widths
             # with O(columns + floors) quads rather than O(columns * floors).
             cursor = left
+            pier_cells=tuple(wall_cells(run.length,0.,spec.height,elevation.openings))
             for i in range(desc.columns):
                 l = left+(i+.5)*desc.pitch-desc.window_width/2
                 r = l+desc.window_width
-                for a,c,low,high in wall_cells(run.length,0.,spec.height,elevation.openings):
+                for a,c,low,high in pier_cells:
                     quad(max(cursor,a),min(l,c),low,high,body,.003)
                 cursor = r
-            for a,c,low,high in wall_cells(run.length,0.,spec.height,elevation.openings):
+            for a,c,low,high in pier_cells:
                 quad(max(cursor,a),min(right,c),low,high,body,.003)
         # Closed backing preserves the opaque shell behind the existing door
         # prop, including its frame clearance, in both representations.

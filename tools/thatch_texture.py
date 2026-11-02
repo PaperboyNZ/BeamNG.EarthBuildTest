@@ -31,7 +31,12 @@ def main():
                       persistentId=str(uuid.uuid5(uuid.NAMESPACE_URL, 'beamng-earth/' + name)),
                       Stages=[dict(baseColorMap='/levels/beamng_earth/art/shapes/beamngEarth/bne_thatch.color.png',
                                    normalMap='/levels/beamng_earth/art/shapes/beamngEarth/bne_thatch.normal.png',
-                                   roughnessFactor=.96, metallicFactor=0., baseColorFactor=[1,1,1,1], vertColor=True)],
+                                   normalMapStrength=1.35,
+                                   roughnessMap='/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds',
+                                   roughnessMapUseUV=1, roughnessFactor=1.,
+                                   detailMap='/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds',
+                                   detailMapUseUV=1, detailScale=[1,1], detailBaseColorMapStrength=.48,
+                                   metallicFactor=0., baseColorFactor=[1,1,1,1], vertColor=True)],
                       translucent=False, doubleSided=False)}
     (dest / 'architectural_details.materials.json').write_text(json.dumps(data, indent=2) + '\n')
 

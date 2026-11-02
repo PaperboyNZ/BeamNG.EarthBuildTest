@@ -25,6 +25,8 @@ def horizontal(mesh, footprint, z, material, scale=6., down=False):
 def draw(mesh, spec, gmin, gmax, collision=False, lite=False):
     import buildings as b
     from . import regional_blocks
+    from .quality import current
+    quality = current()
     fp = spec.footprint
     ring = np.asarray(fp.outer, np.float64)
     mats = b._Looks(spec.seed)
@@ -81,13 +83,16 @@ def draw(mesh, spec, gmin, gmax, collision=False, lite=False):
         draw_gable_frame(mesh,spec,top,mats)
     if spec.inference is not None and spec.roof != "flat" and not collision and not lite:
         from .details import rainwater,roof_caps
-        rainwater(mesh,spec,top,mats,gmin,gmax)
-        roof_caps(mesh,spec,top,mats)
+        if quality.rank >= 4:rainwater(mesh,spec,top,mats,gmin,gmax,detail=quality.rank >= 5)
+        if quality.rank >= 5:roof_caps(mesh,spec,top,mats)
     if mh > .5:
         horizontal(mesh, fp, bottom, mats[spec.facade], down=True)
     if spec.access is not None:
         from .access import draw as draw_access
-        draw_access(mesh, spec, collision, detail=not lite)
+        draw_access(mesh, spec, collision, detail=not lite and quality.rank >= 3)
+    from . import commercial_roofs
+    if not collision:
+        commercial_roofs.draw(mesh, spec, top, mats, lite=lite)
     # The legacy rooftop clutter and cornices assume a simple solid outline.
     # Use them only on rectangles, where none can bridge a courtyard or recess.
     if not collision and not lite and fp.is_rectangle() and getattr(spec, 'city', None) is None:
@@ -96,7 +101,8 @@ def draw(mesh, spec, gmin, gmax, collision=False, lite=False):
             from .regional_architecture import coping
             if not coping(mesh,spec,top,mats):b._cornice(mesh, spec, ring, top, mats)
         from . import regional_roof_details as roof_details
-        if not block and not roof_details.recessed_deck(spec):b._clutter(mesh, spec, ring, top, mats)
+        if quality.rank >= 5 and not block and not roof_details.recessed_deck(spec) and not commercial_roofs.eligible(spec):
+            b._clutter(mesh, spec, ring, top, mats)
         if spec.stoop:
             b._stoop(mesh, spec, ring, gmin, gmax, mats)
         if spec.porch and spec.door:

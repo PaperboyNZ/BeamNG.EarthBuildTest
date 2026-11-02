@@ -1,4 +1,5 @@
 """Identity-led cover and planting fitted to accepted soft landscape patches."""
+from runtimeprofiler import step as profile_step
 from dataclasses import dataclass,replace
 import math
 import numpy as np
@@ -215,6 +216,8 @@ def native_radius(group,height):
     return radius*max(NATIVE_MIN_SCALE,min(2.5,float(height)/nominal))+NATIVE_CLEARANCE
 
 
+
+@profile_step('Building native planting')
 def native_props(spec,x0=0.,y0=0.):
     """Native Forest rows after final access/driveway/landscape coordination.
 

@@ -31,11 +31,12 @@ def section(w,h,amount,lip=None):
     return np.column_stack((xs,normal*(1-amount)+z*amount))
 
 
-def add(builder,curb,out,w,h,caps,ramps,slab,ranges,verge=False):
+def add(builder,curb,out,w,h,caps,ramps,slab,ranges,verge=False,texture_path=None):
     curb,out=np.asarray(curb,float),np.asarray(out,float)
     arc=np.r_[0.,np.cumsum(np.linalg.norm(np.diff(curb[:,:2],axis=0),axis=1))]
     total=arc[-1]
     import sidewalks as sw
+    texture_path = (curb, out) if texture_path is None else texture_path
     ranges=sorted((max(0.,row[0]-FLARE),max(0.,row[0]),min(total,row[1]),min(total,row[1]+FLARE),
                    row[2] if len(row)>2 else sw.RAMP_H) for row in ranges
                   if len(row)>=2 and np.isfinite(row).all() and row[1]>row[0] and row[1]>0 and row[0]<total)
@@ -51,7 +52,8 @@ def add(builder,curb,out,w,h,caps,ramps,slab,ranges,verge=False):
         at=np.r_[a,arc[(arc>a)&(arc<b)],b]
         builder.add_run(interp(curb,at),interp(out,at),w,h,
                         (caps[0] if a==0 else False,caps[1] if b==total else False),
-                        [(max(a,x)-a,min(b,y)-a) for x,y in ramps if y>a and x<b],slab,verge=verge)
+                        [(max(a,x)-a,min(b,y)-a) for x,y in ramps if y>a and x<b],slab,verge=verge,
+                        texture_path=texture_path)
     previous=0.
     for a,b,c,d,lip in merged:
         normal(previous,a)
@@ -87,8 +89,10 @@ def add(builder,curb,out,w,h,caps,ramps,slab,ranges,verge=False):
         band[:4]=[sw.V_BAND_LOW,sw.V_LIGHT_LOW,sw.V_BAND_TOP-.02,sw.V_BAND_TOP]
         band[-2:]=[sw.V_LIGHT_LOW,sw.V_BAND_LOW]
         curb_uv=np.c_[at[vertices//cols]/sw.CURB_REPEAT_M,band[vertices%cols]]
+        surface_uv = np.c_[np.repeat(at+sw.path_station(curb[0],texture_path),cols),
+                           np.tile(normal_profile[:,0],len(at))]
         builder.vehicle_visuals.append((np.vstack((P,P[vertices])),visual_t,
-                                        np.vstack((P[:,:2]/3.,curb_uv)),M))
+                                        np.vstack((surface_uv,curb_uv)),M))
         previous=d
     normal(previous,total)
     builder._built=None

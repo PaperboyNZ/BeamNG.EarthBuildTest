@@ -3,6 +3,7 @@
 The fitted envelope is a local visual/access treatment, never a parcel claim.
 Everything is bounded by the source facade and observed ordinary street.
 """
+from runtimeprofiler import step as profile_step
 from dataclasses import replace
 import hashlib
 import math
@@ -38,6 +39,8 @@ def _owner(spec):
 
 def eligible(spec):
     """Whether a building is eligible for a default-on inferred frontage."""
+    from sitegen.shared_courts import managed
+    if managed(spec):return False
     return (os.environ.get('BNE_BUILDING_PATHS', 'auto') != 'off'
             and spec.site is None and spec.inference is not None
             and spec.inference.use.value in ('commercial', 'industrial', 'mixed')
@@ -654,6 +657,8 @@ def _retained_records(items, walks, x0, y0):
     return records
 
 
+
+@profile_step('Building frontage planning')
 def resolve(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, bounds=None, obstacles=()):
     """Publish a complete regeneration, preserving installed sites on failure.
 

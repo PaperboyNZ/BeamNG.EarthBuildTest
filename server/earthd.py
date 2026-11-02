@@ -4577,8 +4577,10 @@ class Connection:
             return min(GRAPHICS_SCALE[1], max(GRAPHICS_SCALE[0], float(v)))
         lod, tree, bld = (scale("lodScale", self.lod_scale), scale("treeScale", self.tree_scale),
                           scale("buildingScale", self.building_scale))
-        if msg.get('buildingQuality') in ('adaptive','lite','full'):
+        from buildgen.quality import NAMES
+        if msg.get('buildingQuality') in NAMES + ('adaptive','lite','full'):
             self.building_quality=msg['buildingQuality']
+        if type(msg.get('buildingAdaptive')) is bool:self.building_adaptive=msg['buildingAdaptive']
         detail_m=msg.get('buildingDetailM')
         if type(detail_m) in (int,float) and math.isfinite(detail_m):
             self.building_detail_m=min(640.,max(100.,float(detail_m)))
@@ -6038,7 +6040,8 @@ async def main_async(args):
         if args.near_visual == "detail" and (os.cpu_count() or 0) >= PHOTO_PROCESS_MIN_CPUS:
             # requested blocks' photos and stand-ins in a process of their own (Server._base_process / _stand_in)
             photo_pool = poolsmod.RespawningPool(
-                "photo", 1, mp_context=ctx, initializer=blockworker.init,
+                "photo", 1, admission=worker_admission, work_class='essential',
+                mp_context=ctx, initializer=blockworker.init,
                 initargs=(args.cache_dir, args.offline, args.roads == "on",
                           args.grading == "on" and args.roads == "on",
                           args.road_widths == "on" and args.roads == "on", args.surface == "on", None,
@@ -6535,6 +6538,8 @@ def main():
                     help='pinned normalized zoning GeoJSON (v2); restart after changing either catalogue')
     ap.add_argument('--building-sites', default=os.environ.get('BNE_BUILDING_SITES'),
                     help='sourced property polygons and measured access ports (v2); restart after changes')
+    ap.add_argument('--shared-sites', default=os.environ.get('BNE_SHARED_SITE_RECORDS'),
+                    help='source-linked canonical shared-site SiteGraph with measured interfaces (v2); restart after changes')
     ap.add_argument('--building-paths',choices=('auto','off'),default=os.environ.get('BNE_BUILDING_PATHS','auto'),
                     help='infer short frontage/driveway paths, or omit inferred paths (v2)')
     ap.add_argument("--roads", choices=("on", "off"), default="on",
@@ -6619,7 +6624,8 @@ def main():
     os.environ["BNE_BUILDING_GENERATOR"] = args.building_generator
     os.environ['BNE_BUILDING_PATHS'] = args.building_paths
     for option, env in ((args.building_roof_colours, 'BNE_BUILDING_ROOF_COLOURS'),
-                        (args.building_zones, 'BNE_BUILDING_ZONES'), (args.building_sites, 'BNE_BUILDING_SITES')):
+                        (args.building_zones, 'BNE_BUILDING_ZONES'), (args.building_sites, 'BNE_BUILDING_SITES'),
+                        (args.shared_sites, 'BNE_SHARED_SITE_RECORDS')):
         if option:
             os.environ[env] = os.path.abspath(os.path.expanduser(option))
     if args.building_generator == "v2":
@@ -6631,6 +6637,11 @@ def main():
             zones.catalogue()
             from buildgen import site_data
             site_data.catalogue()
+            if args.shared_sites:
+                from sitegen import shared_courts
+                _,_,unsupported=shared_courts.catalogue()
+                if unsupported:
+                    raise ValueError('Unsupported shared sites: '+', '.join(sorted({why for _,why in unsupported})))
         except (RuntimeError, ValueError, OSError, KeyError, TypeError) as exc:
             ap.error(str(exc))
     os.environ["BNE_BRIDGE_PROFILE"] = args.bridge_profile     # read by roads.py here and in the block workers

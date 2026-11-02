@@ -56,6 +56,8 @@ def resolve(items,ground,x0,y0):
     if ground is None:
         return
     for spec,low,high in items:
+        from sitegen.shared_courts import managed
+        if managed(spec):continue
         site=spec.site
         if site is None or commercial.kind(spec) not in commercial.IDS or spec.access is None or spec.facades is None:
             continue

@@ -887,7 +887,10 @@ class _Planner:
                     log.debug("grading: walls of %s: %s: %s", key, type(e).__name__, e)
             threading.Thread(target=walls, daemon=True, name="walls-ahead").start()
         try:
-            feats = self.md.cell(key, layers=("roads",), kind="demand").layers.get("roads")
+            parking_sources = getattr(getattr(self.store, "parking", None), "road_features", {})
+            feats = parking_sources.get(str(key), _UNSET)
+            if feats is _UNSET:
+                feats = self.md.cell(key, layers=("roads",), kind="demand").layers.get("roads")
         except Exception as e:      # no road data: ungraded (asked again after RETRY_S)
             log.debug("grading: roads of %s: %s: %s", key, type(e).__name__, e)
             with self.lock:
@@ -2357,6 +2360,8 @@ class PlanStore:
         self.dem = None
         self.shared = None
         self.lock = threading.Lock()
+        import parkinggrade
+        self.parking = parkinggrade.ParkingGrader(mapdata, elev)
         self.planners = OrderedDict()   # (rx, ry) -> _Planner, the least recently used first
 
     @staticmethod
@@ -2491,6 +2496,7 @@ class Grader:
         base = np.asarray(base, np.float64)
         if base.size == 0:
             return base
+        base = self.store.parking.apply(lat, lon, base, planned_only, self.shared)
         parts = self.store.planners_of(lat, lon)
         if len(parts) == 1:
             return parts[0][0].apply(lat, lon, base, lift, roads_only, planned_only)

@@ -5,7 +5,7 @@ import numpy as np
 from . import roofs
 from .topology import triangles
 
-VARIANTS = frozenset(('gambrel', 'mansard', 'saltbox', 'shed', 'broad_eave', 'flared_hip', 'cross_gable'))
+VARIANTS = frozenset(('gambrel', 'mansard', 'saltbox', 'shed', 'broad_eave', 'flared_hip', 'cross_gable', 'industrial_barrel'))
 
 
 def supported_form(footprint):
@@ -31,6 +31,14 @@ def envelope(footprint, kind, variant):
     # The emitted heights are normalised by the actual maximum below.
     if variant == 'shed':
         planes = [(v, hw)]
+    elif variant == 'industrial_barrel':
+        # Six planar sheets approximate a shallow parabolic barrel. Even
+        # segmentation avoids a zero-gradient cap and keeps UV frames finite.
+        marks = np.linspace(-1., 1., 7)
+        planes = []
+        for left, right in zip(marks, marks[1:]):
+            slope = -(left + right)
+            planes.append((v * slope, hw * (1. + left * right)))
     elif variant == 'saltbox':
         # Ridge 25% of the half-width towards +v, with unequal pitches.
         ridge = .25 * hw

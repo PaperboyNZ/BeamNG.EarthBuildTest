@@ -21,7 +21,7 @@ class DrivewayAudit:
             'schema_version': 1,
             'scope': 'driveway_resolver_invocations',
             'candidate_rejections_scope': 'street_segments_and_ranked_routes_first_failed_check',
-            'crossing_only_feasibility': 'not_evaluated',
+            'crossing_only_feasibility': ('evaluated' if self._counts['crossings']['receiving_area_evaluated'] else 'not_evaluated'),
             'counts': {group: dict(sorted(counts.items()))
                        for group, counts in self._counts.items()},
         }

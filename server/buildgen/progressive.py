@@ -242,6 +242,8 @@ class Publisher:
         import numpy as np
         if hasattr(self,'group_indices') and self.item_count==len(items):
             return [[items[j] for j in group] for group in self.group_indices]
+        from .quality import current
+        quality=current()
         centres=[np.asarray(item[0].ring).mean(axis=0)[:2] for item in items]
         order=sorted(range(len(items)),key=lambda i:(math.floor(centres[i][0]/32),math.floor(centres[i][1]/32),
                      centres[i][0],centres[i][1],str(items[i][0].seed)))
@@ -250,7 +252,7 @@ class Publisher:
             spec=items[i][0]
             work=len(spec.ring)*min(64,max(1,spec.floors or 1))*64
             distant=group and max(float(np.linalg.norm(centres[i]-centres[j])) for j in group)>GROUP_SPAN
-            if group and (len(group)>=GROUP_SIZE or cost+work>GROUP_COST or distant):
+            if group and (len(group)>=min(GROUP_SIZE,quality.group_size) or cost+work>min(GROUP_COST,quality.group_cost) or distant):
                 indices.append(group);group=[];cost=0
             group.append(i);cost+=work
         if group:indices.append(group)
@@ -275,6 +277,16 @@ class Publisher:
         items=freeze_items(items)
         groups=self.partition(items);self.total=len(groups)
         meshes=[];mapping=[];cached={};used=0
+        if self.detail in ('very_low','low'):
+            # The lightweight facade is the final product at these ceilings.
+            # Publish it once, immediately, with no duplicate encoding or spool.
+            for i,group in enumerate(groups):
+                simple=b.build(group,lite=True)
+                detailed=b.split_mesh(simple,b.V2_IMPORT_VERTS) if simple is not None else []
+                names=['bld' if k==0 else f'bld{k+1}' for k in range(len(meshes),len(meshes)+len(detailed))]
+                meshes.extend(detailed);mapping.append(dict(group=str(i),visual=names))
+                if detailed and self.checkpoint():self.publish(i,2,detailed,names)
+            return meshes,mapping
         # All cheap facades are ready before optional close-detail work begins.
         # Large tiles spill exact reusable arrays to the job's temporary directory,
         # outside the game file watcher. The cache is removed on failure/cancel too.
@@ -296,14 +308,18 @@ class Publisher:
                 if isinstance(simple,Path):
                     with simple.open('rb') as stream:simple=pickle.load(stream)
                 ready=[m for m in simple if m is not None]
-                if self.detail=='full':
+                from .quality import PROFILES
+                if self.detail not in ('lite','very_low','low'):
                     try:
-                        if self.path.with_name(f'bp_{self.token}.lite.tmp').exists():self.detail='lite'
+                        if self.path.with_name(f'bp_{self.token}.lite.tmp').exists():
+                            self.detail=PROFILES[self.detail].fallback if self.detail in PROFILES else 'lite'
                     except OSError:pass
-                if self.detail=='lite':
+                if self.detail in ('lite','very_low','low'):
                     detailed=b.split_mesh(b._concat(ready),b.V2_IMPORT_VERTS) if ready else []
                 else:
-                    detailed=b.build_parts(group,max_verts=b.V2_IMPORT_VERTS,with_lod=True,lite_meshes=simple)
+                    state=DETAIL.set(self.detail)
+                    try:detailed=b.build_parts(group,max_verts=b.V2_IMPORT_VERTS,with_lod=True,lite_meshes=simple)
+                    finally:DETAIL.reset(state)
                 names=['bld' if k==0 else f'bld{k+1}' for k in range(len(meshes),len(meshes)+len(detailed))]
                 meshes.extend(detailed);mapping.append(dict(group=str(i),visual=names))
                 if detailed and self.checkpoint():self.publish(i,2,detailed,names)

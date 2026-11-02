@@ -9,7 +9,17 @@
       {
         "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_thatch.color.png",
         "normalMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_thatch.normal.png",
-        "roughnessFactor": 0.96,
+        "normalMapStrength": 1.35,
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.48,
         "metallicFactor": 0.0,
         "baseColorFactor": [
           1,

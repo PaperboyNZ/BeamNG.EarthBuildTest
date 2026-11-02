@@ -19,11 +19,11 @@ def pixels(distance,feature=FEATURE_M,fov=65.,height=1440.):
     return feature*height/(2*math.tan(math.radians(fov)*.5)*max(1.,distance))
 
 
-def wanted(distance,previous=False,*,fov=65.,height=1440.,reach=350.,fast=False,free_camera=False):
+def wanted(distance,previous=False,*,fov=65.,height=1440.,reach=350.,fast=False,free_camera=False,feature=FEATURE_M):
     """Hysteresis applies to subpixel features and the user's distance reach."""
     if fast and not free_camera:return False
     if distance>reach*(1.15 if previous else 1.):return False
-    return pixels(distance,fov=fov,height=height)>=(KEEP_PX if previous else ENTER_PX)
+    return pixels(distance,feature=feature,fov=fov,height=height)>=(KEEP_PX if previous else ENTER_PX)
 
 
 def camera(value,aid,cam_aid):

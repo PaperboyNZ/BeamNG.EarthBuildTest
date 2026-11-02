@@ -294,6 +294,18 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
             elif roof_variant=='flared_hip':
                 roof=Decision('hipped',roof.status,roof.source,roof.strength)
     mapped_roof = observed(ev, "roof_shape")
+    from . import commercial_roofs
+    commercial_options = commercial_roofs.options(
+        use.value, (cls, _text(observed(ev, 'subtype'))), footprint, fd.value, hd.value)
+    commercial_prior = bool(commercial_options and roof.status == 'fallback' and
+                            mapped_roof is None and not attrs.get('_part'))
+    if attrs.get('_part') and use.value in ('commercial', 'industrial'):
+        diagnostics.append('commercial_roof_part_omitted')
+    if commercial_prior:
+        choice = materials.choose(identity, 'ci-roof-form-v1', commercial_options)
+        roof_variant = 'standard' if choice == 'flat' else choice
+        roof = Decision('flat' if choice == 'flat' else 'gabled', 'fallback',
+                        'sparse_use_roof_prior_v1', 'low')
     from . import stepped_gables
     if 'stepped_gable' in selected and not stepped_gables.suitable_footprint(footprint):
         selected=tuple(key for key in selected if key!='stepped_gable')
@@ -331,6 +343,8 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
     if low and use.value in ('residential','mixed','commercial','civic','unknown'):
         pitch = regional_architecture.pitch_default(style_region,identity,pitch)
     rh = observed(ev, "roof_height")
+    if commercial_prior:
+        pitch = 7. + 5. * materials.unit(identity, 'ci-roof-pitch-v1')
     if 'stepped_gable' in selected and roof.value=='gabled' and roof_variant=='standard' and rh is None:
         # This specific narrow-gable recipe needs a steeper profile. Shared
         # wall-height, absolute-rise and mapped-total caps still apply below.
@@ -342,6 +356,9 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
         domestic = use.value in ('residential', 'unknown', 'mixed') and hd.value <= 15.
         rise = float(rh) if rh is not None else inferred_rise(
             footprint, roof.value, roof_variant, half_width, pitch, hd.value, fixed_top, domestic)
+        if commercial_prior and rh is None:
+            # Warehouse spans must not create house-like towering gables.
+            rise = min(rise, 2.8, hd.value * (.23 if fixed_top else .30))
         if rh is None and rise < half_width * math.tan(math.radians(pitch)) - 1e-8:
             diagnostics.append("inferred_roof_proportion_limited")
         if rh is not None and (rise <= 0. or (rise >= hd.value and
@@ -391,6 +408,8 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
                       environments.material_prior(appearance_environment,use.value,'roof',identity,
                           materials.roof_prior(use.value, roof.value, identity)) if roof.value != 'flat' else
                       materials.roof_prior(use.value, roof.value, identity))
+    if commercial_prior and roof.value != 'flat' and roof_mat.status == 'fallback':
+        roof_mat = Decision('metal', 'fallback', 'sparse_use_roof_covering_v1', 'low')
     if roof_mat.status == 'fallback' and roof.value != 'flat':
         roof_mat = replace(roof_mat, value=modifiers.material(selected, 'roof', roof_mat.value))
     city_flat = (roof.value == 'flat' and body > 15. and

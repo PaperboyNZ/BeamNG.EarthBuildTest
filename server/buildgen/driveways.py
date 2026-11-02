@@ -1,7 +1,7 @@
-"""Bounded garage-to-street profiles and optional landing links.
+"""Bounded garage-to-street profiles, curved mouths and receiving-area fallbacks.
 
-Nine sections, one terrain batch for a tile, one obstacle index. No terrain edits,
-path search, mesh booleans or iterative fitting. Unsupported crossings stay flagged.
+Nine sections, one normal terrain batch and one lazy batch per failed property's
+receiving alternatives. No terrain edits or unbounded path search.
 """
 from dataclasses import replace
 import math
@@ -80,7 +80,7 @@ def branch_build(branch,z,ground):
 def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
     """Freeze at most four full route proposals per garage, sample once, commit one.
 
-    Crossing-only feasibility is deliberately not inferred from a failed route.
+    A failed full connection can use an independently fitted receiving area.
     The accepted route's entire physical strip must fit before any curb drops.
     """
     from shapely import STRtree
@@ -90,6 +90,7 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
     from .access import basis, Solid
     from sitegen.portals import StreetPortal, RouteProposal, ranked, simplified_lines, installed_owner, OWNER_TOKEN_PREFIX
     from sitegen.surfaces import contains_known_site
+    from sitegen.shared_courts import managed
     offset=np.array([x0,y0])
     actual_walks=walks
     # A proposal sees its own prior cuts removed from a detached planning view.
@@ -111,7 +112,7 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
         anchor=anchors[source_key(spec)]
         rings=(spec.footprint.outer,*spec.footprint.holes) if spec.footprint is not None else (spec.ring,)
         return tuple(tuple(map(tuple,np.round(np.asarray(ring)-anchor,8))) for ring in rings)
-    eligible=sorted((s for s,_,_ in items if s.inference is not None and s.garage_opening and s.access is not None),
+    eligible=sorted((s for s,_,_ in items if s.inference is not None and s.garage_opening and s.access is not None and not managed(s)),
                     key=lambda s:(source_key(s),component_key(s)))
     if audit is not None:
         for s,_,_ in items:
@@ -237,7 +238,9 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
                 covered=np.flatnonzero((arc[:-1]<s+half+vehicle_crossings.FLARE)&(arc[1:]>s-half-vehicle_crossings.FLARE))
                 delta=np.diff(curb[:,:2],axis=0)[covered]
                 directions=delta/np.maximum(np.linalg.norm(delta,axis=1),1e-9)[:,None]
-                if not len(delta) or np.min(directions@direction)<.999:rejected('curved_frontage');continue
+                if not len(delta) or np.min(directions@direction)<math.cos(math.radians(25)):
+                    rejected('curved_frontage');continue
+                curved=np.min(directions@direction)<.999999
                 if any(hi>=s-half-vehicle_crossings.FLARE and lo<=s+half+vehicle_crossings.FLARE
                        for lo,hi in walks[wi].get('ramps',())):
                     rejected('pedestrian_ramp');continue
@@ -250,22 +253,37 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
                 if any(controlled(road_data[int(i)]) and road_shapes[int(i)].distance(Point(q))<=float(road_data[int(i)][1])+.5
                        for i in road_tree.query(Point(q).buffer(w+12.))):
                     rejected('controlled_road');continue
+                facing=np.array([np.interp(s,arc,out[:,k]) for k in (0,1)])
                 end=q+facing*w
                 end_tangent=direction if direction@tangent>0 else -direction
                 zends=np.interp([s-mouth/2,s+mouth/2],arc,curb[:,2])
                 check=arc[(arc>s-mouth/2)&(arc<s+mouth/2)]
-                if len(check) and np.max(np.abs(np.interp(check,arc,curb[:,2])-
+                if not curved and len(check) and np.max(np.abs(np.interp(check,arc,curb[:,2])-
                        np.interp(check,[s-mouth/2,s+mouth/2],zends)))>.01:
                     rejected('curb_height_profile');continue
                 z=float(zends.mean())+walks[wi].get("curb_h",sidewalks.CURB_H)+w*sidewalks.CROSS_SLOPE
                 grade=float((zends[1]-zends[0])/mouth)*(1 if direction@tangent>0 else -1)
                 # Two overlaid/adjacent footpaths need joint planning, not a cut
                 # through only one source run while the other retains its curb.
+                rear=()
+                if curved:
+                    stations=np.unique(np.r_[np.linspace(s-mouth/2,s+mouth/2,9),check])
+                    if len(stations)>17:rejected('curved_mouth_budget');continue
+                    rr=np.column_stack([np.interp(stations,arc,curb[:,k]-offset[k])+w*np.interp(stations,arc,out[:,k]) for k in (0,1)])
+                    rz=np.interp(stations,arc,curb[:,2])+walks[wi].get('curb_h',sidewalks.CURB_H)+w*sidewalks.CROSS_SLOPE
+                    rr=np.c_[rr,rz]
+                    if direction@tangent<0:rr=rr[::-1]
+                    rear=tuple(map(tuple,rr))
                 crossing_shape=Polygon([end-end_tangent*mouth/2,end+end_tangent*mouth/2,
                                         q+end_tangent*mouth/2,q-end_tangent*mouth/2])
+                if rear:
+                    front=np.column_stack([np.interp(stations,arc,curb[:,k]-offset[k]) for k in (0,1)])
+                    if direction@tangent<0:front=front[::-1]
+                    crossing_shape=Polygon(np.r_[np.asarray(rear)[:,:2],front[::-1]])
+                    if not crossing_shape.is_valid:rejected('folded_crossing');continue
                 if protected_walk(crossing_shape,wi):rejected('overlapping_footpaths');continue
                 yield StreetPortal('sidewalk',tuple(end),tuple(end_tangent),mouth,float(np.linalg.norm(end-origin)),z,grade,
-                                   (int(wi),s-half,s+half))
+                                   (int(wi),s-half,s+half),rear)
         for ri in road_nearby:
             line=road_data[int(ri)]
             if controlled(line):rejected('controlled_road');continue
@@ -312,20 +330,42 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
             tangents/=np.linalg.norm(tangents,axis=1)[:,None]
             widths=width+(portal.width-width)*(t*t*(3-2*t))
             xy=np.stack([centres-tangents*widths[:,None]/2,centres,centres+tangents*widths[:,None]/2],axis=1)
-            outline=Polygon(np.r_[xy[:,0],xy[::-1,2]])
+            if portal.rear:
+                rear=np.asarray(portal.rear)
+                fractions=np.linspace(-.5,.5,len(rear))
+                xy=centres[:,None,:]+tangents[:,None,:]*widths[:,None,None]*fractions[None,:,None]
+                xy+=(t*t*(3-2*t))[:,None,None]*(rear[None,:,:2]-xy[-1][None,:,:])
+            outline=Polygon(np.r_[xy[:,0],xy[-1,1:-1],xy[::-1,-1],xy[0,-2:0:-1]])
             if reason is None and inventory_unknown:reason='unknown_obstacle_inventory'
             if reason is None and not clear(outline,spec):reason='obstruction'
             if reason is None and protected_walk(outline):reason='unsupported_footpath_crossing'
-            branch=branch_candidate(spec,xy,lambda p:clear(p,spec),outline) if reason is None else None
+            branch=branch_candidate(spec,xy,lambda p:clear(p,spec),outline) if reason is None and not portal.rear else None
             proposal=RouteProposal(portal,xy,branch)
             off=len(all_points)
             if reason is None:
                 all_points.extend(xy.reshape(-1,2)+offset)
                 if branch is not None:all_points.extend(branch[-1]+offset)
             record['choices'].append((rank,proposal,off,outline,reason))
+        # A receiving area is evaluated independently, only behind an evidenced
+        # garage-facing mouth. Full connections keep priority. Never replace an
+        # existing complete route with a disconnected receiving slab.
+        if not any(s.kind=='driveway' for s in spec.access.solids):
+            for portal in proposals:
+                if portal.crossing is None:continue
+                end=np.asarray(portal.end); tangent=np.asarray(portal.tangent)
+                inward=np.array([-tangent[1],tangent[0]])
+                if inward@normal>0:inward=-inward
+                t=np.linspace(0.,1.,SECTIONS)
+                rear=np.asarray(portal.rear) if portal.rear else np.c_[end+np.array([-.5,0,.5])[:,None]*portal.width*tangent, np.zeros(3)]
+                xy=rear[None,:,:2]+(1-t)[:,None,None]*5.5*inward
+                outline=Polygon(np.r_[xy[:,0],xy[-1,1:-1],xy[::-1,-1],xy[0,-2:0:-1]])
+                if not clear(outline,spec) or protected_walk(outline):continue
+                if any(outline.intersection(Polygon(np.asarray(s.top)[:,:2])).area>1e-7
+                       for s in spec.access.solids if s.kind not in ('path','paved_margin','driveway')):continue
+                record['choices'].append((len(record['choices'])+1,RouteProposal(portal,xy,None,'crossing_only'),None,outline,None))
         plans.append(record)
     if audit is not None:
-        audit.record('work','terrain_jobs',sum(reason is None for record in plans for *_,reason in record['choices']))
+        audit.record('work','terrain_jobs',sum(reason is None and off is not None for record in plans for _,_,off,_,reason in record['choices']))
         audit.record('work','terrain_points',len(all_points))
         audit.record('work','terrain_calls',int(ground is not None and bool(all_points)))
     terrain=(np.asarray(ground(np.asarray(all_points)),float) if ground is not None and all_points
@@ -344,6 +384,9 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
             portal=proposal.portal;xy=np.asarray(proposal.sections);branch=proposal.branch
             t=np.linspace(0.,1.,SECTIONS);reach=portal.distance
             if reason is None and conflicts(outline):reason='neighbour_access_conflict'
+            if reason is None and any(not Polygon([xy[i,j],xy[i+1,j],xy[i+1,j+1],xy[i,j+1]]).is_valid
+                                      for i in range(SECTIONS-1) for j in range(xy.shape[1]-1)):
+                reason='folded_route'
             if reason is None and portal.crossing is not None:
                 wi,lo,hi=portal.crossing
                 walk=actual_walks[wi]
@@ -351,18 +394,41 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
                 if any(tuple(row) not in own and row[1]+vehicle_crossings.FLARE>=lo-vehicle_crossings.FLARE
                        and row[0]-vehicle_crossings.FLARE<=hi+vehicle_crossings.FLARE
                        for row in walk.get('driveways',())):reason='neighbour_crossing_conflict'
-            ground_z=terrain[off:off+SECTIONS*3].reshape(SECTIONS,3) if reason is None else None
+            cols=xy.shape[1];point_count=SECTIONS*cols
+            if reason is None and off is None:
+                if 'receiving_terrain' not in record:
+                    receiving=[(r,np.asarray(p.sections).reshape(-1,2)+offset) for r,p,o,_,why in record['choices'] if o is None and why is None]
+                    points=np.concatenate([p for _,p in receiving])
+                    values=np.asarray(ground(points),float).reshape(-1) if ground is not None else np.full(len(points),np.nan)
+                    if len(values)!=len(points):values=np.full(len(points),np.nan)
+                    record['receiving_terrain']={};at=0
+                    for r,p in receiving:record['receiving_terrain'][r]=values[at:at+len(p)];at+=len(p)
+                    if audit is not None:
+                        audit.record('work','terrain_calls',int(ground is not None))
+                        audit.record('work','terrain_points',len(points));audit.record('work','terrain_jobs',len(receiving))
+                        audit.record('crossings','receiving_area_evaluated')
+                ground_z=record['receiving_terrain'][rank].reshape(SECTIONS,cols)
+            else:
+                ground_z=terrain[off:off+point_count].reshape(SECTIONS,cols) if reason is None else None
             if reason is None and not np.isfinite(ground_z).all():reason='missing_terrain'
-            if reason is None and spec.access.garage_z is None:reason='missing_garage_height'
+            if reason is None and proposal.mode=='connected' and spec.access.garage_z is None:reason='missing_garage_height'
             if reason is None:
+                if proposal.mode=='crossing_only':reach=5.5
                 target=ground_z[-1].max()+.01 if portal.height is None else portal.height
-                height=hermite(t,spec.access.garage_z,target,reach,grade1=-.015 if portal.crossing else 0.)
-                widths=np.linalg.norm(xy[:,2]-xy[:,0],axis=1)
+                start=spec.access.garage_z if proposal.mode=='connected' else float(ground_z[0].max()+.03)
+                height=hermite(t,start,target,reach,grade0=-.02 if proposal.mode=='connected' else 0.,grade1=-.015 if portal.crossing else 0.)
+                widths=np.linalg.norm(xy[:,-1]-xy[:,0],axis=1)
                 fall=t*t*(3-2*t)*portal.crossfall*widths/2
                 z=np.column_stack((height-fall,height+fall))
-                lengths=np.linalg.norm(np.diff(xy[:,1],axis=0),axis=1)
+                lengths=np.linalg.norm(np.diff(xy[:,cols//2],axis=0),axis=1)
                 grades=np.diff(z,axis=0)/lengths[:,None]
-                fill=np.column_stack((z-ground_z[:,[0,2]],height-ground_z[:,1]))
+                full_z=height[:,None]+np.linspace(-1,1,cols)[None,:]*fall[:,None]
+                if portal.rear:
+                    end_z=np.asarray(portal.rear)[:,2]
+                    full_z+=(t*t*(3-2*t))[:,None]*(end_z-full_z[-1])[None,:]
+                    z=full_z[:,[0,-1]]
+                    grades=np.diff(full_z,axis=0)/np.maximum(np.linalg.norm(np.diff(xy,axis=0),axis=2),1e-9)
+                fill=full_z-ground_z
                 if (np.any(lengths<1e-6) or np.any(np.abs(grades)>MAX_GRADE)
                         or np.any(fill<.004) or np.any(fill>MAX_FILL)):reason='grading'
             if reason is not None:
@@ -372,28 +438,30 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
                 continue
             panels=[]
             for i in range(SECTIONS-1):
-                p=(tuple((*xy[i,0],z[i,0])),tuple((*xy[i+1,0],z[i+1,0])),
-                   tuple((*xy[i+1,2],z[i+1,1])),tuple((*xy[i,2],z[i,1])))
-                panels.append(Solid('driveway',p,float(ground_z[i:i+2].min()-.12)))
-            keep=tuple(s for s in spec.access.solids if s.kind not in ('apron','driveway') and
+                for left,right in ([(0,cols-1)] if not portal.rear else zip(range(cols-1),range(1,cols))):
+                    p=(tuple((*xy[i,left],full_z[i,left])),tuple((*xy[i+1,left],full_z[i+1,left])),
+                       tuple((*xy[i+1,right],full_z[i+1,right])),tuple((*xy[i,right],full_z[i,right])))
+                    panels.append(Solid('driveway',p,float(ground_z[i:i+2].min()-.12)))
+            keep=tuple(s for s in spec.access.solids if s.kind not in (('apron','driveway') if proposal.mode=='connected' else ('driveway',)) and
                        not (s.kind in ('path','paved_margin') and Polygon([p[:2] for p in s.top]).intersection(outline).area>1e-7))
             if spec.inference.selection.preset.id=='garage_outbuilding':keep=tuple(s for s in keep if s.kind!='threshold')
-            linked=branch_build(branch,z,terrain[off+SECTIONS*3:off+SECTIONS*3+10]) if branch is not None else ()
+            linked=branch_build(branch,z,terrain[off+point_count:off+point_count+10]) if branch is not None else ()
             linked_shapes=[Polygon([p[:2] for p in s.top]) for s in linked]
             if any(conflicts(p) for p in linked_shapes):linked=();linked_shapes=[]
             if linked:keep=tuple(s for s in keep if s.kind not in ('path','path_link','path_landing','paved_margin'))+linked
             notes=tuple(n for n in spec.access.diagnostics if not n.startswith('driveway_'))
             outcomes.append(f'driveway_candidate_{rank}_selected')
-            notes+=tuple(outcomes)+(OWNER_TOKEN_PREFIX+owner_id(spec),'driveway_connected')+(('driveway_pedestrian_link',) if linked else ())
+            status='driveway_'+proposal.mode
+            notes+=tuple(outcomes)+(OWNER_TOKEN_PREFIX+owner_id(spec),status)+(('driveway_pedestrian_link',) if linked else ())
             from .landscaping import trim_to_links
             landscape=tuple(s for s in trim_to_links(spec.access.landscape,linked) if all(
                 Polygon([p[:2] for p in s.top]).intersection(p).area<1e-7 for p in (outline,*linked_shapes)))
             retire_owned(spec)
             spec.access=replace(spec.access,solids=keep+tuple(panels),diagnostics=tuple(sorted(notes)),landscape=landscape)
             if audit is not None:
-                audit.record('outcomes','driveway_connected')
+                audit.record('outcomes',status)
                 audit.record('candidates',f'selected_rank_{rank}')
-                if portal.crossing is not None:audit.record('crossings','connected')
+                if portal.crossing is not None:audit.record('crossings',proposal.mode)
             spec.facades=None
             for poly in (outline,*linked_shapes):
                 for key in buckets(poly):accepted.setdefault(key,[]).append(poly)
@@ -410,7 +478,7 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
                     walk['building_driveway_owners']=owners
             if drives is not None:
                 drives.append(dict(m='road_asphalt_2lane',w=float(widths.max()),tl=11.,p=19,
-                                   n=[[*p,0.] for p in xy[:,1]+offset],bne_access_only=True,bne_building_driveway=True,
+                                   n=[[*p,0.] for p in xy[:,cols//2]+offset],bne_access_only=True,bne_building_driveway=True,
                                    bne_building_owner=owner_id(spec)))
             selected=True
             break
@@ -427,4 +495,5 @@ def resolve(items,lines,walks,raw_walks,ground,x0,y0,drives=None,*,audit=None):
             spec.access=replace(spec.access,diagnostics=tuple(sorted(notes+tuple(outcomes)+(message,))))
             if audit is not None:
                 audit.record('outcomes',message)
-                if record['crossing']:audit.record('crossings','internal_route_failed_receiving_area_untested')
+                if record['crossing']:
+                    audit.record('crossings','receiving_area_rejected' if 'receiving_terrain' in record else 'internal_route_failed_receiving_area_untested')

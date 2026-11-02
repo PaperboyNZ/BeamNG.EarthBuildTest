@@ -18,7 +18,7 @@ line (offset 0) outwards, heights above the road:
     back   -> (W, -SINK)                      curbs, dark
 with flat end caps (curbs). Heights follow the road's (graded) centreline z, carried by the runs.
 Slabs, brick, grass and tactile pads receive metric surface UVs after assembly; only curbs use
-a trim atlas. The native sweep's original slab UVs remain an intermediate verge mask.
+a trim atlas. Surface coordinates follow the path's station and profile offset.
 The mod shows it as a TSStatic that collides with its visible mesh. Pure functions; deterministic.
 """
 import numpy as np
@@ -42,32 +42,98 @@ MATERIALS = ("curbs", "bne_sidewalk_slab", "tactile_indicator",  # loaded by roa
 GRASS = 4
 BRICK = 3
 STONE = 6
-BRICK_REPEAT_M = 1.2        # native profile-mask encoding; retained for verge classification
+BRICK_REPEAT_M = 1.2        # native sweep encoding, converted to path metres below
 BRICK_TILE_M = 4.8          # herringbone sheet: approximately 0.20 x 0.10 m paving bricks
 SLAB_TILE_M = (8.0, 4.0)    # slabs_large: 2048 x 1024, four by two square 2 m panels
 GRASS_REPEAT_M = 3.0
 STONE_TILE_M = (3.0, 1.5)   # Italy sidewalk tiles: 1024 x 512, six by three 0.5 m panels
+UV_PHASE_M = 24.0          # common multiple of all surface repeats, including tactile 0.6 m
 
 
-def surface_uvs(mesh, origin):
+def path_station(point, path):
+    """Stable station of a cut's start on its original curb line."""
+    curb = np.asarray(path[0])[:, :2]
+    delta = np.diff(curb, axis=0)
+    lengths = np.linalg.norm(delta, axis=1)
+    valid = np.flatnonzero(lengths > 1e-8)
+    if not len(valid):
+        return 0.
+    fraction = np.clip(np.sum((np.asarray(point)[:2]-curb[:-1])*delta, axis=1)
+                       / np.maximum(lengths**2, 1e-16), 0., 1.)
+    distance = np.sum((curb[:-1]+fraction[:, None]*delta-np.asarray(point)[:2])**2, axis=1)
+    i = valid[np.argmin(distance[valid])]
+    phase = float(curb[0] @ (delta[valid[0]]/lengths[valid[0]])) % UV_PHASE_M
+    return phase + np.sum(lengths[:i]) + fraction[i]*lengths[i]
+
+
+def run_uvs(mesh, origin, piece, path):
+    """Recover sweep stations in linear time from the native strip UVs.
+
+    A tactile boundary can overwrite U on the neighbouring slab's vertex.
+    Check both encodings against geometry before rescaling any material.
+    """
+    P, T, UV, M = mesh
+    ids = np.unique(T[np.isin(M, (1, 2, BRICK))])
+    UV = UV.copy()
+    curb, outward = piece[1] - origin, piece[2]
+    stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(curb[:, :2], axis=0), axis=1))]
+    best = np.full(len(ids), np.inf)
+    metric = np.zeros((len(ids), 2))
+    for repeat in (SLAB_REPEAT_M if piece[8] == 1 else BRICK_REPEAT_M, TACTILE_REPEAT_M):
+        s = np.clip(UV[ids, 0]*repeat, 0., stations[-1])
+        centre = np.column_stack([np.interp(s, stations, curb[:, j]) for j in range(2)])
+        n = np.column_stack([np.interp(s, stations, outward[:, j]) for j in range(2)])
+        rel = P[ids, :2] - centre
+        across = np.sum(rel*n, axis=1) / np.maximum(np.sum(n*n, axis=1), 1e-12)
+        error = np.sum((rel-across[:, None]*n)**2, axis=1)
+        take = error < best
+        best[take] = error[take]
+        metric[take] = np.c_[s[take], across[take]]
+    metric[:, 0] += path_station(piece[1][0], path)
+    UV[ids] = metric
+    return P, T, UV, M
+
+
+def corner_uvs(mesh, origin, path):
+    """A regular paving grid aligned with the corner's incoming footpath.
+
+    A junction fan has no single across-path station at its inside vertex.
+    Projecting that fan onto arc length stretches and pinches the tiles, so
+    use the incoming curb normal as a local planar frame for the whole corner.
+    """
+    P, T, UV, M = mesh
+    vertices = np.unique(T[M == 1])
+    UV = UV.copy()
+    curb, outward = path
+    if len(vertices) and len(curb) >= 2:
+        normal = outward[0] / max(np.linalg.norm(outward[0]), 1e-12)
+        tangent = np.array([normal[1], -normal[0]])
+        if tangent @ (curb[1, :2]-curb[0, :2]) < 0:
+            tangent = -tangent
+        relative = P[vertices, :2] - (curb[0, :2]-np.asarray(origin)[:2])
+        phase = float(curb[0, :2] @ tangent) % UV_PHASE_M
+        UV[vertices] = np.c_[relative@tangent + phase, relative@normal]
+    return P, T, UV, M
+
+
+def surface_uvs(mesh):
     """Apply each surface material's metric mapping after all sidewalk pieces are assembled.
 
-    The native sweep's strip UVs also identify the planted verge before this step. Those UVs
-    belong to the old sidewalk1 atlas, which cannot tile across corners or driveway grids.
-    A shared frame-space projection keeps panel size and phase across runs, corners, crossings
-    and tile origins. Split only vertices used by different materials: a tactile edge must not
+    Profile offsets also identify the planted verge before this step.
+    Path metres keep paving aligned through bends and driveway cuts. Split only
+    vertices used by different materials: a tactile edge must not
     change the adjoining pavement's UVs (or a pavement edge the curb's trim band).
     """
     P, T, UV, M = mesh
     if not len(T):
         return mesh
+    source_uv = UV
     T, UV = T.copy(), UV.copy()
     owner = np.full(len(P), -1, np.int64)
     ps, uvs = [P], [UV]
     count = len(P)
     repeats = {1: SLAB_TILE_M, 2: TACTILE_REPEAT_M, BRICK: BRICK_TILE_M,
                GRASS: GRASS_REPEAT_M, STONE: STONE_TILE_M}
-    origin = np.asarray(origin, np.float64)[:2]
     for mat in np.unique(M):
         rows = M == mat
         vertices = np.unique(T[rows])
@@ -84,8 +150,7 @@ def surface_uvs(mesh, origin):
             count += len(shared)
         if mat in repeats:
             repeat = np.asarray(repeats[mat], np.float64)
-            # Subtract whole repeats at the origin to retain float32 texture precision.
-            mapped = (P[vertices, :2] + origin) / repeat - np.floor(origin / repeat)
+            mapped = source_uv[vertices] / repeat
             original = target < len(P)
             UV[target[original]] = mapped[original]
             if len(shared):
@@ -212,15 +277,17 @@ class Builder:
 
     def __init__(self, origin, collision=False):
         self.origin = np.asarray(origin, np.float64)
-        self.pieces = []            # (kind 0 run / 1 corner, points (k, 3), dirs (k, 2), outer (m, 3), ramps, w, h, caps,
-        self._built = None          # slab); the Rust meshes once built (full, lean)
+        self.pieces = []            # (kind, points, dirs, outer, ramps, width, height, caps, slab)
+        self.surface_paths = []     # original run retained across driveway/verge splits
+        self._built = None          # the Rust meshes once built (full, lean)
         self.vehicle_meshes = []
         self.vehicle_visuals = []
         self.verge_builder = None
         self._defer_surface_uvs = False  # internal verge batch still needs profile-offset UVs
         self.col = _Lean(self) if collision else None
 
-    def add_run(self, curb, toward_out, w, h=CURB_H, caps=(True, True), ramps=(), slab=1, driveways=(), verge=False):
+    def add_run(self, curb, toward_out, w, h=CURB_H, caps=(True, True), ramps=(), slab=1, driveways=(), verge=False,
+                texture_path=None):
         """One sidewalk run: curb (k, 3) the curb line (z = the road there), toward_out (k, 2) unit
         vectors from the curb outwards (scaled by the miter), w its width; caps: end caps at the
         (start, end) (not where the run goes on in the next tile or meets a corner piece); ramps:
@@ -233,10 +300,12 @@ class Builder:
         curb, toward_out = curb[keep], toward_out[keep]
         if len(curb) < 2:
             return
+        texture_path = (curb, toward_out) if texture_path is None else texture_path
         if driveways:
             import vehicle_crossings
             if w >= vehicle_crossings.MIN_WIDTH:
-                vehicle_crossings.add(self,curb,toward_out,w,h,caps,ramps,slab,driveways,verge=verge)
+                vehicle_crossings.add(self,curb,toward_out,w,h,caps,ramps,slab,driveways,verge=verge,
+                                      texture_path=texture_path)
                 return
         if verge and w >= 2.4 and not ramps and slab == 1:
             # A second bounded native batch gives offset-based UVs for the
@@ -244,11 +313,12 @@ class Builder:
             if self.verge_builder is None:
                 self.verge_builder = Builder(self.origin, collision=self.col is not None)
                 self.verge_builder._defer_surface_uvs = True
-            self.verge_builder.add_run(curb,toward_out,w,h,caps,slab=BRICK)
+            self.verge_builder.add_run(curb,toward_out,w,h,caps,slab=BRICK,texture_path=texture_path)
             self._built = None
             return
         self.pieces.append((0, curb[:, :3], np.asarray(toward_out, np.float64)[:, :2], None, list(ramps), float(w),
                             float(h), (bool(caps[0]), bool(caps[1])), int(slab)))
+        self.surface_paths.append(texture_path)
         self._built = None
 
     def add_corner(self, arc, inward, outer, h=CURB_H, ramps=(), slab=1):
@@ -260,6 +330,7 @@ class Builder:
         self.pieces.append((1, np.asarray(arc, np.float64)[:, :3], np.asarray(inward, np.float64)[:, :2],
                             np.asarray(outer, np.float64).reshape(-1, 3), list(ramps), 2.5, float(h), (False, False),
                             int(slab)))
+        self.surface_paths.append((self.pieces[-1][1], self.pieces[-1][2]))
         self._built = None
 
     def empty(self):
@@ -268,20 +339,21 @@ class Builder:
     def _build(self):
         if self._built is None:
             ps = self.pieces
-            # The native geometry API supports concrete/brick runs, but its
-            # corner surfaces always return material 1. Batch by finish so
-            # corners, runs and crossings share the selected regional paving.
+            # Retain each piece's path while mapping its native geometry. The
+            # native ABI has no per-piece vertex offsets, so map before combining.
             from vehicle_crossings import combine
-            groups = {}
-            for piece in ps:
-                groups.setdefault(piece[8], []).append(piece)
             batches = []
-            for finish, pieces in (groups.items() or [(1, [])]):
-                visual, collision = native_mesh(pieces, self.origin, self.col is not None)
+            for piece, path in zip(ps, self.surface_paths):
+                finish = piece[8]
+                visual, collision = native_mesh([piece], self.origin, self.col is not None)
+                visual = (run_uvs(visual, self.origin, piece, path) if piece[0] == 0
+                          else corner_uvs(visual, self.origin, path))
                 P, T, UV, M = visual
                 if finish != 1:
                     M = np.where((M == 1) | (M == BRICK), finish, M)
                 batches.append(((P, T, UV, M), collision))
+            if not batches:
+                batches.append(native_mesh([], self.origin, self.col is not None))
             self._built = (combine(batches[0][0], [b[0] for b in batches[1:]]),
                            combine(batches[0][1], [b[1] for b in batches[1:]]))
             extra = list(self.vehicle_visuals)
@@ -293,7 +365,7 @@ class Builder:
                 P,T,UV,M = (a.copy() for a in self.verge_builder.arrays())
                 # The first slab strip is 0.6 m wide (CURB_W .. CURB_W+PAD_W).
                 # The remaining >=1.65 m stays paved, including every crossing.
-                planted = (M == BRICK) & (UV[T,1].max(axis=1)*BRICK_REPEAT_M <= CURB_W+PAD_W+1e-8)
+                planted = (M == BRICK) & (UV[T,1].max(axis=1) <= CURB_W+PAD_W+1e-8)
                 M[M == BRICK] = 1
                 M[planted] = GRASS
                 extra.append((P,T,UV,M))
@@ -306,7 +378,7 @@ class Builder:
                              combine(collision,collision_extra) if self.col is not None else collision)
             if not self._defer_surface_uvs:
                 visual, collision = self._built
-                self._built = surface_uvs(visual, self.origin), collision
+                self._built = surface_uvs(visual), collision
         return self._built
 
     def arrays(self):

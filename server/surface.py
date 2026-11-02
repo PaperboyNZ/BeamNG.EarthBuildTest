@@ -423,10 +423,12 @@ def _road_segments(frame, x0, y0, size, w, h, feats_list, urban_fn=None, widths=
             if sp is None or fid in seen or sp.kind not in PHOTO_ROAD_RGBA:
                 continue
             seen.add(fid)
-            m = sp.width / 2        # (all of the feature off the photo: none of its rings is in it)
+            aisle_extra = AISLE_STALLS_M if sp.kind == "paved" and \
+                roadsmod._rule_value(feats.rules.get("subclass"), i) == "parking_aisle" else 0.0
+            m = sp.width / 2 + aisle_extra   # include the bays in both photo and asphalt mask
             if box[i, 1] < x0 - m or box[i, 0] > x0 + size + m or box[i, 3] < y0 - m or box[i, 2] > y0 + size + m:
                 continue
-            hw = (sp.width / 2 + PHOTO_ROAD_EDGE_M) * px_m
+            hw = (sp.width / 2 + aisle_extra + PHOTO_ROAD_EDGE_M) * px_m
             for ring in roadsmod.ground_parts(feats, i):
                 e, n = mapgeom.enu_xy(feats, frame, ring)
                 c = (np.asarray(e) - x0) * px_m
@@ -439,7 +441,7 @@ def _road_segments(frame, x0, y0, size, w, h, feats_list, urban_fn=None, widths=
                 if ws is None:
                     hws.append(np.full(len(c) - 1, hw))
                 else:
-                    hp = (ws / 2 + PHOTO_ROAD_EDGE_M) * px_m
+                    hp = (ws / 2 + aisle_extra + PHOTO_ROAD_EDGE_M) * px_m
                     hws.append((hp[:-1] + hp[1:]) / 2)
                 kind.append(np.full(len(c) - 1, kinds.index(sp.kind), np.uint8))
                 if roads_of is not None:
@@ -771,7 +773,8 @@ def paint_square(rgb, frame, x0, y0, size, surface, widths=None, simple=False):
     feats = _square_roads(frame, x0, y0, size, surface)
     if not feats:
         return rgb
-    return photo_roads(rgb, frame, x0, y0, size, feats, surface.urban, widths, simple=simple)
+    rgb = photo_roads(rgb, frame, x0, y0, size, feats, surface.urban, widths, simple=simple)
+    return photo_unpaved_lots(rgb, frame, x0, y0, size, _square_lots(frame, x0, y0, size, surface))
 
 
 def unghost_square(rgb, frame, x0, y0, size, surface, widths=None):
@@ -829,6 +832,11 @@ def road_mask(frame, x0, y0, size, px, surface, widths=None):
     for extra in (pads, lots, corners):
         if extra is not None:
             out = extra if out is None else np.maximum(out, extra)
+    if out is not None:
+        bare = _lot_pads_selected(_square_lots(frame, x0, y0, size, surface), _unpaved_lots)
+        mask = pads_mask(frame, x0, y0, size, px, bare)
+        if mask is not None:
+            out = np.minimum(out, 255 - mask)
     return None if out is None or not out.any() else out
 
 
@@ -855,7 +863,10 @@ def paint_lots(idx, lat, lon, feats_list):
     # (grey paving: the cobble layer's setts drew big squares and promenades pink, Harbor Point 2026-10-15)
     idx = _paint(idx, lat, lon, feats_list, _plazas, ASPHALT)
     idx = _paint(idx, lat, lon, feats_list, _yards, LOOSE)
-    return _paint(idx, lat, lon, feats_list, _parking, ASPHALT)
+    idx = _paint(idx, lat, lon, feats_list, _parking, ASPHALT)
+    for kind, material in (("gravel", LOOSE), ("dirt", DIRT), ("grass", GRASS)):
+        idx = _paint(idx, lat, lon, feats_list, lambda f: _unpaved_lots(f, kind), material)
+    return idx
 
 
 # Gas station forecourts (gasstations.forecourt_pad: Surface.fuel_pads, from the road tiles), asphalt in the ground
@@ -983,12 +994,16 @@ def pads_mask(frame, x0, y0, size, px, pads):
 
 
 def lot_pads(feats_list):
+    return _lot_pads_selected(feats_list, _parking)
+
+
+def _lot_pads_selected(feats_list, select):
     """Parking-lot outer rings as (lat, lon) pads for the photo painters (class parking, not grass or gravel)."""
     pads = []
     for feats in feats_list:
         if feats is None or len(feats) == 0:
             continue
-        sel = _parking(feats)
+        sel = select(feats)
         if sel is None:
             continue
         for i in np.flatnonzero(sel & (feats.kind == 3)):
@@ -1002,12 +1017,66 @@ def lot_pads(feats_list):
 
 def photo_lots(rgb, frame, x0, y0, size, feats_list):
     """The photo with parking-lot polygons painted in the paved roads' colour (under the carriageways). Pure."""
-    return photo_pads(rgb, frame, x0, y0, size, lot_pads(feats_list))
+    rgb = _photo_lot_fill(rgb, frame, x0, y0, size, lot_pads(feats_list), PHOTO_ROAD_RGBA["paved"][:3])
+    return photo_unpaved_lots(rgb, frame, x0, y0, size, feats_list)
 
 
 def lots_mask(frame, x0, y0, size, px, feats_list):
     """The parking lots' coverage (px x px uint8, 255 inside) of a tile photo's square, or None."""
     return pads_mask(frame, x0, y0, size, px, lot_pads(feats_list))
+
+
+# A short exterior fade; the entire interior is opaque, so old grass cannot bleed through.
+LOT_FEATHER_M = 0.8
+
+
+def _photo_lot_fill(rgb, frame, x0, y0, size, pads, colour):
+    if not pads:
+        return rgb
+    from shapely.geometry import Polygon
+    bands = []
+    for distance, opacity in ((LOT_FEATHER_M, .18), (LOT_FEATHER_M / 2, .50), (0., 1.)):
+        expanded = []
+        for la, lo in pads:
+            e, n, _ = frame.geodetic_to_enu(la, lo, np.zeros(len(la)))
+            shape = Polygon(np.c_[e, n]).buffer(distance)
+            parts = [shape] if shape.geom_type == "Polygon" else list(shape.geoms)
+            for part in parts:
+                xy = np.asarray(part.exterior.coords)
+                a, b, _ = frame.enu_to_geodetic(xy[:, 0], xy[:, 1], 0.)
+                expanded.append((a, b))
+        bands.append((expanded, opacity))
+    out = np.array(rgb, np.uint8, copy=True, order="C")
+    h, w = rgb.shape[:2]
+    for expanded, opacity in bands:
+        polys = _pads_photo_px(frame, x0, y0, size, w, h, expanded)
+        if polys:
+            fast.require(140, "parking surface painting")
+            fast._ef.paint_pads(out, polys, list(map(float, colour)), opacity)
+    return out
+
+
+def _unpaved_lots(feats, kind=None):
+    import parking
+    cls, surf = feats.attrs.get("class"), feats.attrs.get("surface")
+    if cls is None or surf is None:
+        return None
+    values = np.array([str(v or "").strip().lower() for v in surf])
+    eligible = set(parking.LOT_UNPAVED)
+    gravel = {"gravel", "fine_gravel", "compacted", "pebblestone"}
+    grass = {"grass", "grass_paver"}
+    if kind == "gravel": eligible = gravel
+    elif kind == "grass": eligible = grass
+    elif kind == "dirt": eligible -= gravel | grass
+    return np.isin(cls.astype(str), list(PARKING_CLASSES)) & np.isin(values, list(eligible))
+
+
+def photo_unpaved_lots(rgb, frame, x0, y0, size, feats_list):
+    for kind, colour in (("gravel", PHOTO_ROAD_RGBA["gravel"][:3]),
+                         ("dirt", PHOTO_ROAD_RGBA["dirt"][:3]), ("grass", (75., 88., 56.))):
+        pads = _lot_pads_selected(feats_list, lambda f: _unpaved_lots(f, kind))
+        rgb = _photo_lot_fill(rgb, frame, x0, y0, size, pads, colour)
+    return rgb
 
 
 def _parking(feats):
@@ -1349,6 +1418,8 @@ class Surface:
                     out.append(self.md.cell(key, layers=(layer,), kind="background").layers.get(layer))
                 except Exception as e:      # an unreadable cache file: like a missing one
                     log.debug("surface: %s of %s: %s: %s", layer, key, type(e).__name__, e)
+        import parking
+        out = parking.resolved_lots(out, self.roads(lat, lon)[0])
         return out
 
     def urban(self, lat, lon):

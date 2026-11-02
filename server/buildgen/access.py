@@ -3,6 +3,7 @@
 Surface samples are batched in the caller's frame. The immutable result is shared
 by props, facades, visual LODs and collision; it never moves the building envelope.
 """
+from runtimeprofiler import step as profile_step
 from dataclasses import dataclass
 import math
 
@@ -73,6 +74,8 @@ def entrance_width(spec):
     return width
 
 
+
+@profile_step('Building access planning')
 def resolve(records, items, ground=None, x0=0., y0=0., lines=()):
     """records: (spec, gmin, gmax, road setback, mutable door prop row)."""
     import buildings as b
@@ -209,6 +212,7 @@ def resolve(records, items, ground=None, x0=0., y0=0., lines=()):
         row[3] = round(door_z, 2)
 
 
+@profile_step('Building access geometry')
 def draw(mesh, spec, collision=False, detail=False):
     import buildings as b
     if spec.access is None:
