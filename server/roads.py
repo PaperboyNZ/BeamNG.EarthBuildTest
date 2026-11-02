@@ -8544,7 +8544,7 @@ class GeoTracker:
         jobs.sort(key=lambda job:(job[1] and job[0] in self.sent,order(job)))
         from buildgen import progressive
         for progress_key,job in list(getattr(self, '_building_progress', {}).items()):
-            limited=demand.get(progress_key,detail) in ('lite','very_low','low')
+            limited=demand.get(progress_key,detail) in ('minimum','lite','very_low','low')
             if limited and not job.get('limited') and self._progress_out_dir:
                 job['limited']=progressive.limit_detail(self._progress_out_dir,job['token'])
             progressive.poll(self, conn, aid, progress_key)

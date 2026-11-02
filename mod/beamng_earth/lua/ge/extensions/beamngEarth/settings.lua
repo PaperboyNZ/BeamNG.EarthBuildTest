@@ -57,7 +57,7 @@ M.SCHEMA = {
   -- Applied live by the server; independent of the graphics quality presets.
   buildingGenerator = { kind = 'enum', default = 'legacy', values = { 'legacy', 'v2' },
     label = 'Building generation' },
-  buildingQuality = { kind = 'enum', default = 'low', values = { 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
+  buildingQuality = { kind = 'enum', default = 'minimum', values = { 'minimum', 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
     label = 'Building generation quality' },
   buildingAdaptive = { kind = 'bool', default = true, label = 'Adaptive building performance' },
   buildingDetailM = { kind = 'number', default = 350, min = 100, max = 640,

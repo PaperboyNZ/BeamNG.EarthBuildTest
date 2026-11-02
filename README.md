@@ -47,6 +47,10 @@ You can help support development by reporting [issues](https://github.com/TecnaG
   wood, Mediterranean stucco, East Asian and Latin American looks), real heights, roofs, windows, shopfronts,
   porches, churches with steeples, glass towers. Buildings show out to about 3 miles: simpler versions past 1 mile,
   and a light skyline beyond that; bridges show out to about 3 miles too.
+- Optional **Advanced** building generation under Pause > BeamNG.Earth > World adds
+  richer regional architecture and building sites. Simple remains the default;
+  Advanced defaults to Minimum quality. Higher quality levels are experimental
+  and costly. See [quality settings and current limits](docs/ADVANCED_BUILDINGS_REVIEW.md).
 - Roads painted into the ground itself (no floating road surface), with lane markings, sidewalks and curbs, curb ramps, storm drains, cobblestone streets,
   traffic islands, roundabouts, rural motorways with shoulders and toll booths; the ground graded under them, with
   retaining walls where a road is cut into a hill (dry stone in the mountains and towns, concrete along major roads)

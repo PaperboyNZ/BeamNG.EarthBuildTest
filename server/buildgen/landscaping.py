@@ -227,7 +227,7 @@ def native_props(spec,x0=0.,y0=0.):
     """
     from shapely.geometry import Point,Polygon
     from .quality import site_level
-    if site_level() == 0 and spec.site is None:return []
+    if site_level() <= 0 and spec.site is None:return []
     access=getattr(spec,'access',None)
     if access is None or not access.landscape or getattr(spec,'inference',None) is None:return []
     profile=treatment(spec)

@@ -6,6 +6,10 @@
     <BngCardHeading>{{ category.name }}</BngCardHeading>
     <div v-if="category.intro" class="earth-intro">{{ category.intro }}</div>
 
+    <div v-if="config.buildingGenerator === 'v2' && (category.name === 'World' || category.name === 'Graphics')" class="earth-intro">
+      Advanced defaults to Minimum quality. Quality levels above Minimum are experimental and costly: they increase generation time and resource use.
+    </div>
+
     <!-- Quality presets: one press sets every setting below; changing one makes it Custom -->
     <template v-if="category.presets">
       <div class="earth-presets">

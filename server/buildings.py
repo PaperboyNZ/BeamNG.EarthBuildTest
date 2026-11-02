@@ -88,7 +88,8 @@ FOLIAGE = "bne_land_foliage"
 SHUTTER = "bne_bld_shutter"
 PAVING = "bne_bld_paving"
 MATERIALS = (FACADE, SHOP, OFFICE, ROOF_FLAT, ROOF_SLATE, ROOF_SHINGLE, SIDING, STUCCO, ROOF_METAL, PANEL, METALWALL,
-             STONE, MARBLE, BRICK_WALL, CONCRETE, SKY_WALL, LAWN, GARDEN, GRAVEL, FOLIAGE, SHUTTER, PAVING, ROOF_THATCH)
+             STONE, MARBLE, BRICK_WALL, CONCRETE, SKY_WALL, LAWN, GARDEN, GRAVEL, FOLIAGE, SHUTTER, PAVING, ROOF_THATCH,
+             'bne_minimum_sash', 'bne_minimum_tall', 'bne_minimum_wide', 'bne_minimum_modern', 'bne_minimum_glass')
 LOOKS = {
     "bne_bridge_steel": (METALWALL, (0.50, 0.52, 0.54)),
     "bne_marble": (MARBLE, (1.0, 1.0, 1.0)),
@@ -1727,6 +1728,8 @@ def build(specs_and_ground, lite=False, *, texture_facades=False):
     from buildgen.quality import current
     lite = lite or current().rank < 2
     texture_facades = texture_facades or current().rank == 0
+    from buildgen.minimum import enabled as minimum_enabled, draw as minimum_draw
+    compact = minimum_enabled()
     m = Mesh()
     for spec, gmin, gmax in specs_and_ground:
         m.weather(spec,gmin,gmax)
@@ -1746,6 +1749,9 @@ def build(specs_and_ground, lite=False, *, texture_facades=False):
             if churches.draw(m, spec, gmin, gmax, lite=lite):
                 continue
         if spec.footprint is not None:
+            if compact and spec.inference is not None:
+                minimum_draw(m,spec,gmin,gmax)
+                continue
             from buildgen.geometry import draw
             draw(m, spec, gmin, gmax, lite=lite, texture_facades=texture_facades)
             continue
@@ -1821,6 +1827,8 @@ def collision_mesh(specs_and_ground):
     oriented box), parking decks as drawn; (positions, uvs, tris, tri materials, MATERIALS, colours) or None.
     The drawn mesh (windows a quad per bay and floor, cornices, signs) cost the game's collision rebuild ~30 ms of
     a 40 ms rebuild in Fells Point (2026-10-15), every few seconds while driving; this one is ~1/20 of its triangles."""
+    from buildgen.minimum import enabled as minimum_enabled, collision as minimum_collision
+    compact = minimum_enabled()
     m = Mesh()
     tok = (MATERIALS.index(PANEL), (128, 128, 128, 255))
     zero = (0.0, 0.0)
@@ -1836,6 +1844,9 @@ def collision_mesh(specs_and_ground):
             if churches.draw(m, spec, gmin, gmax, collision=True):
                 continue
         if spec.footprint is not None:
+            if compact and spec.inference is not None:
+                minimum_collision(m,spec,gmin,gmax)
+                continue
             from buildgen.geometry import draw
             draw(m, spec, gmin, gmax, collision=True)
             continue
@@ -3046,7 +3057,8 @@ def collider_boxes(items, x0, y0):
             from buildgen.regional_supports import boxes as support_boxes
             out.extend(support_boxes(spec,gmin,gmax,x0,y0))
             from buildgen.regional_facade_details import bay_boxes
-            out.extend(bay_boxes(spec,gmin,gmax,x0,y0))
+            from buildgen.minimum import enabled as minimum_enabled
+            if not minimum_enabled():out.extend(bay_boxes(spec,gmin,gmax,x0,y0))
             from buildgen.regional_roof_details import gable_boxes
             out.extend(gable_boxes(spec,gmin,gmax,x0,y0))
             if spec.access is not None:
@@ -3151,6 +3163,7 @@ def doors(items, lines, x0, y0, drives=None, ground=None, walks=None, raw_walks=
     tile chunk dicts, draped by roadmesh) from each detached house's front to the road's edge.
     driveway_audit optionally collects aggregate resolver counts without changing plans."""
     from sitegen.surfaces import terrain_sampler
+    from buildgen.minimum import enabled as minimum_enabled
     from sitegen.portals import simplified_lines
     ground = terrain_sampler(ground)
     lines = simplified_lines(lines) if lines else ()
@@ -3312,7 +3325,7 @@ def doors(items, lines, x0, y0, drives=None, ground=None, walks=None, raw_walks=
             and spec.garage_opening and abs(spec.door[1]-spec.garage_opening[1]) < spec.garage_opening[2]/2
         from buildgen.commercial import can_public_entry
         commercial_entry = can_public_entry(spec)
-        if not garage_only and not commercial_entry and not church_entry:
+        if not garage_only and (not commercial_entry or minimum_enabled()) and not church_entry:
             rows.append(entry_row)
         if spec.inference is not None:
             # Resolve a frontage destination from the same source road used for
@@ -3337,7 +3350,8 @@ def doors(items, lines, x0, y0, drives=None, ground=None, walks=None, raw_walks=
         if id(s) in retained_facades:
             s.facades=retained_facades[id(s)]
     from buildgen.commercial import office_profile, resolve as resolve_commercial
-    if any(s.inference is not None and (s.inference.selection.preset.id.startswith('ci_') or office_profile(s))
+    from buildgen.minimum import enabled as minimum_enabled
+    if not minimum_enabled() and any(s.inference is not None and (s.inference.selection.preset.id.startswith('ci_') or office_profile(s))
            for s,_,_ in items):
         resolve_commercial(items,lines,ground,x0,y0)
     if any(s.site is not None for s,_,_ in items):
@@ -3562,7 +3576,7 @@ def visual_products(items):
     groups = None
     if progress is not None:
         meshes, groups = progress.build(items)
-    elif DETAIL.get()=='lite' or DETAIL.get() in ('very_low','low'):
+    elif DETAIL.get()=='lite' or DETAIL.get() in ('minimum','very_low','low'):
         mesh=build(items,lite=True)
         meshes=split_mesh(mesh,import_vertices()) if mesh is not None else []
     else:

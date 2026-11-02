@@ -20,11 +20,12 @@ class Profile:
 
     @property
     def fallback(self):
-        return NAMES[min(self.rank, 1)]
+        return self.name if self.rank <= 1 else 'low'
 
 
-NAMES = ('very_low', 'low', 'medium', 'high', 'very_high', 'ultra')
+NAMES = ('minimum', 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra')
 PROFILES = {p.name:p for p in (
+    Profile('minimum', -1, 150., 16., 8., 6., .5, 12, 8192),
     Profile('very_low', 0, 150., 16., 8., 6., .30, 12, 8192),
     Profile('low', 1, 200., 18., 9., 5., .25, 10, 7168),
     Profile('medium', 2, 250., 20., 10., 4., .20, 8, 6144),
@@ -37,6 +38,7 @@ WORKER_VALUES = NAMES + ('full', 'lite')
 
 def import_vertices(stage=2):
     """Cheap coverage imports broadly; increasingly detailed imports get smaller."""
+    if current().name == 'minimum':return 20000
     if stage == 0:return 20000
     if stage == 1:return 18000
     return (60000,40000,16000,12000,10000,8000)[current().rank]
@@ -49,7 +51,7 @@ def site_level():
     Visual detail changes within the complete-site levels reuse physical output.
     """
     from .progressive import DETAIL
-    return {'very_low': 0, 'low': 1}.get(DETAIL.get(), 2)
+    return {'minimum': -1, 'very_low': 0, 'low': 1}.get(DETAIL.get(), 2)
 
 
 def current():
@@ -58,10 +60,18 @@ def current():
     return PROFILES.get(DETAIL.get(), PROFILES['ultra'])
 
 
+def run(detail, function, *args, **kwargs):
+    """Carry a captured distant quality into a worker without leaking context."""
+    from .progressive import DETAIL
+    token=DETAIL.set(detail if detail in WORKER_VALUES else 'full')
+    try:return function(*args, **kwargs)
+    finally:DETAIL.reset(token)
+
+
 def rank(value):
     if value == 'full':return 5
     if value == 'lite':return 1
-    return PROFILES[value].rank if isinstance(value,str) and value in PROFILES else -1
+    return PROFILES[value].rank if isinstance(value,str) and value in PROFILES else -2
 
 
 def needs_rebuild(existing, target, ceiling):

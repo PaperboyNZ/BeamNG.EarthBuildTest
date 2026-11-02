@@ -1580,7 +1580,7 @@ class Server:
 
     FAR_GEO_KEPT = 20000        # far geotiles of this session remembered (build_far_geo: sent again from the files)
 
-    def build_far_geo(self, kind, gx, gy, plan_ref=None, plan_refs=None):
+    def build_far_geo(self, kind, gx, gy, plan_ref=None, plan_refs=None, building_detail='full'):
         """blockworker.far_geo in the far buildings' process: far geotile (gx, gy) of kind ("bldfar", "bldsky",
         "brfar"), anchor-free (its own place's rules and DEM zoom); one built before in this session comes from its
         files. (vfs path, n, frame, pivot, shapes) or None (its cells not at hand yet). Worker threads
@@ -1599,14 +1599,16 @@ class Server:
         token=plan_ref['revision'] if plan_ref else distant.reference_revision(plan_refs) if plan_refs else None
         import building_settings
         mode = building_settings.current()
-        memo_key=(kind,gx,gy,token,mode if kind != 'brfar' else None)
+        building_detail='minimum' if building_detail=='minimum' and mode=='v2' and kind!='brfar' else 'full'
+        memo_key=(kind,gx,gy,token,mode if kind != 'brfar' else None,building_detail)
         got = memo.get(memo_key)
         if got is not None and all(os.path.exists(os.path.join(self.out_dir, n))
                                    for n in [os.path.basename(got[0])] + list(got[4].values())):
             return got
         _lh, _mph, _buried, lamps, _country, gzoom = self.geo_rules(gx, gy, z)
         t0 = time.perf_counter()
-        got = self.far_bld_pool.submit(building_settings.run, mode, blockworker.far_geo, kind, gx, gy, gzoom, self.out_dir, self.vfs_dir,
+        from buildgen import quality
+        got = self.far_bld_pool.submit(building_settings.run, mode, quality.run, building_detail, blockworker.far_geo, kind, gx, gy, gzoom, self.out_dir, self.vfs_dir,
                                        lamps,plan_ref=plan_ref,plan_refs=plan_refs).result()
         log.debug("far geotile %s %s: %.2f s (queue + build)", kind, geotiles.key(gx, gy, z), time.perf_counter() - t0)
         if got is not None:
@@ -4556,17 +4558,19 @@ class Connection:
         """The far geotile tracker's build(gx, gy) of kind (Server.build_far_geo)."""
         import building_settings, functools
         mode = building_settings.current()
+        detail='minimum' if getattr(self,'building_quality',None)=='minimum' and mode=='v2' and kind!='brfar' else 'full'
+        build_far=functools.partial(self.s.build_far_geo,building_detail=detail) if detail=='minimum' else self.s.build_far_geo
         def build(gx,gy):
             if kind=='bldfar':
                 roads=getattr(self,'roads',None)
                 ref=(roads.plan_reference((gx,gy)) if hasattr(roads,'plan_reference') else
                      getattr(roads,'info',{}).get((gx,gy),{}).get('acceptedPlan'))
-                if ref is not None:return self.s.build_far_geo(kind,gx,gy,plan_ref=ref)
+                if ref is not None:return build_far(kind,gx,gy,plan_ref=ref)
             elif kind=='bldsky':
                 roads=getattr(self,'roads',None)
                 refs=roads.sky_references(gx,gy) if hasattr(roads,'sky_references') else {}
-                if refs:return self.s.build_far_geo(kind,gx,gy,plan_refs=refs)
-            return self.s.build_far_geo(kind,gx,gy)
+                if refs:return build_far(kind,gx,gy,plan_refs=refs)
+            return build_far(kind,gx,gy)
         return functools.partial(building_settings.run, mode, build)
 
     def build_veg_geo(self, gx, gy):
@@ -4838,8 +4842,15 @@ class Connection:
         lod, tree, bld = (scale("lodScale", self.lod_scale), scale("treeScale", self.tree_scale),
                           scale("buildingScale", self.building_scale))
         from buildgen.quality import NAMES
+        was_minimum=getattr(self,'building_quality',None)=='minimum'
         if msg.get('buildingQuality') in NAMES + ('adaptive','lite','full'):
             self.building_quality=msg['buildingQuality']
+        if was_minimum != (getattr(self,'building_quality',None)=='minimum'):
+            # Retain visible coverage while cancelling obsolete work and queuing
+            # replacements. This is the existing generation-switch handover.
+            for name in ('bldfar','bldsky'):
+                tracker=getattr(self,name,None)
+                if hasattr(tracker,'change_generator'):tracker.change_generator()
         if type(msg.get('buildingAdaptive')) is bool:self.building_adaptive=msg['buildingAdaptive']
         detail_m=msg.get('buildingDetailM')
         if type(detail_m) in (int,float) and math.isfinite(detail_m):

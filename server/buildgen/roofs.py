@@ -35,7 +35,11 @@ class Envelope:
 
 
 def envelope(footprint, kind, variant='standard'):
-    from .progressive import ACTIVE
+    from .progressive import ACTIVE, DETAIL
+    if DETAIL.get()=='minimum':
+        from .minimum_roofs import envelope as compact
+        result=compact(footprint,kind,variant)
+        if result is not None:return result
     job=ACTIVE.get()
     if job is None:return _envelope(footprint,kind,variant)
     key=(footprint,kind,variant)

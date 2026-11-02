@@ -12,9 +12,8 @@ class LeanTests(unittest.TestCase):
         keys={}
         for name in quality.NAMES:
             with tier(name):keys[name]=products.address(tile,'identical-inputs')[0]
-        self.assertNotEqual(keys['very_low'],keys['low'])
-        self.assertNotEqual(keys['low'],keys['medium'])
-        self.assertEqual(len({keys[n] for n in quality.NAMES[2:]}),1)
+        self.assertEqual(len({keys[n] for n in ('minimum','very_low','low','medium')}),4)
+        self.assertEqual(len({keys[n] for n in ('medium','high','very_high','ultra')}),1)
 
     def test_all_regional_identity_and_opening_layouts_survive_lean_policy(self):
         for theme in regional_architecture.catalogue():

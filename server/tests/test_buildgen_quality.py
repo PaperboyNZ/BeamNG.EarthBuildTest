@@ -31,7 +31,7 @@ def tier(name):
 
 class QualityTests(unittest.TestCase):
     def test_all_six_have_bounded_adaptive_settings(self):
-        for rank,name in enumerate(quality.NAMES):
+        for rank,name in enumerate(quality.NAMES, start=-1):
             q=quality.PROFILES[name]
             self.assertEqual(q.rank,rank)
             self.assertLess(q.fast_exit,q.fast_enter)
@@ -39,14 +39,14 @@ class QualityTests(unittest.TestCase):
             self.assertLessEqual(quality.rank(q.fallback),rank)
         self.assertEqual(quality.rank('full'),5)
         self.assertEqual(quality.rank('lite'),1)
-        self.assertEqual(quality.rank(None),-1)
+        self.assertEqual(quality.rank(None),-2)
 
     def test_geometry_is_finite_nested_cost_and_collision_independent(self):
         for spec in (building('nz_temperate'),building('jp_temperate'),city()[0]):
             items=freeze_items([(spec,0.,0.)])
             original=b.collision_mesh(items)
             counts=[]
-            for name in quality.NAMES:
+            for name in quality.NAMES[1:]:
                 with tier(name):
                     mesh=b.build(items)
                     collision=b.collision_mesh(items)
@@ -66,7 +66,7 @@ class QualityTests(unittest.TestCase):
             return np.unique(mesh[0][triangles.ravel(),2])
         expected=rows(b.build(items))
         self.assertGreater(len(expected),0)
-        for name in quality.NAMES:
+        for name in quality.NAMES[1:]:
             with tier(name):mesh=b.build(items)
             np.testing.assert_array_equal(rows(mesh),expected)
         with tier('very_low'):self.assertIs(freeze_items(items)[0][0],items[0][0])
@@ -113,7 +113,7 @@ class QualityTests(unittest.TestCase):
 
     def test_low_publishes_final_once_without_duplicate_lite_encoding(self):
         items=stage_fixtures.ProgressiveTests().items(13)
-        for name in ('very_low','low'):
+        for name in ('minimum','very_low','low'):
             with tempfile.TemporaryDirectory() as folder,tier(name):
                 pub=p.Publisher(folder,'/vfs',None,'a'*32);events=[]
                 with patch.object(pub,'publish',side_effect=lambda g,s,m,names=None:events.append((g,s))),\
@@ -156,6 +156,8 @@ class QualityTests(unittest.TestCase):
                 self.assertEqual(len(submitted),2)
                 conn.building_quality='very_low';pose()
                 self.assertEqual(submitted[-1][0].keywords['building_detail'],'very_low')
+                done('very_low');conn.building_quality='minimum';pose()
+                self.assertEqual(submitted[-1][0].keywords['building_detail'],'minimum')
             finally:tracker.close()
 
     def test_graphics_accepts_six_names_and_boolean_adaptation_only(self):
@@ -171,7 +173,7 @@ class QualityTests(unittest.TestCase):
     def test_all_quality_cache_keys_are_unique(self):
         args=('g',15,True,False,False,False,0.,None,None)
         keys=[bw._geo_content_key(*args,md={},building_detail=name) for name in quality.NAMES]
-        self.assertEqual(len(set(keys)),6)
+        self.assertEqual(len(set(keys)),len(quality.NAMES))
 
     def test_full_profiler_reports_building_stages_without_changing_mesh(self):
         import runtimeprofiler as profiler
@@ -204,7 +206,7 @@ class QualityProductTests(unittest.TestCase):
                  patch.object(b,'collision_mesh',side_effect=AssertionError('rebuilt collision')),\
                  patch.object(b,'doors',side_effect=AssertionError('rebuilt access')):
                 result=products.refine(bw,fixture.tile,fixture.key,str(out),'/tier',name)
-            if name in ('very_low','low'):
+            if name in ('minimum','very_low','low'):
                 self.assertIsNone(result)
                 continue
             self.assertIsNotNone(result)

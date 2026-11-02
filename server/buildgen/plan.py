@@ -152,10 +152,12 @@ def freeze_items(items):
     """Snapshot the complete compiler input, including its ground height ranges."""
     from dataclasses import replace
     from . import facades
+    from .minimum import enabled
+    compact = enabled()
     result = []
     for spec, gmin, gmax in items:
         frozen = BuildingPlan.from_spec(spec)
-        if frozen.inference is not None and frozen.footprint is not None and frozen.facades is None:
+        if not compact and frozen.inference is not None and frozen.footprint is not None and frozen.facades is None:
             frozen = replace(frozen, facades=facades.plan(frozen, gmin, gmax))
         result.append((frozen, float(gmin), float(gmax)))
     return tuple(result)

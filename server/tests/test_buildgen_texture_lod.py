@@ -36,12 +36,18 @@ class TextureLodTests(unittest.TestCase):
         for field in (0,1,2,3,5):np.testing.assert_array_equal(close[field],again[field])
         self.assertLess(len(new[2]),len(old[2]))
 
-    def test_import_budgets_shrink_as_quality_increases(self):
+    def test_detailed_import_budgets_shrink_and_minimum_stays_bounded(self):
         budgets=[];groups=[]
         for name in quality.NAMES:
             token=progressive.DETAIL.set(name)
             try:
-                budgets.append(quality.import_vertices());groups.append(quality.current().group_size)
+                if name == 'minimum':
+                    # Minimum publishes one compact representation, not a large
+                    # tile batch of the existing detailed compiler's products.
+                    self.assertLessEqual(quality.import_vertices(),20000)
+                    self.assertGreater(quality.import_vertices(),0)
+                else:budgets.append(quality.import_vertices())
+                groups.append(quality.current().group_size)
                 if quality.current().rank>=2:self.assertGreater(quality.import_vertices(1),quality.import_vertices(2))
             finally:progressive.DETAIL.reset(token)
         self.assertEqual(budgets,sorted(budgets,reverse=True))

@@ -1,10 +1,12 @@
 # Building quality ladder and performance audit
 
-Implemented 2 November 2026 in the selected PR #2 playtest and mirrored as a
-patch into `upstream-dev-profiler`. Ultra is the current playtest's generation
-method, including its local roof, weathering, parking and shared-ground changes.
-The older source checkout retains its own pre-existing differences; syncing this
-quality patch does not overwrite those unrelated changes.
+3 November 2026: **Minimum** now sits below the six levels described here. See [MINIMUM_BUILDINGS.md](MINIMUM_BUILDINGS.md) for its compact geometry and separate physical policy.
+
+
+The six detailed levels were introduced on 2 November 2026; Minimum was added
+on 3 November. Ultra retains the full roof, weathering, parking and shared-ground
+pipeline. See [the current upstream review guide](ADVANCED_BUILDINGS_REVIEW.md)
+for the integrated scope and validation limits.
 
 ## Quality contract
 
@@ -44,7 +46,7 @@ See [the lean pipeline measurements](LEAN_BUILDINGS_20261102.md) for current cos
 ## Adaptive performance at every level
 
 `buildingQuality` selects the ceiling. `buildingAdaptive` is a separate boolean,
-enabled by default for all six levels. New settings default to Low; saved quality
+enabled by default for all six levels. New settings default to Simple generation with Minimum quality for Advanced; saved quality
 choices and explicit overall graphics presets retain their intended values. The existing overall graphics presets map
 Low/Medium/High/Ultra/Extreme to building Low/Medium/High/Very High/Ultra. Very Low
 is available independently. Existing saved Light becomes Low, Adaptive becomes
@@ -104,7 +106,7 @@ summed as if they were exclusive costs.
 | Flashing and rooftop extras (`details.roof_caps`, `commercial_roofs`, legacy clutter) | Small high-cost details are reserved for Ultra. Major equipment/roof panels remain in lightweight form; no change to source roof forms. |
 | Site surfaces and trim (`access.draw`, `sitework.draw_details`) | Essential entrance and garage surfaces remain at all levels. Fine visual restraints/rails enter at High. Optional path/site surfaces follow the physical policy. |
 | Surface aging (`weathering.apply`) | Measured in each visual profile and timed in full runtime profiling. Retained as a bounded shared visual treatment rather than adding per-building materials/textures. |
-| Collision and collider boxes (`buildings.collision_mesh`, `collider_boxes`) | Independently compiled and cached. Transitions within Medium–Ultra reuse physical hashes/bytes; crossing optional site policies rebuilds complete matching collision. Never omit collision to meet a visual budget. |
+| Collision and collider boxes (`buildings.collision_mesh`, `collider_boxes`) | Independently compiled and cached. Transitions within Mediumâ€“Ultra reuse physical hashes/bytes; crossing optional site policies rebuilds complete matching collision. Never omit collision to meet a visual budget. |
 | Mesh assembly, splits and LOD (`build_parts`, `split_mesh`, `split_with_lod`) | Final import caps are 60k/40k/16k/12k/10k/8k vertices across the six tiers. Split oversized buildings without discarding triangles; coarse triangles are distributed once. Profile group sizes bound batches, not a single emitter's execution time. |
 | UVs, normals/tangents, native encoding and writes (`buildings.write`, `cdae`) | Baseline in-memory encoder timing is separate from actual publication timing, which also includes detail UVs, file writes and metadata. Avoid duplicate encoding; retain final-file adoption. |
 | Cache/refinement (`products`, `productcache`, `revisit`) | Separate quality keys, including safe Very Low/Very High storage names. Accepted plan/physical product is keyed by essential/path/full site policy. A downgraded or mixed progressive job cannot populate the requested higher-quality cache. Cache misses still use the complete safe planning path. |

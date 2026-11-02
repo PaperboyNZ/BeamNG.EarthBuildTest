@@ -24,8 +24,14 @@ def raster(mesh, props, drives, width, height, b, roof_grid=False, ground=None, 
     roof_triangles = {i for i, mat in enumerate(mid) if mats[mat] in (b.ROOF_SLATE, b.ROOF_METAL, b.ROOF_SHINGLE)}
     ground = ground or (lambda xy: np.zeros(len(xy)))
     surface = []
+    textures={}
+    texture_root=Path(__file__).resolve().parents[1]/'mod/beamng_earth/levels/beamng_earth/art/shapes/beamngEarth'
+    for i,mat in enumerate(mats):
+        if mat.startswith('bne_minimum_') and (texture_root/(mat+'.png')).is_file():
+            with Image.open(texture_root/(mat+'.png')) as image:textures[i]=np.asarray(image.convert('RGBA'))
     for mat, tri in zip(mid, t):
         mean = (.26, .33, .36) if mats[mat] in (b.FACADE, b.OFFICE, b.SHOP) else b.MAT_MEAN.get(mats[mat], (.78, .78, .76))
+        if mat in textures:mean=(1.,1.,1.)
         surface.append(np.array(mean) * np.mean(colour[tri, :3], axis=0) / 255.)
 
     def quad(q, rgb):
@@ -92,7 +98,15 @@ def raster(mesh, props, drives, width, height, b, roof_grid=False, ground=None, 
         w2 = 1.-w0-w1
         z = w0*a[2]+w1*c[2]+w2*d[2]
         mask = (w0 >= -1e-8) & (w1 >= -1e-8) & (w2 >= -1e-8) & (z > zbuf[y0:y1, x0:x1])
-        if roof_grid and triangle in roof_triangles:
+        if triangle<len(mid) and mid[triangle] in textures:
+            texture=textures[mid[triangle]]
+            uv = w0[...,None]*texcoords[ids[0]] + w1[...,None]*texcoords[ids[1]] + w2[...,None]*texcoords[ids[2]]
+            tx=(np.mod(uv[:,:,0],1.)*texture.shape[1]).astype(int)%texture.shape[1]
+            ty=((1.-np.mod(uv[:,:,1],1.))*texture.shape[0]).astype(int)%texture.shape[0]
+            sample=texture[ty,tx]
+            mask &= sample[:,:,3]>=128
+            pixels[y0:y1,x0:x1][mask]=np.clip(sample[:,:,:3]* (rgb.astype(float)/255.),0,255).astype(np.uint8)[mask]
+        elif roof_grid and triangle in roof_triangles:
             uv = w0[...,None]*texcoords[ids[0]] + w1[...,None]*texcoords[ids[1]] + w2[...,None]*texcoords[ids[2]]
             grid = np.floor(uv*4).sum(axis=2) % 2
             shade = .7 + .3*grid

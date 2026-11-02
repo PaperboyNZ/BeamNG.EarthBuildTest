@@ -2,6 +2,18 @@
 
 What changed in each release of BeamNG.Earth, newest first.
 
+## Unreleased
+
+- Optional **Advanced** building generation adds regional architecture, roofs,
+  facades, weathering, driveways, parking and landscaping, with seven quality
+  levels and staged visual/collision replacement. Simple remains the default;
+  Advanced starts at Minimum unless a saved choice or graphics preset overrides it.
+- Keep existing buildings visible during live generator and quality changes.
+  Repair incomplete sidewalk corners and fit intersecting pavement above terrain.
+- Include opt-in frame, worker and I/O diagnostics for generation profiling.
+  Native driving, visual acceptance and startup performance remain under review;
+  higher Advanced quality levels are experimental and costly.
+
 ## 1.7.3 beta (2026-10-30)
 
 > **Join the TGForever Discord, [discord.gg/tgf](https://discord.gg/tgf), to chat, get help, report bugs or help

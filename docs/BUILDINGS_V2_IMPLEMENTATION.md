@@ -1,5 +1,9 @@
 # Building generation v2 implementation status
 
+For the current upstream submission, including Minimum, live switching and
+3 November follow-ups, start with [the review guide](ADVANCED_BUILDINGS_REVIEW.md).
+The dated checkpoint notes below retain their historical scope.
+
 ## Progressive display and mesh budgets — 1 November 2026
 
 V2 road geotiles now publish solid coloured shells, lightweight facades/access,

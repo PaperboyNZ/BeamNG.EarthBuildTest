@@ -1771,6 +1771,8 @@ def far_geo_names(kind, key, plan_revision=None):
     if kind in ('bldfar', 'bldsky'):
         import building_settings
         pre += '_' + building_settings.current()
+        from buildgen.minimum import enabled as minimum_enabled
+        if minimum_enabled():pre += '_minimum'
     if plan_revision is not None:
         if not isinstance(plan_revision,str) or not re.fullmatch(r'[a-f0-9]{64}',plan_revision):
             raise ValueError('invalid far accepted-plan revision')
@@ -1918,7 +1920,8 @@ def far_geo(kind, gx, gy, gzoom, out_dir, vfs_dir, lamp_region=None, plan_ref=No
             accepted_plan=products.load_accepted(Store(_s.cache_dir),tile,plan_ref['key'],plan_ref['revision'])
     names = far_geo_names(kind, tile.key, accepted_plan.revision if accepted_plan else None)
     k = revisit.key(kind, "g", tile.key, int(gzoom), _md_versions(), lamp_region,
-                    accepted_plan.revision if accepted_plan else 'source-plan')
+                    accepted_plan.revision if accepted_plan else 'source-plan',
+                    __import__('buildgen.minimum',fromlist=['enabled']).enabled())
     frame_ll = (float(tile.frame.lat0), float(tile.frame.lon0))
     # Hybrid skyline output depends on the accepted subset actually read plus
     # unresolved source inputs. Do not address fallback bytes as an all-accepted

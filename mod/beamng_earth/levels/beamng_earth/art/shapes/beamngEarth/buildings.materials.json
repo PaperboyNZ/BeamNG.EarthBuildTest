@@ -683,5 +683,145 @@
       {}
     ],
     "translucent": false
+  },
+  "bne_minimum_sash": {
+    "name": "bne_minimum_sash",
+    "mapTo": "bne_minimum_sash",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "033e0ef6-1353-51c6-9568-6356de237be1",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_sash.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_sash_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_tall": {
+    "name": "bne_minimum_tall",
+    "mapTo": "bne_minimum_tall",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "b52e7675-0c79-5ce0-a448-5e32b8fe37ec",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_tall.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_tall_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_wide": {
+    "name": "bne_minimum_wide",
+    "mapTo": "bne_minimum_wide",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "dab76ecb-ecce-5a2e-8511-ee65a05fe370",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_wide.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_wide_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_modern": {
+    "name": "bne_minimum_modern",
+    "mapTo": "bne_minimum_modern",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "abc7d498-5c4e-523d-b5bb-cab87c8bb24b",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_modern.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_modern_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_glass": {
+    "name": "bne_minimum_glass",
+    "mapTo": "bne_minimum_glass",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "f3478298-2126-55ac-8afb-6a5f23d29d0a",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_glass.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": true,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_glass_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": false,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
   }
 }

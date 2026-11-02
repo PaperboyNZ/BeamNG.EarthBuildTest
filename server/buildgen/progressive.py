@@ -283,7 +283,7 @@ class Publisher:
     def shells(self,items):
         import buildings as b
         from .quality import import_vertices
-        if self.detail in ('very_low','low'):return
+        if self.detail in ('minimum','very_low','low'):return
         groups=self.partition(items);self.total=len(groups)
         for i,group in self.view_order(groups):
             if not self.checkpoint():break
@@ -299,7 +299,7 @@ class Publisher:
         from .quality import import_vertices
         from .plan import freeze_items
         items=freeze_items(items)
-        if self.detail in ('very_low','low'):
+        if self.detail in ('minimum','very_low','low'):
             # One final tile product: no proxy, no spool and no repeated
             # growing manifests. Lossless splitting retains every triangle.
             mesh=b.build(items,lite=True)
