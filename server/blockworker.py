@@ -635,6 +635,7 @@ def _revisit_tile(kind, k, aid, tx, ty, out_dir, vfs_dir, name, build, extra_of,
     kept with it; result_of(vfs path of name, that data): the result again on a hit. The session's names (vfs_dir, the
     anchor id) are taken out of the kept files and put back."""
     import revisit
+    _stages, mark = _stage_clock()
     mine = [(f"{vfs_dir}/", "@V@/"), (f"_{aid}_{tx}_{ty}", f"_@A@_{tx}_{ty}")]
     got = revisit.load(_s.cache_dir, kind, k)
     if got is not None:
@@ -644,7 +645,9 @@ def _revisit_tile(kind, k, aid, tx, ty, out_dir, vfs_dir, name, build, extra_of,
             if g.endswith(".json"):
                 data = revisit.swap(data.decode("utf-8"), back).encode("utf-8")
             _write_bytes(os.path.join(out_dir, revisit.swap(g, back)), data)
-        return result_of(f"{vfs_dir}/{name}", extra or {})
+        result = result_of(f"{vfs_dir}/{name}", extra or {})
+        mark("cache_restore")
+        return result
     f0 = revisit.faults()
     res = build()
     if res is not None and revisit.ON and revisit.faults() == f0:     # (complete: nothing it read failed or was missing)
@@ -673,7 +676,8 @@ def _write_bytes(path, data):
 # depend on the anchor but for its placement (buildings, decks, tunnels, walls, wires, rails, props, guardrails,
 # parking, fuel, wells, sound); "skin" stages follow the anchor's 2 m lattice and height quantum (the draped road mesh,
 # plazas, sidewalks / walk collision in write_tile); "shared" are the stores both read (grading plans, chain profiles).
-TILE_STAGE_KIND = {"warm": "shared", "anchor": "shared", "profiles": "shared", "fuel": "content", "items": "content",
+TILE_STAGE_KIND = {"warm": "shared", "anchor": "shared", "profiles": "shared", "decks": "shared",
+                   "cache_lookup": "shared", "cache_restore": "shared", "fuel": "content", "items": "content",
                    "build_tile": "content", "rails": "content", "airports": "content", "doors_park": "content",
                    "markings": "content", "guardrails": "content", "medians": "content", "mesh": "skin",
                    "plazas": "skin", "deck_mesh": "content", "tunnel_mesh": "content", "railways": "content",
@@ -682,7 +686,7 @@ _tile_stages = threading.local()
 
 
 def last_tile_stages():
-    """{stage: s} of the last road tile this thread built (_roads_tile; {} before one or on a revisit hit)."""
+    """{stage: s} of this thread's last road operation; revisit hits report cache_restore only."""
     return dict(getattr(_tile_stages, "last", {}))
 
 
@@ -695,6 +699,7 @@ def _stage_clock():
         t = time.perf_counter()
         stages[name] = stages.get(name, 0.0) + t - clock[0]
         clock[0] = t
+        _tile_stages.last = stages      # a skin can have called content() while obtaining its inputs
     return stages, mark
 
 
@@ -753,8 +758,9 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         import buildings as buildingsmod
         # (on the graded ground, the one the terrain is drawn with: on the raw elevation a building beside a road's
         # cutting stood over the cut; hashk014's PR #69)
-        items = buildingsmod.road_tile_items(frame, tx, ty, _s.md, elev, decks=_tile_decks(bridges, cells, tx, ty),
-                                             skip=skip)
+        decks = _tile_decks(bridges, cells, tx, ty)
+        mark("decks")
+        items = buildingsmod.road_tile_items(frame, tx, ty, _s.md, elev, decks=decks, skip=skip)
         town = buildingsmod.coverage(items, side) < buildingsmod.POLES_COVERAGE
     mark("items")
     rwalls = []
@@ -1211,6 +1217,7 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
     import geotiles
     import revisit
     from buildgen.progressive import ACTIVE, DETAIL
+    _stages, mark = _stage_clock()
     tile = geotiles.geobox(gx, gy)
     names = geo_names(tile.key)
     requested_detail=DETAIL.get()
@@ -1224,6 +1231,7 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
                 data = data.decode("utf-8").replace("@V@/", f"{vfs_dir}/").encode("utf-8")
             _write_bytes(os.path.join(out_dir, name), data)
         _geo_stats["content_hits"] += 1
+        mark("cache_restore")
         return (f"{vfs_dir}/{names['json']}", int(extra.get("n", 0)), extra.get("info") or {},
                 [(sid, [(np.asarray(la), np.asarray(lo)) for la, lo in rs]) for sid, rs in extra.get("pads", [])])
     from buildgen import products
@@ -1233,7 +1241,7 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
     if buildings:
         refined=products.refine(sys.modules[__name__],tile,product_key,out_dir,vfs_dir,requested_detail)
         if refined is not None:return refined
-    _stages, mark = _stage_clock()
+    mark("cache_lookup")
     f0 = revisit.faults()
     g = _frame_grader(tile.frame)
     walks_raw = []
@@ -1533,12 +1541,15 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
 
 def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, lift, buildings, left_hand, mph, q,
               gas_stations, buried=0.0, lamp_region=None, country=None, content=True, skin=True, exact=None,
-              progress_token=None, building_detail='full', building_view=None):
+              progress_token=None, building_detail='full', building_view=None, submitted_at=None):
     """earthd.Server.build_roads_geo here (road-tile pool): geotile (gx, gy)'s content (content: built in its own
     frame, or from the revisit cache; gzoom its DEM zoom, the rules its own place's), anchor aid's skin (skin) and its
     parts' exact variants for that anchor (exact: {what: {pivot}}, or "auto": those of the content built here that its
     rigid placement would leave off, roads.geo_exact_auto). Returns {"content": (vfs path, chunks, info,
     fuel pads) or None, "skin": (vfs path, info) or None, "exact": {what: vfs path}, "stages": {...}}."""
+    started = time.perf_counter()        # actual process entry, not Future.running() in the executor call queue
+    stats = getattr(_s.md, "cell_stats", lambda: {})
+    before = stats()
     watch = _stack_watch(f"road geotile {gx}_{gy}")
     from buildgen.progressive import ACTIVE, DETAIL, Publisher
     import geotiles
@@ -1571,6 +1582,10 @@ def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, l
             out["exact"] = _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, exact)
         out["time"] = {"content_s": t1 - t0, "content_cpu": c1 - c0, "skin_s": t2 - t1, "skin_cpu": c2 - c1,
                        "exact_s": time.perf_counter() - t2}
+        out["worker"] = {"pid": os.getpid(), "started_at": started, "finished_at": time.perf_counter(),
+                         "submitted_at": submitted_at,
+                         "queue_s": None if submitted_at is None else max(0.0, started - submitted_at)}
+        out["dependencies"] = {k: v - before.get(k, 0) for k, v in stats().items()}
         return out
     finally:
         ACTIVE.reset(progress_state)
