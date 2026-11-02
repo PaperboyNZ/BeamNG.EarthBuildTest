@@ -48,7 +48,8 @@ retains the running global-grid job and sends its completion for the current
 anchor. Repeated unchanged references do not rebuild or resend distant content.
 
 These are source contracts, not measured native frame/contact behavior. The
-existing aggregate worker admission still uses estimates, not calibrated RSS.
+experimental aggregate worker admission was removed after native loading stalls;
+upstream process/cache budgets and scheduling remain in use.
 
 ## Verification at the preceding far-building checkpoint
 

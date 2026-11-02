@@ -22,7 +22,6 @@ def main():
         'Use projected feature size, camera FOV/resolution and travel demand with':['projected-demand-tests-fixed'],
         'Prioritize missing nearby coverage and approaching-camera demand over':['projected-demand-tests-fixed','mod/tests/test_building_progress.lua'],
         'Supplement vertex limits with measured import time, bytes and material':['p6-priced-import-checkpoint/manifest.json'],
-        'Extend existing worker/budget infrastructure with aggregate admission,':['aggregate-admission-tests','worker-pool-tests'],
         'Evaluate native or idle-cache exact vertex deduplication after final normals':['exact-vertices/results.json','exact-vertex-tests'],
     }
     doc=ROOT/'docs/GENERATION_IMPLEMENTATION_CHECKLIST.md';text=doc.read_text(encoding='utf-8')
