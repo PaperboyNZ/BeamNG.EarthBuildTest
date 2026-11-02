@@ -19,6 +19,74 @@ def flat(xy):return np.zeros(len(xy))
 
 
 class BalanceTests(unittest.TestCase):
+    def test_common_sidewalk_retains_tree_in_narrow_fenced_garden(self):
+        from shapely.geometry import Polygon
+        wk=walk(2.5);original=tree();stats={}
+        rows=rc.clear([original],walks=[wk],ground=flat,diagnostics=stats)
+        self.assertEqual([r[0] for r in rows],['garden_trough','deciduous'])
+        self.assertIs(rows[1],original)
+        self.assertEqual(rows[1][4:8],[25.,1.,8.,.3])
+        self.assertAlmostEqual(stats['trees'][0]['distance_m'],.34)
+        footprint=Polygon(np.array(rows[0][8]['footprint'])+rows[0][1:3])
+        self.assertGreaterEqual(footprint.bounds[1],4.12)
+        self.assertLess(footprint.bounds[3],5.) # back 1.5 m stays entirely open
+        self.assertFalse(any(footprint.intersects(p) for p in rc.keepouts(walks=[wk])))
+        self.assertEqual(rows,rc.clear(copy.deepcopy(rows),walks=[wk],ground=flat))
+
+    def test_wide_walk_keeps_source_and_uses_existing_regional_palette(self):
+        for pavement,kind in (('brick','garden_square'),('stone','garden_octagon'),('slab','garden_trough')):
+            wk=walk(4.);wk['pavement']=pavement;source=tree();source[2]=5.1;stats={}
+            rows=rc.clear([source],walks=[wk],ground=flat,diagnostics=stats)
+            self.assertEqual(rows[0][0],kind)
+            self.assertAlmostEqual(stats['trees'][0]['distance_m'],0.)
+        source=tree();source[6]=14.
+        rows=rc.clear([source],walks=[walk(2.5)],ground=flat)
+        self.assertEqual(len(rows),1);self.assertEqual(rows[0][6],14.)
+
+    def test_off_path_tree_is_not_pulled_onto_sidewalk(self):
+        source=tree();source[2]=10.;stats={}
+        rows=rc.clear([source],walks=[walk(4.)],ground=flat,diagnostics=stats)
+        self.assertEqual(len(rows),1);self.assertEqual(stats['trees'][0]['distance_m'],0.)
+
+    def test_garden_footprint_clears_partial_driveway_and_tile_boundary(self):
+        from shapely.geometry import Polygon
+        wk=walk(2.5);wk['driveways']=[(49.,51.)]
+        rows=rc.clear([tree()],walks=[wk],ground=flat,bounds=(0,0,100,20))
+        if rows[0][0] in streetplanters.GROUPS:
+            fp=Polygon(np.array(rows[0][8]['footprint'])+rows[0][1:3])
+            self.assertFalse(any(fp.intersects(p) for p in rc.keepouts(walks=[wk])))
+        rows=rc.clear([tree()],walks=[walk(2.5)],ground=flat,bounds=(49.9,0,50.1,20))
+        self.assertFalse(any(r[0] in streetplanters.GROUPS for r in rows))
+
+    def test_grade_change_inside_bed_rejects_unsupported_garden(self):
+        wk=walk(2.5)
+        wk['pts']=np.array([[0.,5.25,0.],[49.9,5.25,0.],[50.,5.25,.3],[50.1,5.25,0.],[100.,5.25,0.]])
+        rows=rc.clear([tree()],walks=[wk],ground=flat)
+        if rows[0][0] in streetplanters.GROUPS:
+            self.assertGreater(abs(rows[0][1]-50),.9)
+
+    def test_compact_container_rotates_long_axis_along_curb(self):
+        from shapely.geometry import Polygon
+        sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'tools'))
+        from build_street_planters import mesh
+        source=tree();source[6]=3.
+        rows=rc.clear([source],walks=[walk(2.5)],ground=flat)
+        self.assertEqual(rows[0][0],'planter_trough')
+        self.assertEqual(rows[1][6],3.)
+        P,T,M,C,CT=mesh('trough');yaw=np.radians(rows[0][4])
+        rotation=np.array([[np.cos(yaw),-np.sin(yaw)],[np.sin(yaw),np.cos(yaw)]])
+        fp=Polygon(np.array(rows[0][8]['footprint'])+rows[0][1:3])
+        self.assertTrue(fp.covers(Polygon((P[:,:2]@rotation.T+rows[0][1:3])).convex_hull))
+
+    def test_bed_does_not_steal_an_existing_bench_position(self):
+        source=tree();bench=['bench',50.,5.3,.15,0.,1.,1.,0.]
+        rows=rc.clear([source,bench],walks=[walk(4.)],ground=flat)
+        from shapely.geometry import Polygon
+        for r in rows:
+            if r[0] in streetplanters.GROUPS:
+                fp=Polygon(np.array(r[8]['footprint'])+r[1:3])
+                self.assertFalse(fp.intersects(Point(50.,5.3).buffer(rc.RADII['bench']+.15)))
+
     def test_canopy_may_overhang_paving_but_trunk_may_not(self):
         chm=raster();mask=np.zeros(chm.data.shape,bool);mask[:,80:]=True
         source=items(((78,80),(80,80),(76,80)),groups=(vegetation.G_DECIDUOUS,),height=12.)
@@ -26,18 +94,19 @@ class BalanceTests(unittest.TestCase):
         self.assertEqual(len(vegetation._clear_surface_footprints(source,mask,chm,ground_only=False)),1)
 
     def test_wide_walk_gets_paired_planter_and_keeps_walking_strip(self):
-        wk=walk();rows=rc.clear([tree()],walks=[wk],ground=flat,lines=[(np.array([[0,0],[100,0]]),4.,'residential')])
+        wk=walk();small=tree();small[6]=3.;rows=rc.clear([small],walks=[wk],ground=flat,lines=[(np.array([[0,0],[100,0]]),4.,'residential')])
         self.assertEqual(len(rows),2)
         planter,plant=rows
-        self.assertIn(planter[0],streetplanters.GROUPS);self.assertEqual(plant[0],'planted_tree')
+        self.assertIn(planter[0],streetplanters.CONTAINERS);self.assertEqual(plant[0],'deciduous')
+        self.assertEqual(plant[6],3.)
         self.assertEqual(planter[8],plant[8]);self.assertAlmostEqual(plant[3]-planter[3],streetplanters.SOIL)
         self.assertLessEqual(planter[2]+.8,4+wk['w']-1.5)
         self.assertFalse(any(a.intersects(Point(*planter[1:3]).buffer(.8)) for a in rc.keepouts(walks=[wk])))
         # A second clearance pass must keep the same assembly, not duplicate it.
         self.assertEqual(rows,rc.clear(copy.deepcopy(rows),walks=[wk],ground=flat))
 
-    def test_narrow_walk_places_uncontained_tree_beyond_back_skin(self):
-        wk=walk(2.5);rows=rc.clear([tree()],walks=[wk],ground=flat)
+    def test_too_narrow_walk_places_uncontained_tree_beyond_back_skin(self):
+        wk=walk(2.3);rows=rc.clear([tree()],walks=[wk],ground=flat)
         self.assertEqual(len(rows),1);self.assertEqual(rows[0][0],'deciduous')
         from sitegen.hardscape import collect
         from shapely.geometry import Polygon
@@ -46,13 +115,13 @@ class BalanceTests(unittest.TestCase):
         self.assertFalse(any(Polygon(p['rings'][0],p['rings'][1:]).intersects(footprint) for p in masks['polygons']))
 
     def test_no_ground_or_blocked_rear_never_licenses_bare_tree_on_path(self):
-        self.assertEqual(rc.clear([tree()],walks=[walk(2.5)]),[])
+        self.assertEqual(rc.clear([tree()],walks=[walk(2.3)]),[])
         self.assertEqual(rc.clear([tree()],walks=[walk(2.5)],ground=flat,areas=[box(-1,4,101,30)]),[])
 
     def test_relocation_batches_terrain_for_all_supports(self):
         calls=[]
         def ground(xy):calls.append(len(xy));return np.zeros(len(xy))
-        rows=rc.clear([tree(20),tree(40),tree(60),tree(80)],walks=[walk(2.5)],ground=ground)
+        rows=rc.clear([tree(20),tree(40),tree(60),tree(80)],walks=[walk(2.3)],ground=ground)
         self.assertEqual(len(rows),4)
         self.assertEqual(len(calls),1)
 
@@ -98,7 +167,7 @@ class BalanceTests(unittest.TestCase):
         wk=walk(4.);wk['caps']=(True,True)
         rows=rc.clear([tree()],walks=[wk],ground=flat,lines=[(np.array([[0.,0.],[100.,0.]]),4.,'residential')])
         self.assertIn(rows[0][0],streetplanters.GARDENS)
-        self.assertLessEqual(rows[0][6],.55);self.assertLessEqual(rows[1][6],6.5)
+        self.assertLessEqual(rows[0][6],.55);self.assertEqual(rows[1][6],8.)
         raw=copy.deepcopy([wk]);streetplanters.attach([wk],rows,raw)
         self.assertEqual(wk['tree_gardens'],raw[0]['tree_gardens'])
         hole=Polygon(np.asarray(wk['tree_gardens'][0]['ring'])[:,:2])

@@ -344,4 +344,28 @@ trees.setSurfaceExclusions('fixture',steps,nil,{0,0,20,20})
 T.check(not trees.surfaceBlocked('deciduous',21,10,0,8,1),'canopy over neighbouring garden steps retained')
 T.check(trees.surfaceBlocked('deciduous',20.1,10,0,8,1),'tree trunk still cannot intersect steps')
 clean()
+-- A narrow bed fits beside the walking route even when its enclosing circle
+-- overlaps that route. The tree shares the exact root footprint, including
+-- late-arriving masks and transformed geotile coordinates.
+local narrow={root={10,4.56,.12},group='garden_trough',height=.55,scale=1,choices={{0,0,0}},
+  footprint={{-.83,-.43},{.83,-.43},{.83,.43},{-.83,.43}}}
+local function route(y)
+  return {v=1,polygons={{kind='access',min_z=-.1,max_z=.4,rings={{{0,y},{20,y},{20,6.5},{0,6.5}}}}}}
+end
+local pair={{0,10,4.56,.12,90,1,.55,0,narrow},{1,10,4.56,.08,25,1,8,.3,narrow}}
+trees.onRows(1,'narrow-garden',pair,{'garden_trough','deciduous'})
+trees.setSurfaceExclusions('fixture',route(5),nil,{0,0,20,20});run(1)
+T.check(count()==2,'oriented bed and original tree survive next to walking strip')
+T.check(trees.surfaceBlocked('garden_trough',10,4.56,.12,.55,1),'enclosing circle would incorrectly prune the bed')
+trees.setSurfaceExclusions('fixture',route(4.98),nil,{0,0,20,20});run(1)
+T.check(count()==0,'actual footprint overlap removes the entire assembly')
+clean()
+trees.onGeoRows('p'..key,key,pair,{'garden_trough','deciduous'},nil,source,0,A)
+trees.setSurfaceExclusions('fixture',route(5),geodesy.transformOf(pa.r,pa.t))
+run(1,pose(A),12)
+T.check(count()==2,'oriented bed survives geotile placement')
+trees.setSurfaceExclusions('fixture',route(5),geodesy.transformOf(pb.r,pb.t))
+trees.transform(A:worldTransformTo(B,0,0,0),geodesy,B);run(2,pose(B),12)
+T.check(count()==2,'oriented footprint and tree survive anchor rebase')
+clean()
 T.done('test_surface_exclusions')

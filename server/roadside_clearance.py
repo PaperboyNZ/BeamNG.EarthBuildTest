@@ -81,6 +81,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
     from shapely.affinity import translate
     areas = keepouts(walks=walks,items=items,lines=lines,origin=origin,**context) if areas is None else areas
     if not rows: return rows
+    source_trees=[(r,np.array(r[1:4],float)) for r in rows if r[0]=='deciduous'] if diagnostics is not None else []
     tree = STRtree(areas)
     obstacles=[]
     for spec,_,_ in items or ():
@@ -93,13 +94,15 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         if len(line)>1 and len(line[0])>=2:
             obstacles.append(LineString(np.asarray(line[0])[:,:2]).buffer(float(line[1])+.15))
     obstacle_tree=STRtree(obstacles)
-    lanes=[]
+    lanes=[];lane_walks=[]
     for walk in walks or ():
         if 'pts' not in walk or walk.get('median'): continue
         w=float(walk.get('w',2.5))
         curb,out=sw.run_geometry(walk['pts'],walk['side'],w)
         arc=np.r_[0.,np.cumsum(np.linalg.norm(np.diff(curb[:,:2],axis=0),axis=1))]
-        if arc[-1]>.01: lanes.append((LineString(curb[:,:2]),curb,out,arc,w,float(walk.get('curb_h',.15))))
+        if arc[-1]>.01:
+            lanes.append((LineString(curb[:,:2]),curb,out,arc,w,float(walk.get('curb_h',.15))))
+            lane_walks.append(walk)
     lane_tree=STRtree([lane[0] for lane in lanes])
     tree_paving=[]
     for _,curb,out,arc,w,h in lanes:
@@ -117,7 +120,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         if row[0]=='deciduous':return max(.18,float(row[6])*.035)*max(1.,float(row[5]))+.25
         return value+.15
     import streetplanters
-    rows=streetplanters.fit(rows,lanes,tree,obstacle_tree,bounds)
+    rows=streetplanters.fit(rows,lanes,tree,obstacle_tree,bounds,walks=lane_walks,radius_of=radius)
     # Accessories use their support's footprint and selection, never their
     # elevated/offset lens position. Regenerate lenses after moving supports.
     accessories={'lamplens','lampglow'}
@@ -128,7 +131,14 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         if r[0]=='polelamp': roots[id(r)]=poles.get((round(r[1],2),round(r[2],2)),r)
     planters={(round(r[1],2),round(r[2],2)):r for r in supports if r[0] in streetplanters.GROUPS}
     for r in supports:
-        if r[0]=='planted_tree':roots[id(r)]=planters.get((round(r[1],2),round(r[2],2)),r)
+        paired=len(r)>8 and isinstance(r[8],dict) and r[8].get('group') in streetplanters.GROUPS
+        if r[0]=='planted_tree' or (r[0]=='deciduous' and paired):
+            roots[id(r)]=planters.get((round(r[1],2),round(r[2],2)),r)
+    footprints={id(r):np.asarray(r[8]['footprint'],float) for r in supports
+                if r[0] in streetplanters.GROUPS and len(r)>8 and 'footprint' in r[8]}
+    def footprint_at(r,pos,rad):
+        ring=footprints.get(id(r))
+        return Polygon(ring+np.asarray(pos)[:2]) if ring is not None else Point(*pos[:2]).buffer(rad)
     occupied=[];moves={};choices={};old_poles=[]
     # Reserve already-clear supports before moving others, so a relocation
     # cannot steal a later bin/sign's valid original position.
@@ -136,7 +146,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
     for r in supports:
         rad=radius(r)
         if roots[id(r)] is not r or rad is None:continue
-        footprint=Point(*r[1:3]).buffer(rad)
+        footprint=footprint_at(r,r[1:3],rad)
         if not len(tree.query(footprint,predicate='intersects')):
             reserved.append(footprint);reserved_owners.append(id(r))
     reserved_tree=STRtree(reserved)
@@ -182,7 +192,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         if rad is None:moves[id(r)]=np.zeros(3);continue
         old=np.array(r[1:4],float)
         def safe(pos,relocated=False):
-            footprint=Point(*pos[:2]).buffer(rad)
+            footprint=footprint_at(r,pos,rad)
             if len(tree.query(footprint,predicate='intersects')):return False
             if r[0]=='deciduous' and len(tree_paving.query(footprint,predicate='intersects')):return False
             if any(footprint.intersects(p) for p in occupied):return False
@@ -201,7 +211,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         if candidates:
             selected=candidates[0];delta=selected-old
             moves[id(r)]=delta;choices[id(r)]=[list(map(float,c-selected)) for c in candidates]
-            occupied.append(Point(*selected[:2]).buffer(rad))
+            occupied.append(footprint_at(r,selected,rad))
             stats['moved' if np.linalg.norm(delta)>.01 else 'kept']+=1
         else:moves[id(r)]=None;stats['unplaced']+=1
         if r[0]=='pole':old_poles.append((old,moves[id(r)]))
@@ -223,6 +233,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
             r.append(dict(root=list(map(float,root[1:4])),group=root[0],height=float(root[6]),scale=float(root[5]),
                           wired=wired and root[0]=='pole',
                           choices=choices.get(id(root),[[0.,0.,0.]])[:1 if wired and root[0]=='pole' else 8]))
+            if id(root) in footprints:r[8]['footprint']=footprints[id(root)].tolist()
     for r in kept:
         if garden_records.get(id(r)) is not None and len(r)>8:r[8]['garden']=garden_records[id(r)]
     for r in list(kept):
@@ -243,5 +254,15 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
                 t=np.linspace(0,1,len(wire))[:,None]
                 adjusted.append(np.asarray(wire)+(1-t)*ends[0]+t*ends[1])
         wires[:]=adjusted
-    if diagnostics is not None:diagnostics.update(stats)
+    if diagnostics is not None:
+        # Compare actual source stations with accepted tree positions, including
+        # bed fitting (which happens before the general relocation pass).
+        by_identity={id(r):r for r in kept if r[0]=='deciduous'}
+        stats['trees']=[]
+        for source,old in source_trees:
+            placed=by_identity.get(id(source))
+            stats['trees'].append(dict(source=old.tolist(),position=placed[1:4] if placed else None,
+                distance_m=float(np.linalg.norm(np.asarray(placed[1:3])-old[:2])) if placed else None,
+                treatment=placed[8]['group'] if placed and len(placed)>8 else None))
+        diagnostics.update(stats)
     return kept

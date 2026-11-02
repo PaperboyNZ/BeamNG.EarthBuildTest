@@ -680,6 +680,32 @@ local function circleOnSurface(record,x,y,r)
   end
   return true
 end
+local function footprintOnSurface(record,footprint,x,y,radius)
+  if not footprint then return circleOnSurface(record,x,y,radius) end
+  -- Bed metadata contains the full safety-buffered model footprint. Checking
+  -- its enclosing circle would erase long narrow beds beside a walking strip.
+  local pad2=(record.pad or 0)^2
+  for _,p in ipairs(footprint) do
+    if circleOnSurface(record,p[1],p[2],0) then return true end
+  end
+  local function cross(a,b,c) return (b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]) end
+  for _,ring in ipairs(record.rings) do
+    for j,a in ipairs(ring) do
+      local b=ring[j%#ring+1]
+      local inside,d=ringTest(footprint,a[1],a[2])
+      if inside or d<=pad2 then return true end
+      for k,c in ipairs(footprint) do
+        local e=footprint[k%#footprint+1]
+        if math.max(a[1],b[1])>=math.min(c[1],e[1]) and math.max(c[1],e[1])>=math.min(a[1],b[1])
+          and math.max(a[2],b[2])>=math.min(c[2],e[2]) and math.max(c[2],e[2])>=math.min(a[2],b[2])
+          and cross(a,b,c)*cross(a,b,e)<=0 and cross(c,e,a)*cross(c,e,b)<=0 then return true end
+        if pad2>0 and (segmentDistance2(c[1],c[2],a,b)<=pad2 or segmentDistance2(e[1],e[2],a,b)<=pad2
+          or segmentDistance2(b[1],b[2],c,e)<=pad2) then return true end
+      end
+    end
+  end
+  return false
+end
 local function applySurface(pl,x,y,z)
   if not pl then return x,y,z end
   if pl.c then return geotile.apply(pl,x,y,z) end
@@ -816,7 +842,7 @@ function M.surfaceRadius(group,height,scale,renderedHeight,crown)
   local bound=M.SURFACE_ASSET_BOUNDS[group]
   return math.max(radius,bound[1]*height+bound[2])*scale+.25
 end
-function M.surfaceBlocked(group,x,y,z,height,scale,renderedHeight)
+function M.surfaceBlocked(group,x,y,z,height,scale,renderedHeight,footprint)
   if not naturalGroups[group] or not next(surfaceGrid) then return false end
   local groundRadius=M.surfaceRadius(group,height,scale,renderedHeight)
   local radius=M.surfaceRadius(group,height,scale,renderedHeight,true)
@@ -844,7 +870,7 @@ function M.surfaceBlocked(group,x,y,z,height,scale,renderedHeight)
               -- Steps and hillside footpaths are ground surfaces even when
               -- their uphill end is higher than a neighbouring tree's base.
               -- Only overhead road/pavement decks require crown clearance.
-              and circleOnSurface(record,x,y,(record.kind=='road' or record.kind=='pavement')
+              and footprintOnSurface(record,footprint,x,y,(record.kind=='road' or record.kind=='pavement')
                 and record.min_z>z+.6 and radius or groundRadius) then return true end
         end
       end
@@ -968,8 +994,18 @@ local function roadsideRows(t,rows)
         if type(v)=='table' and #v==3 and finite(v[1]) and finite(v[2]) and finite(v[3])
           and math.abs(v[1])<=32 and math.abs(v[2])<=32 and math.abs(v[3])<=2 then choices[#choices+1]=v end
       end
+      local footprint
+      if (m.group:match('^garden_') or m.group:match('^planter_')) and type(m.footprint)=='table'
+        and #m.footprint>=3 and #m.footprint<=16 then
+        local good=true
+        for _,p in ipairs(m.footprint) do
+          if type(p)~='table' or #p~=2 or not finite(p[1]) or not finite(p[2])
+            or p[1]^2+p[2]^2>M.surfaceRadius(m.group,m.height,m.scale)^2 then good=false;break end
+        end
+        if good then footprint=m.footprint end
+      end
       if #choices>0 then t.roadside[i]={root=m.root,group=m.group,height=m.height,scale=m.scale,wired=m.wired==true,
-        choices=choices,base={row[2],row[3],row[4]}} end
+        choices=choices,footprint=footprint,base={row[2],row[3],row[4]}} end
     end
   end
 end
@@ -988,9 +1024,19 @@ local function roadsideChoice(t,i)
       if other~=key and math.abs(z-p[3])<3 and (x-p[1])^2+(y-p[2])^2<(radius+p[4])^2 then occupied=true;break end
     end end
     local localX,localY,localZ=x,y,z
+    local footprint
+    if m.footprint then
+      footprint={}
+      for _,p in ipairs(m.footprint) do
+        local px,py,pz=x+p[1],y+p[2],z
+        if t.geo then px,py,pz=geotile.apply(t.pl,px,py,pz)
+        elseif t.surfaceXf then px,py,pz=t.surfaceXf:apply(px,py,pz) end
+        footprint[#footprint+1]={px,py}
+      end
+    end
     if t.geo then x,y,z=geotile.apply(t.pl,x,y,z)
     elseif t.surfaceXf then x,y,z=t.surfaceXf:apply(x,y,z) end
-    if not occupied and not M.surfaceBlocked(m.group,x,y,z,m.height,m.scale) then
+    if not occupied and not M.surfaceBlocked(m.group,x,y,z,m.height,m.scale,nil,footprint) then
       selected=v
       t.roadsideResolved[key]=v;t.roadsideOccupied[key]={localX,localY,localZ,radius}
       break

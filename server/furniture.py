@@ -687,8 +687,8 @@ def place(roads, walks, box, curb_h=0.15, wires=None, town=False, left_hand=Fals
                 if put(G_LAMP, spacing, phase, LAMP_CURB_M, 9.0, lambda out: _yaw(-out[0], -out[1])):
                     lit.add(fid)
         if spec.urban and spec.cls in STREET_TREE_CLASSES and _h01(fid, "trees") < STREET_TREE_SHARE:
-            # Candidates are moved to supported ground behind the footpath by
-            # roadside_clearance; never infer a tree pit in the paved slab.
+            # roadside_clearance first tries a supported garden cutout near
+            # this source station, then supported ground behind the footpath.
             tph = _h01(fid, side, "tph") * STREET_TREE_SPACING
             for p, out in _stations(run, line, STREET_TREE_SPACING, tph, END_CLEAR_M + 4.0, side):
                 q = p[:2] - out * (w / 2 - STREET_TREE_CURB_M)
