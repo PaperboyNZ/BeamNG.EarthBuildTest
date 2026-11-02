@@ -115,7 +115,7 @@ class HardscapeTests(unittest.TestCase):
                 park=None,tmesh=None,fuel=None,rmesh=None,guardrail_rows=None,garage_sound=(),wells=(),
                 vegetation_exclusions=data)
             blockworker._write_geo_content(folder,'/vfs',tile,p)
-            exported=json.loads((Path(folder)/f'rg_{tile.key}.json').read_text())
+            exported=json.loads((Path(folder)/blockworker.geo_names(tile.key)['json']).read_text())
             self.assertEqual(exported['vegetationExclusions'],data)
             self.assertEqual(exported['frame'],list(geotiles.centre(65536,65536)))
 

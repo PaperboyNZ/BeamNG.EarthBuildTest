@@ -54,7 +54,7 @@ class FarPlanProductsTests(unittest.TestCase):
              patch.object(bw,'_tile_parts',side_effect=AssertionError('combined pipeline')),\
              patch.object(bw,'_frame_grader',side_effect=AssertionError('terrain fitting')):
             result,data,out=self.far('accepted')
-        expected=out/'expected.cdae';b.write(str(expected),b.build(self.plans,lite=True))
+        expected=out/'expected.cdae';b.write(str(expected),b.build(self.plans,lite=True,texture_facades=True))
         self.assertEqual((out/result[4]['shape']).read_bytes(),expected.read_bytes())
         self.assertEqual(data['acceptedPlan']['revision'],self.ref['revision'])
         self.assertEqual(data['acceptedPlan']['physicalRevision'],self.saved.value['physical_revision'])

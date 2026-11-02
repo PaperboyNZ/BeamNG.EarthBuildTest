@@ -41,7 +41,7 @@ class LiveBuildingSwitchTests(unittest.TestCase):
         c.bldsky = vegetation.Tracker(kind='bldsky', geo=True)
         c.brfar = vegetation.Tracker(kind='brfar', geo=True)
         c.veg = vegetation.Tracker(geo=True)
-        c.s = SimpleNamespace(connections=[c], anchors={7: object()}, out_dir=None,
+        c.s = SimpleNamespace(sid='fixture', connections=[c], anchors={7: object()}, out_dir=None,
                               mapdata=object(), imagery=object(), dem=object())
         return c
 
@@ -67,6 +67,8 @@ class LiveBuildingSwitchTests(unittest.TestCase):
             self.assertEqual(c.brfar.generation_epoch, 0)
             self.assertEqual(c.building_progress, value == 'v2')
         self.assertTrue(all(m['type'] == 'building_generator' for m in c.messages))
+        from test_protocol_agreement import ServerMessagesTest
+        for message in c.messages:ServerMessagesTest.check(self, message)
 
     def test_invalid_or_incompatible_request_preserves_mode_and_world(self):
         c = self.connection()

@@ -62,7 +62,7 @@ python3 server/earthd.py --port 47613 --user-dir ~/.local/share/BeamNG/BeamNG.dr
 | `--block-process` | `on` | The terrain-follow and prefetch physics blocks build in two processes of their own (`blockworker.py`: one for the mod's requests, one for the prefetch), off this process's interpreter lock, each with its own DEM reader, road plans (looked up ahead of the player), street widths and 128 m height chunks over the same disk caches. A block that moved one step reuses 7/8 of its heights. `off`: built in this process's threads. In-game 2026-10-12 this took a 58 m/s drive from falling off the block after 0.5 km to 10 km without a fall. |
 | `--surface` | `on` | Ground models under the physics block (`surface.py`, ROADMAP v1.5): every 2 m sample gets a material from the ESA WorldCover class under it (asphalt for built-up, grass, dusty / loose dirt, snow, mud, dirt) and rock where steeper than 35°; one 0/255 mask per material is written next to the heightmap (`hm_<a>_<cx>_<cy>_m<i>.png`) and named in `terrain.layers` / `terrain.materials`. Land cover comes from the map-data cache (`<cache>/mapdata/`), prefetched 3 km around the player; a block never waits for it (an uncached cell reads as dirt until the next block). |
 | `--credits` | `on` | Data credits for the mod's on-screen overlay (`credits.py`; `credits` messages, see below): the imagery / elevation / weather sources of the tiles within 2 km of the player and of the far field (with `--colormatch s2`, a texture the seam feather corrected also names the S2 references), sent on change, at most once a second. `off`: no message (the mod shows `hello.attribution`). `Server()` has none |
-| `--building-generator` | saved setting, else `legacy` | Initial building mode: **Simple** (`legacy`) or **Advanced** (`v2`). Change it live in Pause > BeamNG.Earth > World > Building generation. Existing buildings remain until replacements are ready; the session, terrain and unrelated generated data are preserved. Startup precedence: CLI, `BNE_BUILDING_GENERATOR`, saved setting, Simple. Live changes need matching global-road/chunk support. See [implementation status](../docs/BUILDINGS_V2_IMPLEMENTATION.md). |
+  | `--building-generator` | saved setting, else `legacy` | Initial building mode: **Simple** (`legacy`) or **Advanced** (`v2`). Change it live in Pause > BeamNG.Earth > World > Building generation. Existing buildings remain until replacements are ready; the session, terrain and unrelated generated data are preserved. Startup precedence: CLI, `BNE_BUILDING_GENERATOR`, saved setting, Simple. Live changes need matching global-road/chunk support on every active client. See [implementation status](../docs/BUILDINGS_V2_IMPLEMENTATION.md). |
 | `-v` | off | Debug logging, with the event loop's stalls over 0.25 s and the main thread's stack at that moment ("event loop stalled") |
 
 Requirements: Python 3 (3.10+), numpy, Pillow (≥ 11, for its DXT1 encoder) with WebP support. No
@@ -106,6 +106,13 @@ Frames: 4-byte little-endian length + UTF-8 JSON (unchanged). Numbers for `cx`/`
 as JSON floats (`512.0`). All positions are in the ENU plane of the anchor named by `anchorId`.
 
 ### mod → server
+
+The additive `building_generator` request carries `value: "legacy"` (Simple) or
+`value: "v2"` (Advanced). Server hello advertises `buildingGenerator` and
+`buildingGeneratorSwitch: 1`. Its `building_generator` reply contains `value`,
+`sessionId`, nullable `anchorId`, and optional `error`; rejection preserves the
+current mode. Every active client must support global road tiles and building
+chunks. No protocol version bump is required.
 
 | Message | Notes |
 |---|---|
