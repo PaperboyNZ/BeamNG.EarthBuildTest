@@ -1958,7 +1958,8 @@ def _lane_flow_rows(f):
     covers the 3 x 3 around it, so every layer's rows were made again for each of its neighbours' solves: 6 of
     lane_flow's 7 CPU-s in Manhattan's first visit, the solve itself 0.3 (2026-11-02)."""
     got = f.__dict__.get("_lane_flow_rows")
-    if got is not None:
+    lane_column = f.attrs.get("osm_lanes")
+    if got is not None and f.__dict__.get("_lane_flow_rows_column") is lane_column:
         return got
     n = len(f)
     ids = f.ids.tolist()
@@ -1985,7 +1986,35 @@ def _lane_flow_rows(f):
             _LANE_FLOW_DFLT[c] = lane_layout(Spec(carriageway(c, "paved", False, None, True, None), "paved", False, c,
                                                   True))[1]
         attrs[i, 3] = float(_LANE_FLOW_DFLT[c])
+    for a in (starts, ends, attrs):
+        a.flags.writeable = False
+    # LaneTags.join may replace the lane column after neighbour preparation.
+    f.__dict__["_lane_flow_rows_column"] = lane_column
     got = f.__dict__["_lane_flow_rows"] = (ids, starts, ends, attrs)
+    return got
+
+
+def _lane_flow_inputs(feats):
+    """Endpoint-only native inputs derived from the shared upstream rows.
+
+    The native solver reads endpoints only. Preserve 0/1-point counts so short
+    features still cannot connect or block nodes. A replaced LaneTags column
+    invalidates both caches; geometry and rules otherwise stay immutable.
+    """
+    rows = _lane_flow_rows(feats)
+    got = feats.__dict__.get("_lane_flow_inputs")
+    if got is not None and got[0] is rows:
+        return got[1]
+    _, starts, stops, attrs = rows
+    counts = np.minimum(stops - starts, 2).astype(np.int64)
+    ends = np.zeros((len(feats), 2, 2), np.float64)
+    nonempty, lines = counts > 0, counts == 2
+    ends[nonempty, 0] = feats.lonlat[starts[nonempty]]
+    ends[lines, 1] = feats.lonlat[stops[lines] - 1]
+    for a in (ends, counts):
+        a.flags.writeable = False
+    got = (ends, counts, attrs)
+    feats.__dict__["_lane_flow_inputs"] = (rows, got)
     return got
 
 
@@ -1997,6 +2026,13 @@ def _lane_flow_local(feats):
         return got
     import fast
     fast.require(118, "lane_flow")
+    _, size, at = _lane_flow_inputs(feats)
+    # Known counts, ramps and short/excluded features cannot need a solve.
+    needs = (size == 2) & (at[:, 0] != 0) & ~np.isfinite(at[:, 1]) & (at[:, 2] <= 0.5)
+    if not needs.any():
+        out = [None] * len(feats)
+        feats.__dict__["_lane_flow"] = out
+        return out
     layers = [feats]
     hook = feats.__dict__.get("_bnge_neighbours")
     if hook is not None:
@@ -2007,18 +2043,15 @@ def _lane_flow_local(feats):
     seen = set()                        # each road id once, this cell's first
     coords, lens, attrs, mine = [], [], [], None
     for f in layers:
-        ids, starts, ends, at = _lane_flow_rows(f)
+        ids, _, _, _ = _lane_flow_rows(f)
         sel = np.fromiter((i for i, fid in enumerate(ids) if fid not in seen and not seen.add(fid)), np.int64)
         if f is feats and mine is None:
             mine = sel                  # (its rows first: rows 0 .. len(mine) - 1)
         if not len(sel):
             continue
-        a, n_ = starts[sel], ends[sel] - starts[sel]
-        tot = int(n_.sum())
-        if tot:
-            # the selected features' coordinate ranges as one index array
-            first = np.concatenate([[0], np.cumsum(n_)[:-1]])
-            coords.append(f.lonlat[np.repeat(a - first, n_) + np.arange(tot)])
+        ends, size, at = _lane_flow_inputs(f)
+        n_ = size[sel]
+        coords.append(ends[sel][np.arange(2) < n_[:, None]])
         lens.append(n_)
         attrs.append(at[sel])
     out = [None] * len(feats)
@@ -7661,6 +7694,31 @@ def _deck_frame(spec, walk):
     return float(spec.width) + wm * len(sides), wm / 2 * float(sum(sides))
 
 
+def _deck_walk_graph(feats):
+    """Endpoint adjacency shared by bridge sidewalk lookups on an immutable decoded cell.
+
+    Only geometry is cached: widths, land cover and driving side still come from
+    each call's specs. The graph dies with the cell, like its other source caches.
+    Publish after construction so concurrent readers never see a partial graph.
+    """
+    got = feats.__dict__.get("_deck_walk_graph")
+    if got is not None:
+        return got
+    nodes = {}                                  # rounded end point -> [(feature, 0 | 1)]
+    for j in range(len(feats)):
+        a = feats.coord_off[feats.ring_off[feats.part_off[j]]]
+        b = feats.coord_off[feats.ring_off[feats.part_off[j + 1]]]
+        if b - a < 2:
+            continue
+        for e, k in ((0, a), (1, b - 1)):
+            nodes.setdefault((round(float(feats.lonlat[k, 0]), 6), round(float(feats.lonlat[k, 1]), 6)), []).append((j, e))
+    ends = {}
+    for key, lst in nodes.items():
+        for j, e in lst:
+            ends[(j, e)] = key
+    return feats.__dict__.setdefault("_deck_walk_graph", (nodes, ends))
+
+
 def deck_walks(feats, i, ground_specs, left_hand=False):
     """(sidewalk width m, sides) a deck of feature i carries, or None: its own ground part's (ground_specs[i]: the
     tile's road_specs, land cover and all) where that has sidewalks, else those of the nearest road of its class with
@@ -7674,18 +7732,7 @@ def deck_walks(feats, i, ground_specs, left_hand=False):
     if bridge[i] is None:
         return None
     cls = bridge[i].cls
-    nodes = {}                                  # rounded end point -> [(feature, 0 | 1)]
-    for j in range(len(feats)):
-        a = feats.coord_off[feats.ring_off[feats.part_off[j]]]
-        b = feats.coord_off[feats.ring_off[feats.part_off[j + 1]]]
-        if b - a < 2:
-            continue
-        for e, k in ((0, a), (1, b - 1)):
-            nodes.setdefault((round(float(feats.lonlat[k, 0]), 6), round(float(feats.lonlat[k, 1]), 6)), []).append((j, e))
-    ends = {}
-    for key, lst in nodes.items():
-        for j, e in lst:
-            ends[(j, e)] = key
+    nodes, ends = _deck_walk_graph(feats)
     seen, frontier = {i}, [(i, False)]          # (feature, whether its direction runs against i's)
     for _ in range(DECK_WALK_CHAIN):
         nxt, best = [], None
