@@ -30,6 +30,8 @@ class Route:
 def candidate(spec, goal):
     from .access import basis
     from sitegen.shared_courts import managed
+    from .quality import site_level
+    if site_level() == 0 and spec.site is None:return None
     if managed(spec):return None
     if os.environ.get('BNE_BUILDING_PATHS','auto')=='off' or goal is None or spec.inference.use.value not in ('residential','commercial','civic','mixed','industrial'):
         return None

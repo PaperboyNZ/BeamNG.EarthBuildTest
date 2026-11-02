@@ -215,16 +215,24 @@ class Publisher:
             return False
         self.path.parent.mkdir(parents=True,exist_ok=True)
         records={}
+        pos=[float(v) for v in self.tile.box[:2]]+[0.]
         for i,mesh in enumerate(meshes):
             if not self.checkpoint():return False
             what=names[i] if names else f'p{i}'
             name=f'bp_{self.token}_{group}_{stage}_{i}.cdae'
             path=os.path.join(self.out_dir,name)
-            b.write(path,mesh)
+            # Inspect the exact encoded bytes already in memory. Avoid opening
+            # and reading every newly written file a second time for metadata.
+            stats={}
+            def encoded(data):
+                import fast
+                n,med,lo,hi=fast._ef.cdae_zstats(data)
+                pivot=float(med) if n else 0.
+                stats.update(pivot=round(pivot,3),relief=round(max(abs(float(hi)-pivot),abs(pivot-float(lo))) if n else 0.,3))
+            b.write(path,mesh,encoded_callback=encoded)
             if stage==2:self.final_files[what]=path
-            pos=[float(v) for v in self.tile.box[:2]]+[0.]
             records[what]=dict(shape=f'{self.vfs_dir}/{name}',pos=pos,
-                               **blockworker._shape_info(path,pos,'bld'))
+                               **stats)
             stored=[mesh]+([mesh[6]] if len(mesh)>6 and mesh[6] is not None else [])
             center=(np.asarray(mesh[0]).min(axis=0)+np.asarray(mesh[0]).max(axis=0))*.5+pos
             records[what]['center']=[float(v) for v in center]
@@ -275,6 +283,7 @@ class Publisher:
     def shells(self,items):
         import buildings as b
         from .quality import import_vertices
+        if self.detail in ('very_low','low'):return
         groups=self.partition(items);self.total=len(groups)
         for i,group in self.view_order(groups):
             if not self.checkpoint():break
@@ -290,18 +299,17 @@ class Publisher:
         from .quality import import_vertices
         from .plan import freeze_items
         items=freeze_items(items)
+        if self.detail in ('very_low','low'):
+            # One final tile product: no proxy, no spool and no repeated
+            # growing manifests. Lossless splitting retains every triangle.
+            mesh=b.build(items,lite=True)
+            meshes=b.split_mesh(mesh,import_vertices()) if mesh is not None else []
+            names=['bld' if i==0 else f'bld{i+1}' for i in range(len(meshes))]
+            self.total=1
+            if meshes and self.checkpoint():self.publish(0,2,meshes,names)
+            return meshes,[dict(group='0',visual=names)] if meshes else []
         groups=self.partition(items);self.total=len(groups)
         meshes=[];mapping=[];cached={};used=0
-        if self.detail in ('very_low','low'):
-            # The lightweight facade is the final product at these ceilings.
-            # Publish it once, immediately, with no duplicate encoding or spool.
-            for i,group in enumerate(groups):
-                simple=b.build(group,lite=True)
-                detailed=b.split_mesh(simple,min(b.V2_IMPORT_VERTS,import_vertices())) if simple is not None else []
-                names=['bld' if k==0 else f'bld{k+1}' for k in range(len(meshes),len(meshes)+len(detailed))]
-                meshes.extend(detailed);mapping.append(dict(group=str(i),visual=names))
-                if detailed and self.checkpoint():self.publish(i,2,detailed,names)
-            return meshes,mapping
         # All cheap facades are ready before optional close-detail work begins.
         # Large tiles spill exact reusable arrays to the job's temporary directory,
         # outside the game file watcher. The cache is removed on failure/cancel too.

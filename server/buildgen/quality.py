@@ -1,4 +1,4 @@
-"""Visual quality ceilings; physical plans never depend on these profiles.
+"""Visual ceilings and optional site policies; architectural identity is stable.
 
 The old full/lite worker values remain valid for older clients. Current() is
 job-local (ContextVar), so concurrent tiles cannot change each other's quality.
@@ -39,7 +39,17 @@ def import_vertices(stage=2):
     """Cheap coverage imports broadly; increasingly detailed imports get smaller."""
     if stage == 0:return 20000
     if stage == 1:return 18000
-    return (20000,18000,16000,12000,10000,8000)[current().rank]
+    return (60000,40000,16000,12000,10000,8000)[current().rank]
+
+
+def site_level():
+    """Accepted physical policy: essential entrances, paths, or complete sites.
+
+    Separate product addresses force a full safe rebuild across policy changes.
+    Visual detail changes within the complete-site levels reuse physical output.
+    """
+    from .progressive import DETAIL
+    return {'very_low': 0, 'low': 1}.get(DETAIL.get(), 2)
 
 
 def current():

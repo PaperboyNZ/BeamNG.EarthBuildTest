@@ -39,7 +39,7 @@ for k, v in pairs(d) do
   if vals[k] ~= v and k ~= 'quality' and k ~= 'qualityDetected' and k ~= 'buildingQuality' then same = false end
 end
 T.check(same, 'no file: every value is its default (but the quality, picked from the hardware)')
-T.check(vals.quality == 'high', 'no file, no GPU info: the High preset (= the old defaults)')
+T.check(vals.quality == 'custom' and vals.buildingQuality == 'low', 'auto hardware defaults retain Low buildings')
 
 -- the quality presets
 T.check(settings.detectQuality({ name = 'AMD Custom GPU 0932 (RADV VANGOGH)', memoryMB = 6144 }) == 'medium',
@@ -545,6 +545,10 @@ files[settings.FILE] = { version = 1, groundCover = false, rocks = false, trees 
 local v3 = settings.load()
 T.check(v3.quality == 'custom' or v3.quality == 'low', 'old knobs that match no preset stay theirs')
 files[settings.FILE] = nil
+T.check(settings.load().buildingQuality == 'low', 'fresh building quality defaults to Low')
+files[settings.FILE] = {version=1,quality='ultra'}
+T.check(settings.load().buildingQuality == 'low', 'missing building choice defaults to Low on older presets')
+files[settings.FILE] = nil
 -- Six visual ceilings retain old saved intent and send adaptation separately.
 for _, q in ipairs({'very_low','low','medium','high','very_high','ultra'}) do
   T.check(settings.set('buildingQuality', q).ok, 'accept quality ' .. q)
@@ -561,6 +565,7 @@ for _, old in ipairs({'lite','adaptive','full'}) do
 end
 files[settings.FILE] = {version=1,quality='custom',buildingQuality='ultra',buildingAdaptive=false}
 T.check(settings.load().buildingAdaptive == false, 'explicit nonadaptive setting persists')
+T.check(settings.get('buildingQuality') == 'ultra', 'explicit saved Ultra survives default change')
 files[settings.FILE] = nil
 -- Generation persists and switches live, independently of visual quality.
 settings.load()

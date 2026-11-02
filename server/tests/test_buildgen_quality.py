@@ -119,9 +119,9 @@ class QualityTests(unittest.TestCase):
                 with patch.object(pub,'publish',side_effect=lambda g,s,m,names=None:events.append((g,s))),\
                      patch.object(b,'build',wraps=b.build) as build:
                     pub.shells(items);meshes,groups=pub.build(items)
-                self.assertEqual([stage for g,stage in events],[0]*len(groups)+[2]*len(groups))
+                self.assertEqual([stage for g,stage in events],[2])
                 self.assertEqual(build.call_count,len(groups))
-                self.assertTrue(all(len(m[0])<=b.V2_IMPORT_VERTS for m in meshes))
+                self.assertTrue(all(len(m[0])<=quality.import_vertices() for m in meshes))
                 self.assertLessEqual(max(map(len,pub.partition(items))),quality.PROFILES[name].group_size)
 
     def test_progressive_downgrade_keeps_selected_cache_unpoisoned(self):
@@ -194,7 +194,7 @@ class QualityTests(unittest.TestCase):
 
 
 class QualityProductTests(unittest.TestCase):
-    def test_all_six_deepen_then_lower_using_one_physical_product(self):
+    def test_physical_policy_crossings_require_rebuild_and_upper_tiers_reuse(self):
         fixture=product_fixtures.IndependentProductsTests();fixture.setUp();self.addCleanup(fixture.doCleanups)
         folder,before=fixture.retain_lite()
         for name in (*quality.NAMES,'very_low'):
@@ -204,6 +204,9 @@ class QualityProductTests(unittest.TestCase):
                  patch.object(b,'collision_mesh',side_effect=AssertionError('rebuilt collision')),\
                  patch.object(b,'doors',side_effect=AssertionError('rebuilt access')):
                 result=products.refine(bw,fixture.tile,fixture.key,str(out),'/tier',name)
+            if name in ('very_low','low'):
+                self.assertIsNone(result)
+                continue
             self.assertIsNotNone(result)
             data=json.loads((out/bw.geo_names(fixture.tile.key)['json']).read_text())
             self.assertEqual(data['buildingDetail'],name)

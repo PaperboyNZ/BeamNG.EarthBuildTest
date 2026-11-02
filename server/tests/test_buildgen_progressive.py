@@ -251,8 +251,8 @@ class ProgressiveTests(unittest.TestCase):
             p.total=1
             mesh=progressive.shell(self.items(1))
             write=b.write
-            def cancel_after_write(path,mesh):
-                write(path,mesh)
+            def cancel_after_write(path,mesh,**kwargs):
+                write(path,mesh,**kwargs)
                 progressive.cancel(folder,p.token)
             with patch.object(b,'write',side_effect=cancel_after_write) as encoded:
                 self.assertFalse(p.publish(0,0,[mesh,mesh]))
@@ -385,7 +385,7 @@ class ProgressiveTests(unittest.TestCase):
                 expected,mapping=baseline.build(items)
             failures=(lambda:patch.object(Path,'mkdir',side_effect=PermissionError('preview mkdir')),
                       lambda:patch.object(b,'write',side_effect=PermissionError('preview shape')),
-                      lambda:patch.object(blockworker,'_shape_info',side_effect=OSError('preview read')),
+                      lambda:patch('fast._ef.cdae_zstats',side_effect=OSError('preview metadata')),
                       lambda:patch.object(blockworker,'_write_bytes',side_effect=PermissionError('preview manifest')),
                       lambda:patch.object(progressive,'shell',side_effect=OSError('preview shell')))
             for i,failure in enumerate(failures):

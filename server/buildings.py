@@ -1726,6 +1726,7 @@ def build(specs_and_ground, lite=False, *, texture_facades=False):
     cornices, whole walls instead of one quad per bay."""
     from buildgen.quality import current
     lite = lite or current().rank < 2
+    texture_facades = texture_facades or current().rank == 0
     m = Mesh()
     for spec, gmin, gmax in specs_and_ground:
         m.weather(spec,gmin,gmax)
@@ -3083,7 +3084,7 @@ BLD_LOD_PX = 2700.0
 
 
 @profile_step('Building shape export')
-def write(path, mesh, collision_only=False):
+def write(path, mesh, collision_only=False, *, encoded_callback=None):
     """The tile's .cdae (cdae.encode with one primitive per material; collision_only: a never-drawn collision detail).
     A mesh with a 7th element (build_parts with_lod) gets that lite mesh as its coarse detail below BLD_LOD_PX."""
     import cdae
@@ -3100,7 +3101,7 @@ def write(path, mesh, collision_only=False):
         remap = np.array([mats.index(m) for m in matsl], np.int64)
         lods = [(BLD_LOD_PX, {"positions": Pl, "tris": Tl, "uvs": UVl, "tri_materials": remap[np.asarray(Ml)],
                               "colors": Cl,"uvs2":weather_uv(Pl,Tl)})]
-    return cdae.write(path, P, T, uvs=UV, uvs2=None if collision_only else weather_uv(P,T),
+    return cdae.write(path, P, T, encoded_callback=encoded_callback, uvs=UV, uvs2=None if collision_only else weather_uv(P,T),
                       material=mats, tri_materials=M, object_name="buildings", colors=C,
                       collision_only=collision_only, lods=lods,
                       shape_bounds=mesh[7] if len(mesh)>7 else None)
@@ -3563,7 +3564,7 @@ def visual_products(items):
         meshes, groups = progress.build(items)
     elif DETAIL.get()=='lite' or DETAIL.get() in ('very_low','low'):
         mesh=build(items,lite=True)
-        meshes=split_mesh(mesh,min(V2_IMPORT_VERTS,import_vertices())) if mesh is not None else []
+        meshes=split_mesh(mesh,import_vertices()) if mesh is not None else []
     else:
         meshes = build_parts(items, max_verts=min(MAX_MESH_VERTS, V2_IMPORT_VERTS, import_vertices()) if building_ingest.enabled()
                              else MAX_MESH_VERTS, with_lod=True)
