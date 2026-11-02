@@ -150,14 +150,65 @@ class ParkingGrader:
         self.cache_bytes = 0
         self.cells = OrderedDict()
         self.road_features = OrderedDict()
+        self.protection_rows = OrderedDict()
+        self.protection_bytes = 0
         self.failed = {}
         self.lock = threading.RLock()
 
     def _remember_roads(self, key, feats):
+        cached = self.protection_rows.pop(str(key), None)
+        if cached is not None:self.protection_bytes -= cached[-1]
         self.road_features[str(key)] = feats
         self.road_features.move_to_end(str(key))
         while len(self.road_features) > 64:
             self.road_features.popitem(last=False)
+
+    def _road_reservations(self, key, feats):
+        """Bounded immutable source preparation, shared by neighbouring patches."""
+        import sidewalks
+        from streetscape import STYLES
+        cache_key = str(key)
+        cached = self.protection_rows.get(cache_key)
+        if cached is not None and cached[0] is feats:
+            self.protection_rows.move_to_end(cache_key)
+            return cached[1:]
+        if cached is not None:
+            self.protection_rows.pop(cache_key)
+            self.protection_bytes -= cached[-1]
+        rings, reaches, identities, count, backs = [], [], [], 0, {}
+        curb_h = max(style.height for style in STYLES.values())
+        for i, spec in enumerate(roads.road_specs(feats, None, self.widths)):
+            if spec is None:continue
+            urban = spec._replace(urban=True)
+            width = max(spec.width, roads.carriageway(spec.cls, spec.kind, True, None,
+                                                      spec.oneway, spec.lanes))
+            walk = max(spec.walk, roads.MEDIAN_SLAB_M/2) if roads.has_sidewalks(urban) else 0.
+            if walk not in backs:
+                backs[walk] = float(sidewalks.profile(h=curb_h, w=walk)[:, 0].max()) if walk else 0.
+            reach = 2*(width/2 + backs[walk]) + HARDSCAPE_GUARD_M
+            if reach + FALLOFF_M + HARDSCAPE_FADE_M > ROAD_SEARCH_M:
+                raise ValueError("unsupported parking road-protection width")
+            for ring in roads.ground_parts(feats, i):
+                ring = np.asarray(ring, np.float64)
+                count += len(ring)
+                if count > MAX_PROTECTION_POINTS:
+                    raise ValueError("parking road-protection geometry budget")
+                if len(ring) < 2:continue
+                rings.append(ring);reaches.append(reach)
+                identities.append((str(feats.ids[i]), ring.tobytes(), reach))
+        lengths = np.asarray([len(r) for r in rings], dtype=np.intp)
+        starts = np.r_[0, np.cumsum(lengths)[:-1]].astype(np.intp) if len(rings) else np.zeros(0,dtype=np.intp)
+        ll = np.concatenate(rings) if rings else np.empty((0,2))
+        reach = np.asarray(reaches)
+        size = ll.nbytes + starts.nbytes + lengths.nbytes + reach.nbytes + sum(len(i[1])+128 for i in identities)
+        row = (ll, starts, lengths, reach, identities, count, size)
+        if size <= 16*1024*1024:
+            self.protection_rows[cache_key] = (feats,*row)
+            self.protection_bytes += size
+            while len(self.protection_rows)>64 or self.protection_bytes>16*1024*1024:
+                _,old=self.protection_rows.popitem(last=False)
+                self.protection_bytes-=old[-1]
+        return row
 
     def _protected(self, frame, footprint):
         """Fixed source-road reservations for the WHOLE patch, never the query.
@@ -167,9 +218,6 @@ class ParkingGrader:
         unknown space as free. No sidewalk meshes or terrain samples are needed.
         """
         import revisit
-        import sidewalks
-        from streetscape import STYLES
-
         halo = footprint.buffer(FALLOFF_M + HARDSCAPE_FADE_M)
         x0, y0, x1, y1 = halo.bounds
         la, lo, _ = frame.enu_to_geodetic(
@@ -180,8 +228,6 @@ class ParkingGrader:
             raise ValueError("parking road-protection cell budget")
         before = revisit.faults()
         shapes, seen, count = [], set(), 0
-        # Reserve the tallest regional back skin, including narrow median curbs.
-        curb_h = max(style.height for style in STYLES.values())
         for key in sorted(keys, key=str):
             if str(key) not in self.road_features:
                 cd = self.md.cell(key, layers=("roads",), kind="demand")
@@ -191,34 +237,29 @@ class ParkingGrader:
             feats = self.road_features[str(key)]
             if feats is None:
                 continue
-            for i, spec in enumerate(roads.road_specs(feats, None, self.widths)):
-                if spec is None:
-                    continue
-                # Land cover can later enable urban sidewalks. Protect that
-                # possible extent now, including explicitly tagged sidewalks.
-                urban = spec._replace(urban=True)
-                width = max(spec.width, roads.carriageway(spec.cls, spec.kind, True, None,
-                                                          spec.oneway, spec.lanes))
-                walk = max(spec.walk, roads.MEDIAN_SLAB_M/2) if roads.has_sidewalks(urban) else 0.
-                back = float(sidewalks.profile(h=curb_h, w=walk)[:, 0].max()) if walk else 0.
-                # Offsets have a 2x miter limit. A conservative envelope also
-                # contains junction returns, flares and one-sided walk bands.
-                reach = 2*(width/2 + back) + HARDSCAPE_GUARD_M
-                if reach + FALLOFF_M + HARDSCAPE_FADE_M > ROAD_SEARCH_M:
-                    raise ValueError("unsupported parking road-protection width")
-                for ring in roads.ground_parts(feats, i):
-                    ring = np.asarray(ring, np.float64)
-                    count += len(ring)
-                    if count > MAX_PROTECTION_POINTS:
-                        raise ValueError("parking road-protection geometry budget")
-                    ident = (str(feats.ids[i]), ring.tobytes(), reach)
-                    if len(ring) < 2 or ident in seen:
-                        continue
-                    seen.add(ident)
-                    x, y, _ = frame.geodetic_to_enu(ring[:, 1], ring[:, 0], 0.)
-                    shape = LineString(np.c_[x, y]).buffer(reach, cap_style=3, join_style=2, mitre_limit=2)
-                    if shape.intersects(halo):
-                        shapes.append(shape.intersection(halo))
+            ll, starts, lengths, reach, identities, points_count, _ = self._road_reservations(key, feats)
+            count += points_count
+            if count > MAX_PROTECTION_POINTS:
+                raise ValueError("parking road-protection geometry budget")
+            if not len(starts):continue
+            # Same frame and coordinates as the original per-ring projection.
+            # Buffer caps extend at most sqrt(2)*reach; mitres at most 2*reach.
+            # Reject only envelopes strictly outside the complete patch halo.
+            x,y,_=frame.geodetic_to_enu(ll[:,1],ll[:,0],0.)
+            x,y=np.asarray(x),np.asarray(y)
+            pad=2*reach+1e-7
+            keep=((np.minimum.reduceat(x,starts)-pad <= x1) &
+                  (np.maximum.reduceat(x,starts)+pad >= x0) &
+                  (np.minimum.reduceat(y,starts)-pad <= y1) &
+                  (np.maximum.reduceat(y,starts)+pad >= y0))
+            for i in np.flatnonzero(keep):
+                ident=identities[i]
+                if ident in seen:continue
+                seen.add(ident)
+                begin,end=starts[i],starts[i]+lengths[i]
+                shape=LineString(np.c_[x[begin:end],y[begin:end]]).buffer(
+                    reach[i],cap_style=3,join_style=2,mitre_limit=2)
+                if shape.intersects(halo):shapes.append(shape.intersection(halo))
         if revisit.faults() != before:
             raise ValueError("incomplete parking road-protection data")
         return union_all(shapes)
