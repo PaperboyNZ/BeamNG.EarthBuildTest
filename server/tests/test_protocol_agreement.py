@@ -152,9 +152,11 @@ MOD_TO_SERVER = {
     # highway signs (signstream.py; additive): the settings page's switch, sent after every hello and when changed
     "highway_signs": {"on": F(bool)},
     # the settings page's graphics (Connection.set_graphics; additive): sent after every hello and on a change; the
-    # far field's terrain detail (K x lodScale), the tree tiles' and far buildings' reach, the ground photo's px
+    # far field's terrain detail (K x lodScale), tree/far-building reach, building quality/adaptation/detail distance,
+    # and the ground photo's px
     "graphics": {"lodScale": F(NUM, OPT), "treeScale": F(NUM, OPT), "buildingScale": F(NUM, OPT),
-                 "photoPx": F(NUM, OPT), "viewM": F(NUM, OPT)},
+                 "photoPx": F(NUM, OPT), "viewM": F(NUM, OPT), "buildingQuality": F(str, OPT),
+                 "buildingAdaptive": F(bool, OPT), "buildingDetailM": F(NUM, OPT)},
     "map_tiles": {"tiles": F(list)},       # the world map's basemap tiles as files (settings.mapTiles)
     "geocode": {"id": F(int), "q": F(str), "lat": F(NUM, OPT), "lon": F(NUM, OPT)},   # the map's search box
     # the map's cache view (covermap.py; additive): the zoom-z tiles x0..x1, y0..y1; mode summary / elevation /

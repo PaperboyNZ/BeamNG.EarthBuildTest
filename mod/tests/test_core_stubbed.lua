@@ -909,8 +909,64 @@ do -- the window gets its view only while it is shown: it is hidden by default (
   T.check(#views == 1 and type(views[1].connection) == 'string', 'shown window: its view built')
   ui.draw, ui.visible = draw, vis0
 end
-core.reconnect()
-T.check(core.cacheState() == nil and not core.cacheClear(), 'disconnected: numbers gone, no request sent')
+do -- Exercise the real serializer/socket path, not just settings.serverGraphics().
+  local oldSettings = beamngEarth_settings
+  local g = { lodScale=1,treeScale=1,buildingScale=1,photoPx=2048,viewM=0,
+    buildingQuality='minimum',buildingAdaptive=false,buildingDetailM=350 }
+  beamngEarth_settings = {serverGraphics=function() return g end}
+  local net = require('beamngEarth/net')
+  core.graphicsSent = nil
+  local n = #received('graphics')
+  T.check(core.sendGraphics() and #received('graphics') == n+1, 'graphics wire: initial selection sent')
+  local msg = last('graphics')
+  T.check(msg.buildingQuality == 'minimum' and msg.buildingAdaptive == false and msg.buildingDetailM == 350,
+    'graphics wire: Minimum, explicit false adaptation and 350m survive framing')
+  T.check(not core.sendGraphics() and #received('graphics') == n+1, 'graphics wire: identical selection deduplicated')
+  g.buildingQuality='low'
+  T.check(core.sendGraphics() and last('graphics').buildingQuality == 'low' and #received('graphics') == n+2,
+    'graphics wire: quality alone sends')
+  g.buildingAdaptive=true
+  T.check(core.sendGraphics() and last('graphics').buildingAdaptive == true and #received('graphics') == n+3,
+    'graphics wire: adaptation alone sends')
+  g.buildingAdaptive=false
+  T.check(core.sendGraphics() and last('graphics').buildingAdaptive == false and #received('graphics') == n+4,
+    'graphics wire: explicit false sends')
+  T.check(not core.sendGraphics() and #received('graphics') == n+4, 'graphics wire: repeated false is deduplicated')
+  g.buildingDetailM=640
+  T.check(core.sendGraphics() and last('graphics').buildingDetailM == 640 and #received('graphics') == n+5,
+    'graphics wire: detail reach alone sends')
+  local session = core._state().sessionId
+  local sent = core.graphicsSent
+  core._state().sessionId=nil;g.buildingQuality='minimum'
+  T.check(not core.sendGraphics() and core.graphicsSent == sent and #received('graphics') == n+5,
+    'graphics wire: no hello cannot mark an unsent selection sent')
+  core._state().sessionId=session
+  T.check(core.sendGraphics() and #received('graphics') == n+6, 'graphics wire: ready session retries unsent selection')
+  local isConnected = net.isConnected
+  net.isConnected=function() return false end
+  sent=core.graphicsSent;g.buildingDetailM=350
+  T.check(not core.sendGraphics() and core.graphicsSent == sent and #received('graphics') == n+6,
+    'graphics wire: disconnected cannot mark an unsent selection sent')
+  net.isConnected=isConnected
+  T.check(core.sendGraphics() and #received('graphics') == n+7, 'graphics wire: connection retries unsent selection')
+  local function hello(sid)
+    serverSend({type='hello',protocol=4,format=4,cells=64,horizon=true,serverVersion='0.4.0',
+      sessionId=sid,farFormat='cdae',material='bngEarthFar_v3',nearVisual='mesh'})
+  end
+  hello('s13')
+  T.check(pumpUntil(function() return #received('graphics') == n+8 end,20),
+    'graphics wire: hello resends the unchanged selection')
+  core.reconnect()
+  T.check(core.cacheState() == nil and not core.cacheClear(), 'disconnected: numbers gone, no request sent')
+  frames(1)
+  hello('s14')
+  T.check(pumpUntil(function() return #received('graphics') == n+9 end,20),
+    'graphics wire: reconnect and fresh hello resend unchanged selection')
+  msg=last('graphics')
+  T.check(msg.buildingQuality == 'minimum' and msg.buildingAdaptive == false and msg.buildingDetailM == 350,
+    'graphics wire: reconnect preserves Minimum and explicit false')
+  beamngEarth_settings=oldSettings
+end
 beamngEarth_settings = nil
 
 core.onExtensionUnloaded()

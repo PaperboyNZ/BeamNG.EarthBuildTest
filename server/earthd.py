@@ -4941,9 +4941,12 @@ class Connection:
             cap = max(VIEW_CAP_MIN_M, float(v)) if v > 0 else None
             far = far or cap != self.view_cap
             self.view_cap = cap
-        log.info("graphics: terrain detail x%.2f, trees to %.0f m, far buildings to %.0f m, ground photo %d px, view %s",
+        log.info("graphics: terrain detail x%.2f, trees to %.0f m, far buildings to %.0f m, ground photo %d px, view %s; "
+                 "buildingQuality=%s, buildingAdaptive=%s, buildingDetailM=%s",
                  self.lod_scale, self.veg.send_m, self.bldfar.send_m, self.s.base_px,
-                 "to the horizon" if self.view_cap is None else f"{self.view_cap / 1000:.0f} km")
+                 "to the horizon" if self.view_cap is None else f"{self.view_cap / 1000:.0f} km",
+                 getattr(self, 'building_quality', None), getattr(self, 'building_adaptive', None),
+                 getattr(self, 'building_detail_m', None))
         if far and self.active is not None:
             self.update_far()
 
