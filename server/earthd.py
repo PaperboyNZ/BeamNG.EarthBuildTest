@@ -6221,14 +6221,13 @@ async def main_async(args):
     ROUTE_AHEAD_MAX_M = args.route_prefetch_km * 1000.0
     block_pools, far_pool, photo_pool = [], None, None
     import budget
-    worker_admission=budget.WorkAdmission.for_machine()
     plancachemod.start_run(args.cache_dir)      # (before the workers: they inherit the run's id)
     if args.block_process == "on":
         ctx = multiprocessing.get_context("spawn")
         for _ in (LANE_REQUEST, LANE_PREFETCH):
             warm_q = ctx.Queue(maxsize=64)
             block_pools.append((poolsmod.RespawningPool(
-                "block", 1, admission=worker_admission, work_class='essential' if _==LANE_REQUEST else 'optional',
+                "block", 1,
                 mp_context=ctx, initializer=blockworker.init,
                 initargs=(args.cache_dir, args.offline, args.roads == "on",
                           args.grading == "on" and args.roads == "on",
@@ -6238,7 +6237,7 @@ async def main_async(args):
         if args.near_visual == "detail" and (os.cpu_count() or 0) >= PHOTO_PROCESS_MIN_CPUS:
             # requested blocks' photos and stand-ins in a process of their own (Server._base_process / _stand_in)
             photo_pool = poolsmod.RespawningPool(
-                "photo", 1, admission=worker_admission, work_class='essential',
+                "photo", 1,
                 mp_context=ctx, initializer=blockworker.init,
                 initargs=(args.cache_dir, args.offline, args.roads == "on",
                           args.grading == "on" and args.roads == "on",
@@ -6246,7 +6245,7 @@ async def main_async(args):
                           logging.getLogger().level, args.airports == "on", args.sea == "on", 0,
                           roadsmod.ROADS_IN_GROUND, args.gas_stations == "on" and args.roads == "on"))
         far_pool = poolsmod.RespawningPool(
-            "far tile", args.workers, admission=worker_admission, work_class='coverage',
+            "far tile", args.workers,
             mp_context=ctx, initializer=blockworker.init,
             initargs=(args.cache_dir, args.offline, args.roads == "on",
                       args.grading == "on" and args.roads == "on",
@@ -6272,7 +6271,7 @@ async def main_async(args):
     road_pool = None
     if args.block_process == "on" and args.roads == "on" and args.road_processes > 0:
         road_pool = poolsmod.RespawningPool(      # road tiles (blockworker.roads_tile)
-            "road tile", args.road_processes, admission=worker_admission,
+            "road tile", args.road_processes,
             mp_context=ctx, initializer=blockworker.init,
             initargs=(args.cache_dir, args.offline, True, args.grading == "on", args.road_widths == "on",
                       args.surface == "on", None, logging.getLogger().level,
@@ -6280,7 +6279,7 @@ async def main_async(args):
     far_bld_pool = None
     if road_pool is not None and args.buildings == "on":
         far_bld_pool = poolsmod.RespawningPool(   # far building tiles (blockworker.far_buildings_tile)
-            "far building", 1, admission=worker_admission, work_class='coverage',
+            "far building", 1,
             mp_context=ctx, initializer=blockworker.init,
             initargs=(args.cache_dir, args.offline, True, args.grading == "on", args.road_widths == "on",
                       args.surface == "on", None, logging.getLogger().level,

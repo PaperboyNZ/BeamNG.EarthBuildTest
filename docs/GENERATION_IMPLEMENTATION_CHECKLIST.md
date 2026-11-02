@@ -413,8 +413,10 @@ lost station identity; incomplete evidence cannot masquerade as free space.
   disconnect; preserve essential final geometry and reject stale token completion.
 - [x] Bound and validate preview manifests before delivery; test cancellation,
   malformed/oversized metadata and unchanged final geometry.
-- [x] Extend existing worker/budget infrastructure with aggregate admission,
-  backpressure, cancellation tokens and bounded stage/sector checkpoints.
+- [ ] Extend existing worker/budget infrastructure with starvation-safe aggregate
+  admission. The experimental shared gate was removed after native loading stalls;
+  upstream scheduling and machine budgets are retained. Cancellation tokens and
+  bounded stage/sector checkpoints remain implemented.
 - [x] Add versioned dependency cache with atomic/checksummed writes, quota,
   coalescing and stale-producer recovery; distinguish fetch failure from absence.
 - [x] Introduce sector manifests and client capability negotiation; preserve

@@ -165,7 +165,7 @@ class LiveBuildingSwitchTests(unittest.TestCase):
         self.assertIs(wait.call_args.args[0], future)
         self.assertEqual(wait.call_args.args[1], earthd.ROAD_TILE_TIMEOUT_S)
 
-    def test_area_prebuild_keeps_optional_admission_and_low_priority(self):
+    def test_area_prebuild_keeps_low_priority_and_generation_mode(self):
         from unittest.mock import Mock
         future = Future(); future.set_result('cached')
         pool = SimpleNamespace(submit=Mock(), submit_low=Mock(return_value=future))
