@@ -13,6 +13,8 @@ import parking
 import parkinggrade
 import surface
 import grading
+import sidewalks
+import streetscape
 import roads
 from test_roads import FRAME, features, rules
 
@@ -217,6 +219,149 @@ class GradingTest(unittest.TestCase):
         raw=self.elevation(la,lo)
         out=pg.apply(la,lo,raw)
         self.assertLessEqual(np.max(np.abs(out-raw)),parkinggrade.MAX_CHANGE_M)
+
+
+class HardscapeGradingTest(unittest.TestCase):
+    elevation = staticmethod(GradingTest.elevation)
+
+    def grader(self, road=None, widths=None):
+        layers = {'infrastructure': lots(ring=[(-80,-80),(140,-80),(140,100),(-80,100),(-80,-80)]),
+                  'roads': road}
+        return parkinggrade.ParkingGrader(SimpleNamespace(cell=lambda *a, **kw: SimpleNamespace(layers=layers)),
+                                         self.elevation, widths)
+
+    def heights(self, pg, xy):
+        xy = np.asarray(xy)
+        la,lo,_ = FRAME.enu_to_geodetic(xy[:,0],xy[:,1],0.)
+        raw = self.elevation(la,lo)
+        return raw, pg.apply(la,lo,raw)
+
+    def test_cut_and_fill_vanish_on_sidewalk_and_terrain_support_vertices(self):
+        road = features([[(-100,0),(160,0)]], ['residential'], widths=[(0,8.)])
+        pg = self.grader(road)
+        xx,yy = np.meshgrid(np.arange(-40.,101.),np.arange(-12.,13.))
+        xy = np.c_[xx.ravel(),yy.ravel()]
+        raw,out = self.heights(pg,xy)
+        # Includes carriageway, both raised walks, their back skins and the
+        # neighbouring 2 m lattice vertices that interpolate under those skins.
+        np.testing.assert_array_equal(out,raw)
+        bare = self.grader()
+        _,changed = self.heights(bare,xy)
+        self.assertGreater(np.max(changed-raw),.01)
+        self.assertLess(np.min(changed-raw),-.01)
+        raw,out = self.heights(pg,np.c_[np.arange(-40.,101.),np.full(141,50.)])
+        self.assertGreater(np.max(np.abs(out-raw)),.01,'clear lot interiors still smooth')
+
+    def test_bent_wide_walks_all_regional_profiles_and_one_sided_tags(self):
+        line = np.array([[-50.,0.,0.],[0.,0.,0.],[0.,50.,0.]])
+        road = features([line[:,:2]], ['residential'])
+        road.attrs['osm_sidewalk'] = np.array(['left'])
+        widths = lambda *a: (14.,4.5)
+        pg = self.grader(road,widths)
+        spec = roads.road_specs(road,None,widths)[0]._replace(urban=True)
+        samples=[]
+        for look,w,pts in roads.extras(spec,line,0.):
+            if look['m'] != roads.SIDEWALK['m']:
+                continue
+            curb,outward = sidewalks.run_geometry(pts,look['side'],w)
+            for style in streetscape.STYLES.values():
+                profile = sidewalks.profile(h=style.height,w=w)
+                samples.extend((curb[:,:2,None]+outward[:,:,None]*profile[:,0]).transpose(0,2,1).reshape(-1,2))
+        self.assertTrue(samples)
+        raw,out=self.heights(pg,samples)
+        np.testing.assert_array_equal(out,raw)
+
+    def test_fixed_protection_is_identical_for_batches_order_and_anchor(self):
+        road=features([[(-100,0),(160,0)]],['residential'],widths=[(0,8.)])
+        xy=np.c_[np.linspace(-40,100,301),np.linspace(-30,60,301)]
+        raw,out=self.heights(self.grader(road),xy)
+        chunked=np.concatenate([self.heights(self.grader(road),part)[1] for part in np.array_split(xy,7)])
+        np.testing.assert_array_equal(out,chunked)
+        _,reverse=self.heights(self.grader(road),xy[::-1])
+        np.testing.assert_array_equal(out,reverse[::-1])
+        la,lo,_=FRAME.enu_to_geodetic(xy[:,0],xy[:,1],0.)
+        import geodesy
+        g=grading.Grader(geodesy.EnuFrame(FRAME.lat0+.01,FRAME.lon0-.01),self.grader(road).md,self.elevation)
+        fake=SimpleNamespace(apply=lambda la,lo,base,*a:base)
+        with patch.object(g.store,'planners_of',return_value=[(fake,None)]):
+            np.testing.assert_array_equal(out,g.apply(la,lo,raw))
+
+    def test_final_road_grade_at_junction_and_crossing_is_unchanged(self):
+        road=features([[(-100,0),(160,0)],[(0,-100),(0,120)]],
+                      ['residential','residential'],widths=[(0,8.),(1,10.)])
+        pg=self.grader(road)
+        g=grading.Grader(FRAME,pg.md,self.elevation)
+        xx,yy=np.meshgrid(np.arange(-12.,13.),np.arange(-12.,13.))
+        la,lo,_=FRAME.enu_to_geodetic(xx.ravel(),yy.ravel(),0.)
+        raw=self.elevation(la,lo)
+        decorated=g.apply(la,lo,raw,grading.ROAD_LIFT)
+        with patch.object(g.store.parking,'apply',side_effect=lambda la,lo,base,*a:base):
+            original=g.apply(la,lo,raw,grading.ROAD_LIFT)
+        np.testing.assert_array_equal(decorated,original)
+
+    def test_coarse_collision_lattice_cannot_transfer_displacement_under_walk(self):
+        road=features([[(-100,0),(160,0)]],['residential'],widths=[(0,8.)])
+        # All vertices of an 8 m collision square straddling the rear sidewalk
+        # remain identical, so either triangle's interpolation remains identical.
+        xy=np.array([[16.,0.],[24.,0.],[16.,8.],[24.,8.]])
+        raw,out=self.heights(self.grader(road),xy)
+        np.testing.assert_array_equal(out,raw)
+
+    def test_neighbouring_cell_roads_are_loaded_for_the_whole_patch(self):
+        road=features([[(-100,0),(160,0)]],['residential'],widths=[(0,8.)])
+        pg=self.grader()
+        keys=[]
+        def cell(key,**kw):
+            keys.append(str(key))
+            return SimpleNamespace(layers={'roads':road})
+        pg.md=SimpleNamespace(cell=cell)
+        shape=box(-40,-30,100,60)
+        protected=pg._protected(FRAME,shape)
+        self.assertFalse(protected.is_empty)
+        self.assertGreater(len(keys),1,'protection crosses the nearby source cell boundaries')
+        self.assertTrue(protected.covers(LineString([(-40,8),(100,8)])))
+
+    def test_cached_footprints_still_obtain_road_protection(self):
+        road=features([[(-100,0),(160,0)]],['residential'],widths=[(0,8.)])
+        pg=self.grader(road)
+        # _cell can restore just footprints.json, without populating road_features.
+        saved=list(parkinggrade._sources(lots(ring=[(-40,-30),(100,-30),(100,60),(-40,60),(-40,-30)])))
+        with patch.object(pg,'_cell',return_value=saved):
+            raw,out=self.heights(pg,[(20.,5.),(30.,7.)])
+        np.testing.assert_array_equal(out,raw)
+        self.assertTrue(pg.road_features)
+
+    def test_failed_or_incomplete_road_inventory_skips_smoothing_and_retries(self):
+        for incomplete in (False,True):
+            pg=self.grader()
+            original=pg.md
+            import revisit
+            def cell(key,**kw):
+                if kw.get('layers') == ('roads',):
+                    if incomplete:
+                        revisit.fault()
+                        return SimpleNamespace(layers={})
+                    raise OSError('road inventory unavailable')
+                return original.cell(key,**kw)
+            pg.md=SimpleNamespace(cell=cell)
+            saved=list(parkinggrade._sources(original.cell(None).layers['infrastructure']))
+            with patch.object(pg,'_cell',return_value=saved):
+                raw,out=self.heights(pg,[(20.,5.),(30.,7.),(40.,50.)])
+                np.testing.assert_array_equal(out,raw)
+                self.assertFalse(pg.cache,'an incomplete protection mask must not be cached')
+                pg.md=original
+                raw,out=self.heights(pg,[(20.,5.),(30.,7.),(40.,50.)])
+            self.assertGreater(np.max(np.abs(out-raw)),.01,'a later complete inventory retries')
+
+    def test_protection_fades_smoothly_for_positive_and_negative_changes(self):
+        protected=box(-20,-20,20,20)
+        p=parkinggrade.Patch(FRAME,box(-50,-50,80,80),self.elevation,protected)
+        xy=np.c_[np.array([19.,20.,21.,22.,23.,24.,25.]),np.full(7,5.)]
+        la,lo,_=FRAME.enu_to_geodetic(xy[:,0],xy[:,1],0.)
+        idx,change,weight=p.corrections(la,lo)
+        np.testing.assert_array_equal(idx,np.arange(7))
+        np.testing.assert_allclose(weight,[0,0,.15625,.5,.84375,1,1],atol=1e-8)
+        self.assertTrue(np.isfinite(change).all())
 
 
 if __name__ == '__main__':

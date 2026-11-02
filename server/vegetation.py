@@ -1071,6 +1071,14 @@ class Tracker:
         self.refined = {}
         self.refinement_jobs = {}
         self.refinement_retries = {}
+        self.generation_epoch = 0
+
+    def change_generator(self):
+        """Refresh building representations without dropping resident coverage."""
+        if self.kind not in ('bldfar', 'bldsky'):return
+        self.generation_epoch += 1
+        for key in self.sent | self.building:
+            self.refine(key, 'generator-' + str(self.generation_epoch))
 
     def refine(self,key,revision):
         if self.geo and (key in self.sent or key in self.building):
@@ -1188,7 +1196,7 @@ class Tracker:
             self.building.add((gx, gy))
             self.refinement_jobs[(gx,gy)]=self.refinements.get((gx,gy))
             fut = self.futs[(gx, gy)] = loop.run_in_executor(self.pool, build, gx, gy)
-            fut.add_done_callback(lambda f, k=(gx, gy): self._built_geo(conn, k, f))
+            fut.add_done_callback(lambda f, k=(gx, gy), ep=self.generation_epoch: self._built_geo(conn, k, f, ep))
         for k in [k for k in list(self.sent) if all(self._geo_dist(k, *p) > self.drop_m for p in spots)
                   and all(self._geo_dist(k, f[0], f[1]) > f[2] + 256.0 for f in foci)]:
             self.sent.discard(k)
@@ -1210,12 +1218,15 @@ class Tracker:
                 self._quads.clear()
         return geotiles.quad_dist(q, x, y)
 
-    def _built_geo(self, conn, key, fut):
+    def _built_geo(self, conn, key, fut, generation_epoch=None):
         import geotiles
         if self.futs.get(key) is not fut:return
         revision=self.refinement_jobs.pop(key,None)
         self.building.discard(key)
         self.futs.pop(key, None)
+        if generation_epoch is not None and generation_epoch != self.generation_epoch:
+            if not fut.cancelled():fut.exception()
+            return
         if getattr(self,'closed',False):return
         if key not in getattr(self,'wanted',{key}) and key not in self.sent:
             self.refinements.pop(key,None);self.refinement_retries.pop(key,None);self.refined.pop(key,None)

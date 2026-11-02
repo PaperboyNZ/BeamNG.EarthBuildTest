@@ -2526,7 +2526,7 @@ function M._lifetime(event,currentAnchor)
     end
   end
 end
-function M.update(gov, currentAnchor, player, view, a)
+function M.update(gov, currentAnchor, player, view, a, camera)
   buildingFade:update()
   M._lifetime('begin')
   stepT0 = stepClock()
@@ -2613,7 +2613,7 @@ function M.update(gov, currentAnchor, player, view, a)
   if not forced and progressFrame % M.FAR_IMPORT_EVERY == 0 then updateFar(gov,true) end
   if not forced and not deferImports and importsThisFrame < M.MAX_IMPORTS_PER_FRAME
     and (#walkQ == 0 or progressFrame % 2 == 0) then
-    local choice=buildingProgress:prepare(anchorObj,view or player)
+    local choice=buildingProgress:prepare(anchorObj,view or player,camera)
     if choice and gov:try('roadWalk',choice.ms) then
       local elapsed=stopwatch.new()
       if buildingProgress:step(anchorObj,view or player,choice) then

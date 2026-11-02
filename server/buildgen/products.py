@@ -13,6 +13,7 @@ def address(tile,content_dependencies):
     revision=SourceRevision(source,str(content_dependencies))
     frame=GeographicFrame(float(tile.frame.lon0),float(tile.frame.lat0))
     dependencies=dict(source=revision.to_dict(),frame=frame.to_dict(),generator=revisit.code_key(),
+                      building_generator=__import__('building_settings').current(),
                       terrain_decoder=dem.DECODED_VERSION,plan_schema=__import__('buildgen.plan',fromlist=['SCHEMA_VERSION']).SCHEMA_VERSION,
                       street_access_materials=str(content_dependencies))
     return identity(dependencies),dependencies
@@ -54,7 +55,8 @@ def load_accepted(store,tile,key,revision=None):
     if (not isinstance(deps,dict) or not isinstance(deps.get('source'),dict) or identity(deps)!=key or
             deps.get('source',{}).get('identity')!=SourceIdentity('beamng-earth/geotile',tile.key).to_dict() or
             deps.get('frame')!=GeographicFrame(float(tile.frame.lon0),float(tile.frame.lat0)).to_dict() or
-            deps.get('generator')!=revisit.code_key() or not _current_inputs(value['inputs']) or
+            deps.get('generator')!=revisit.code_key() or
+            deps.get('building_generator')!=__import__('building_settings').current() or not _current_inputs(value['inputs']) or
             not isinstance(value['physical_revision'],str) or
             not re.fullmatch(r'[a-f0-9]{16}',value['physical_revision']) or
             not isinstance(items,tuple) or not items or
@@ -156,7 +158,7 @@ def refine(worker,tile,key,out_dir,vfs_dir,detail):
     worker._write_bytes(str(Path(out_dir)/names['inputs']),pickle.dumps(inputs,protocol=4))
     worker._write_bytes(str(Path(out_dir)/names['json']),json.dumps(data,separators=(',',':'),sort_keys=True).encode())
     with worker._geo_lock:
-        worker._geo_inputs[tile.key]=inputs
+        worker._geo_inputs[names['inputs']]=inputs
         while len(worker._geo_inputs)>worker.GEO_INPUTS_KEPT:worker._geo_inputs.pop(next(iter(worker._geo_inputs)))
     worker._geo_stats['plan_reuse']=worker._geo_stats.get('plan_reuse',0)+1
     return vfs_dir+'/'+names['json'],accepted['n'],dict(h=h,parts={**accepted['parts'],**visual['parts']},

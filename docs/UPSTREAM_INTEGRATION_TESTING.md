@@ -78,7 +78,19 @@ python start.py -- --building-generator v2
 python start.py -- --building-generator legacy
 ```
 
-The default generator is legacy. The v2 dependencies include `shapely>=2.1,<3`.
+Playtesters can choose **Simple** (legacy) or **Advanced** (v2) in Pause menu >
+BeamNG.Earth > World > Building generation. The selection persists independently
+of graphics presets and switches live in the current gameplay session. Existing
+buildings remain until their replacements are ready; changed collisions use the
+existing staged handover. Terrain, imagery, vegetation and distant bridges remain.
+Building-dependent driveways, sidewalk cuts, parking and masks refresh with their
+building tile. Old in-flight jobs cannot publish after a switch; Simple and
+Advanced products have separate cache identities and generated filenames.
+The active-mode row shows what the connected server is using. At startup, CLI
+overrides take precedence over `BNE_BUILDING_GENERATOR`, then the saved setting;
+with none set, the default is Simple. The combined playtest initially selects
+Advanced and thereafter reads the saved choice.
+The v2 dependencies include `shapely>=2.1,<3`.
 Optional roof-colour, zoning and shared-site inputs should be passed explicitly
 when testing those features. Merely enabling v2 does not supply shared-site data.
 

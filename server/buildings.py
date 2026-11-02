@@ -1720,7 +1720,7 @@ GARAGE_DRIVE_MAX_M = 25.0   # m from the outline to a road's edge at most
 
 
 @profile_step('Building visual mesh')
-def build(specs_and_ground, lite=False):
+def build(specs_and_ground, lite=False, *, texture_facades=False):
     """The tile's mesh from [(Spec, ground z min, ground z max)] with rings in the tile's local frame:
     (positions, uvs, tris, tri material indices, MATERIALS) or None if empty. lite (far tiles): no
     cornices, whole walls instead of one quad per bay."""
@@ -1746,7 +1746,7 @@ def build(specs_and_ground, lite=False):
                 continue
         if spec.footprint is not None:
             from buildgen.geometry import draw
-            draw(m, spec, gmin, gmax, lite=lite)
+            draw(m, spec, gmin, gmax, lite=lite, texture_facades=texture_facades)
             continue
         ring = drawn_ring(spec)
         mh = spec.min_h or 0.0
@@ -3556,15 +3556,16 @@ def road_tile(frame, tx, ty, md, ground, lines=None, props=None, items=None):
 def visual_products(items):
     """Compile representations from an accepted plan, without physical planning."""
     from buildgen.progressive import ACTIVE, DETAIL
+    from buildgen.quality import import_vertices
     progress = ACTIVE.get()
     groups = None
     if progress is not None:
         meshes, groups = progress.build(items)
     elif DETAIL.get()=='lite' or DETAIL.get() in ('very_low','low'):
         mesh=build(items,lite=True)
-        meshes=split_mesh(mesh,V2_IMPORT_VERTS) if mesh is not None else []
+        meshes=split_mesh(mesh,min(V2_IMPORT_VERTS,import_vertices())) if mesh is not None else []
     else:
-        meshes = build_parts(items, max_verts=min(MAX_MESH_VERTS, V2_IMPORT_VERTS) if building_ingest.enabled()
+        meshes = build_parts(items, max_verts=min(MAX_MESH_VERTS, V2_IMPORT_VERTS, import_vertices()) if building_ingest.enabled()
                              else MAX_MESH_VERTS, with_lod=True)
     return meshes,groups,progress.final_files if groups is not None else {}
 
@@ -3612,7 +3613,7 @@ def far_tile(frame, tx, ty, md, ground, out_dir, vfs_dir, aid, lamp_region=None)
     import json
     import os
     items, lamps, (x0, y0, _x1, _y1) = far_items(frame, tx, ty, md, ground, lamp_region)
-    mesh = build(items, lite=True)
+    mesh = build(items, lite=True, texture_facades=True)
     data = {"v": 1}
     if lamps:
         data["lamps"] = lamps

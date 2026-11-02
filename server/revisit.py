@@ -89,6 +89,9 @@ def code_key():
 def key(kind, *parts):
     """The cache key of an item: its kind, what it was built from (the anchor's lat/lon, the tile, the settings) and
     the code."""
+    if kind in ("roads", "roadsg", "bldfar", "bldsky"):
+        import building_settings
+        parts = (building_settings.cache_identity(), *parts)
     return hashlib.sha1(repr((kind, code_key(), parts)).encode()).hexdigest()
 
 

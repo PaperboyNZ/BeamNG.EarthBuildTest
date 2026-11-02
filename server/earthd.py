@@ -1515,14 +1515,16 @@ class Server:
         else:plan_refs=None
         memo = self.__dict__.setdefault("_far_geo_done", {})
         token=plan_ref['revision'] if plan_ref else distant.reference_revision(plan_refs) if plan_refs else None
-        memo_key=(kind,gx,gy,token)
+        import building_settings
+        mode = building_settings.current()
+        memo_key=(kind,gx,gy,token,mode if kind != 'brfar' else None)
         got = memo.get(memo_key)
         if got is not None and all(os.path.exists(os.path.join(self.out_dir, n))
                                    for n in [os.path.basename(got[0])] + list(got[4].values())):
             return got
         _lh, _mph, _buried, lamps, _country, gzoom = self.geo_rules(gx, gy, z)
         t0 = time.perf_counter()
-        got = self.far_bld_pool.submit(blockworker.far_geo, kind, gx, gy, gzoom, self.out_dir, self.vfs_dir,
+        got = self.far_bld_pool.submit(building_settings.run, mode, blockworker.far_geo, kind, gx, gy, gzoom, self.out_dir, self.vfs_dir,
                                        lamps,plan_ref=plan_ref,plan_refs=plan_refs).result()
         log.debug("far geotile %s %s: %.2f s (queue + build)", kind, geotiles.key(gx, gy, z), time.perf_counter() - t0)
         if got is not None:
@@ -1533,7 +1535,7 @@ class Server:
 
 
     def build_roads_geo(self, aid, gx, gy, content=True, skin=True, exact=None, progress_token=None,
-                        building_detail='full'):
+                        building_detail='full', building_view=None):
         """blockworker.roads_geo in a road process: geotile (gx, gy)'s content (once: kept by the mod across
         rebases), anchor aid's skin and exact variants. Its gas station pads kept for the ground's painters. None
         when the anchor is gone. Worker threads (roads.GeoTracker)."""
@@ -1541,11 +1543,13 @@ class Server:
         if anchor is None or self.mapdata is None or self.road_pool is None:
             return None
         lh, mph, buried, lamps, country, gzoom = self.geo_rules(gx, gy)
+        import building_settings
         fut = self.road_pool.submit(
-            blockworker.roads_geo, aid, anchor.lat, anchor.lon, anchor.zooms[0], gx, gy, gzoom, self.out_dir,
+            building_settings.run, building_settings.current(), blockworker.roads_geo,
+            aid, anchor.lat, anchor.lon, anchor.zooms[0], gx, gy, gzoom, self.out_dir,
             self.vfs_dir, self.sidewalks, DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0,
             self.buildings, lh, mph, self.anchor_q(anchor) if skin else None, self.gas_stations, buried, lamps,
-            country, content, skin, exact, progress_token, building_detail)
+            country, content, skin, exact, progress_token, building_detail, building_view)
         try:
             res = fut.result(timeout=ROAD_TILE_TIMEOUT_S)
         except concurrent.futures.TimeoutError:
@@ -1581,7 +1585,9 @@ class Server:
             return None
         lh, mph, buried, lamps, country, gzoom = self.geo_rules(gx, gy)
         scratch = os.path.join(self.cache_dir, "areas", "scratch")
-        return self.road_pool.submit(blockworker.prebuild_geo, gx, gy, gzoom, scratch, self.buildings, lh, mph,
+        import building_settings
+        return self.road_pool.submit(building_settings.prebuild, building_settings.current(), blockworker.prebuild_geo,
+                                     gx, gy, gzoom, scratch, self.buildings, lh, mph,
                                      self.gas_stations, buried, lamps, country).result(timeout=ROAD_TILE_TIMEOUT_S)
 
     def build_roads_tile(self, aid, tx, ty):
@@ -1847,7 +1853,7 @@ class Server:
             "sidewalks": bool(self.sidewalks),
             "lift": float(DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0),
             "buildings": bool(self.buildings),
-            "building_generator": os.environ.get("BNE_BUILDING_GENERATOR", "legacy"),
+            "building_generator": __import__('building_settings').current(),
             "gas_stations": bool(self.gas_stations),
             # every kind: the map data's versions (Overture release, layer versions, the weekly rail / lane builds)
             "md": md,
@@ -4368,6 +4374,8 @@ class Connection:
 
     def build_far_geo(self, kind):
         """The far geotile tracker's build(gx, gy) of kind (Server.build_far_geo)."""
+        import building_settings, functools
+        mode = building_settings.current()
         def build(gx,gy):
             if kind=='bldfar':
                 roads=getattr(self,'roads',None)
@@ -4379,7 +4387,7 @@ class Connection:
                 refs=roads.sky_references(gx,gy) if hasattr(roads,'sky_references') else {}
                 if refs:return self.s.build_far_geo(kind,gx,gy,plan_refs=refs)
             return self.s.build_far_geo(kind,gx,gy)
-        return build
+        return functools.partial(building_settings.run, mode, build)
 
     def build_veg_geo(self, gx, gy):
         """Server.build_veg_geo in this mod's format (veg_flat): the geotile tracker's worker threads."""
@@ -4397,7 +4405,10 @@ class Connection:
             self.status("Building generator v2 needs the matching mod's building chunk support. Update the mod and reconnect.")
             return
         if kind == "hello":
-            self.building_chunks_blocked = (os.environ.get("BNE_BUILDING_GENERATOR", "legacy") == "v2"
+            import building_settings
+            self.building_chunks_supported = msg.get("buildingChunks") == roadsmod.BUILDING_CHUNKS
+            self.building_progress_supported = msg.get("buildingProgress") == 1
+            self.building_chunks_blocked = (building_settings.current() == "v2"
                                             and msg.get("buildingChunks") != roadsmod.BUILDING_CHUNKS)
             if self.building_chunks_blocked:
                 self.status("Building generator v2 needs the matching mod's building chunk support. Update the mod and reconnect.")
@@ -4412,7 +4423,8 @@ class Connection:
             m = {"type": "hello", "protocol": PROTOCOL, "format": lay.format, "serverVersion": SERVER_VERSION,
                  "runtimeProfiler": 2, "appVersion": updatesmod.local_version() or "",     # the release (VERSION): the players' reports
                  "sessionId": self.s.sid, "farFormat": self.s.far_format, "material": farfield.MATERIAL,
-                 "nearVisual": self.s.near_visual, "attribution": self.s.attribution()}
+                 "nearVisual": self.s.near_visual, "attribution": self.s.attribution(),
+                 "buildingGenerator": building_settings.current(), "buildingGeneratorSwitch": 1}
             if self.s.imagery is not None:      # the world map credits the sources its view shows
                 m["imageryCredits"] = self.s.imagery.credits_by_area()
                 m["otherCredits"] = self.s.attribution_rest()
@@ -4476,7 +4488,7 @@ class Connection:
             if msg.get("buildingChunks") == roadsmod.BUILDING_CHUNKS:
                 m["buildingChunks"] = roadsmod.BUILDING_CHUNKS
             self.building_progress = road_geo and msg.get("buildingProgress") == 1 \
-                and os.environ.get("BNE_BUILDING_GENERATOR", "legacy") == "v2"
+                and building_settings.current() == "v2"
             if self.building_progress:
                 m["buildingProgress"] = 1
             # ... and the far buildings, skyline and far bridges when it places those too (hello.farGeo: roads.lua's
@@ -4582,6 +4594,8 @@ class Connection:
             self.signs = signstream.Tracker()
         elif kind == "highway_signs":           # the settings page's switch: no sign tiles built while it is off
             self.signs_on = bool(msg.get("on", True))
+        elif kind == "building_generator":
+            self.change_building_generator(msg.get("value"))
         elif kind == "graphics":                # the settings page's graphics knobs (set_graphics)
             self.set_graphics(msg)
         elif kind == "gas_stations":            # the settings page's switch: the road tiles again, with or without
@@ -4590,6 +4604,40 @@ class Connection:
                 self.roads = road_tracker(self)
         else:
             log.debug("ignoring message type %r", kind)
+
+    def change_building_generator(self, mode):
+        """Change building products in place; anchors, ground and other trackers survive."""
+        import building_settings
+        error = None
+        if mode not in building_settings.GENERATORS:
+            error = 'Choose Simple or Advanced building generation.'
+        elif not getattr(self, 'road_geo', False) or not getattr(self, 'building_chunks_supported', False):
+            error = 'Live building switching needs the matching Earth mod and global road tiles.'
+        elif any(c.active is not None and not getattr(c, 'road_geo', False) for c in self.s.connections):
+            error = 'A connected older mod does not support live building switching.'
+        elif mode == 'v2':
+            try:
+                from buildgen.topology import check_runtime
+                check_runtime()
+            except (RuntimeError, ValueError, OSError) as exc:
+                error = str(exc)
+        if error:
+            self.send(dict(type='building_generator', value=building_settings.current(), error=error,
+                           sessionId=getattr(self.s, 'sid', None), anchorId=self.active))
+            return False
+        if mode != building_settings.current():
+            building_settings.set_default(mode)
+            for conn in self.s.connections:
+                if hasattr(conn.roads, 'change_generator'):conn.roads.change_generator(conn)
+                for tracker in (conn.bldfar, conn.bldsky):
+                    if tracker is not None:tracker.change_generator()
+                conn.building_progress = (getattr(conn, 'road_geo', False)
+                    and getattr(conn, 'building_progress_supported', False) and mode == 'v2')
+                conn.send(dict(type='building_generator', value=mode, sessionId=getattr(self.s, 'sid', None), anchorId=conn.active))
+            log.info('Building generation changed live to %s; refreshing building products', building_settings.LABELS[mode])
+        else:
+            self.send(dict(type='building_generator', value=mode, sessionId=getattr(self.s, 'sid', None), anchorId=self.active))
+        return True
 
     def set_graphics(self, msg):
         """The settings page's graphics (the user, 2026-10-28: "give player much more control in the graphics settings
@@ -6563,8 +6611,9 @@ def main():
                     help="bridge decks: curve (grades of 5 %% up to what they must clear, joined by vertical curves, "
                          "a chain solved as one line) or legacy (deck_heights' line, tents, smoothing)")
     ap.add_argument("--building-generator", choices=("legacy", "v2"),
-                    default=os.environ.get("BNE_BUILDING_GENERATOR", "legacy"),
-                    help="building generator: legacy (default) or experimental v2 topology (courtyards and multipart footprints)")
+                    default=None,
+                    help="building generator override: legacy (Simple) or v2 (Advanced); otherwise use "
+                         "BNE_BUILDING_GENERATOR, then the mod's saved Building generation setting, then legacy")
     ap.add_argument("--offline", action="store_true",
                     help="no network: serve elevation and imagery from the disk cache only (uncached tiles get "
                          "the palette, uncached terrain fails); the status says 'Offline - using cached data'")
@@ -6655,8 +6704,11 @@ def main():
                          "never what this session used within the hour, the gravity model or netstats/")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
-    if args.building_generator not in ("legacy", "v2"):
-        ap.error("BNE_BUILDING_GENERATOR must be legacy or v2")
+    import building_settings
+    try:
+        args.building_generator = building_settings.resolve(args.user_dir, args.building_generator)
+    except ValueError as error:
+        ap.error(str(error))
     os.environ["BNE_BUILDING_GENERATOR"] = args.building_generator
     os.environ['BNE_BUILDING_PATHS'] = args.building_paths
     for option, env in ((args.building_roof_colours, 'BNE_BUILDING_ROOF_COLOURS'),
@@ -6693,6 +6745,7 @@ def main():
         ap.error("--horizon needs --near-visual mesh (terrain mode is frozen at the v1.3.1 layout)")
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    log.info("Building generation: %s (%s)", building_settings.LABELS[args.building_generator], args.building_generator)
     raise_open_files()
     import fast
     try:

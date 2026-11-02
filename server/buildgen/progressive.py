@@ -164,8 +164,20 @@ def shell(items):
     return positions,uv,tris,mat,b.MATERIALS,colours
 
 
+def local_view(frame,tile,x,y,camera=None):
+    """Transform a transient priority hint into the tile's geometry frame."""
+    import geotiles
+    hx,hy=(camera.get('fx',0.),camera.get('fy',0.)) if isinstance(camera,dict) else (0.,0.)
+    if not all(isinstance(v,(int,float)) and math.isfinite(v) for v in (x,y,hx,hy)):return None
+    lat,lon,_=frame.enu_to_geodetic(x,y,0.)
+    la2,lo2,_=frame.enu_to_geodetic(x+hx,y+hy,0.)
+    px,py,_=geotiles.geodetic_to_world(tile.frame,lat,lon)
+    ex,ey,_=geotiles.geodetic_to_world(tile.frame,la2,lo2)
+    return tuple(map(float,(px-tile.box[0],py-tile.box[1],ex-px,ey-py)))
+
+
 class Publisher:
-    def __init__(self,out_dir,vfs_dir,tile,token):
+    def __init__(self,out_dir,vfs_dir,tile,token,view=None):
         self.path=manifest_path(out_dir,token)
         self.out_dir,self.vfs_dir,self.tile,self.token=out_dir,vfs_dir,tile,token
         self.groups={};self.sequence=0
@@ -173,6 +185,7 @@ class Publisher:
         self.final_files={}
         self._previews_stopped=False
         self.detail=DETAIL.get()
+        self.view=view
         # Keep solved roof envelopes across the three passes. A bounded job-local
         # working set avoids thrashing the smaller process-wide LRU on dense tiles.
         self.roof_cache={};self.roof_cache_vertices=0
@@ -261,18 +274,20 @@ class Publisher:
 
     def shells(self,items):
         import buildings as b
+        from .quality import import_vertices
         groups=self.partition(items);self.total=len(groups)
-        for i,group in enumerate(groups):
+        for i,group in self.view_order(groups):
             if not self.checkpoint():break
             try:
                 mesh=shell(group)
-                if mesh is not None:self.publish(i,0,b.split_mesh(mesh,b.V2_IMPORT_VERTS))
+                if mesh is not None:self.publish(i,0,b.split_mesh(mesh,min(b.V2_IMPORT_VERTS,import_vertices(0))))
             except OSError:
                 self._previews_stopped=True
                 break
 
     def build(self,items):
         import buildings as b
+        from .quality import import_vertices
         from .plan import freeze_items
         items=freeze_items(items)
         groups=self.partition(items);self.total=len(groups)
@@ -282,7 +297,7 @@ class Publisher:
             # Publish it once, immediately, with no duplicate encoding or spool.
             for i,group in enumerate(groups):
                 simple=b.build(group,lite=True)
-                detailed=b.split_mesh(simple,b.V2_IMPORT_VERTS) if simple is not None else []
+                detailed=b.split_mesh(simple,min(b.V2_IMPORT_VERTS,import_vertices())) if simple is not None else []
                 names=['bld' if k==0 else f'bld{k+1}' for k in range(len(meshes),len(meshes)+len(detailed))]
                 meshes.extend(detailed);mapping.append(dict(group=str(i),visual=names))
                 if detailed and self.checkpoint():self.publish(i,2,detailed,names)
@@ -293,10 +308,10 @@ class Publisher:
         parent=self.path.parent
         parent.mkdir(parents=True,exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='building-lite-',dir=parent) as spool:
-            for i,group in enumerate(groups):
+            for i,group in self.view_order(groups):
                 simple=[b.build([item],lite=True) for item in group]
                 ready=[m for m in simple if m is not None]
-                if ready and self.checkpoint():self.publish(i,1,b.split_mesh(b._concat(ready),b.V2_IMPORT_VERTS))
+                if ready and self.checkpoint():self.publish(i,1,b.split_mesh(b._concat(ready),min(b.V2_IMPORT_VERTS,import_vertices(1))))
                 size=sum(a.nbytes for m in ready for a in m if hasattr(a,'nbytes'))
                 if used+size<=LITE_MEMORY_BYTES:cached[i]=simple;used+=size
                 else:
@@ -315,15 +330,28 @@ class Publisher:
                             self.detail=PROFILES[self.detail].fallback if self.detail in PROFILES else 'lite'
                     except OSError:pass
                 if self.detail in ('lite','very_low','low'):
-                    detailed=b.split_mesh(b._concat(ready),b.V2_IMPORT_VERTS) if ready else []
+                    detailed=b.split_mesh(b._concat(ready),min(b.V2_IMPORT_VERTS,import_vertices())) if ready else []
                 else:
                     state=DETAIL.set(self.detail)
-                    try:detailed=b.build_parts(group,max_verts=b.V2_IMPORT_VERTS,with_lod=True,lite_meshes=simple)
+                    try:detailed=b.build_parts(group,max_verts=min(b.V2_IMPORT_VERTS,import_vertices()),with_lod=True,lite_meshes=simple)
                     finally:DETAIL.reset(state)
                 names=['bld' if k==0 else f'bld{k+1}' for k in range(len(meshes),len(meshes)+len(detailed))]
                 meshes.extend(detailed);mapping.append(dict(group=str(i),visual=names))
                 if detailed and self.checkpoint():self.publish(i,2,detailed,names)
         return meshes,mapping
+
+    def view_order(self,groups):
+        """Coverage first around the viewer; stable IDs and final content order."""
+        rows=list(enumerate(groups))
+        if not self.view:return rows
+        import numpy as np
+        x,y,hx,hy=self.view;length=math.hypot(hx,hy)
+        def score(row):
+            centre=np.mean([np.asarray(item[0].ring).mean(axis=0)[:2] for item in row[1]],axis=0)
+            dx,dy=centre-[x,y];distance=math.hypot(dx,dy)
+            facing=max(0.,(dx*hx+dy*hy)/(distance*length)) if distance>.001 and length>.001 else 0.
+            return distance/(1.+2.*facing),row[0]
+        return sorted(rows,key=score)
 
 
 def begin(tracker,key):

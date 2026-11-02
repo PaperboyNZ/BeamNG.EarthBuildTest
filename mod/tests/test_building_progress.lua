@@ -171,4 +171,20 @@ T.check(not replacement.hidden and original.hidden,'visibility follows replaceme
 P:clear()
 T.check(not replacement.hidden,'final owner retains current replacement on progress cleanup')
 
+-- Stationary camera rotation changes priority; old off-screen work still wins
+-- once its fairness deadline is reached.
+C:clear();time=20
+local forward=msg(0,{p0=part('forward')});forward.token='view';forward.total=2
+local behind=msg(0,{p0=part('behind')});behind.token='view';behind.total=2;behind.group='1'
+forward.parts.p0.center={30,0,0};behind.parts.p0.center={-30,0,0}
+C:receive(behind,1);time=20.1;C:receive(forward,1)
+local viewAnchor=geodesy.newAnchor(lat,lon)
+local choice=C:prepare(viewAnchor,{x=0,y=0},{fx=1,fy=0})
+T.check(choice.part.shape=='/test/forward.cdae','stationary camera facing prioritizes visible coverage')
+choice=C:prepare(viewAnchor,{x=0,y=0},{fx=-1,fy=0})
+T.check(choice.part.shape=='/test/behind.cdae','rotating camera reverses equal-distance preference')
+time=26
+choice=C:prepare(viewAnchor,{x=0,y=0},{fx=1,fy=0})
+T.check(choice.part.shape=='/test/behind.cdae','aged off-screen coverage cannot starve')
+C:clear()
 T.done('test_building_progress')

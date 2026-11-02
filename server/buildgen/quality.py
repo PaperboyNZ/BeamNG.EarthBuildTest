@@ -25,14 +25,21 @@ class Profile:
 
 NAMES = ('very_low', 'low', 'medium', 'high', 'very_high', 'ultra')
 PROFILES = {p.name:p for p in (
-    Profile('very_low', 0, 150., 16., 8., 6., .30, 4, 3072),
-    Profile('low', 1, 200., 18., 9., 5., .25, 6, 4096),
+    Profile('very_low', 0, 150., 16., 8., 6., .30, 12, 8192),
+    Profile('low', 1, 200., 18., 9., 5., .25, 10, 7168),
     Profile('medium', 2, 250., 20., 10., 4., .20, 8, 6144),
-    Profile('high', 3, 350., 22., 12., 3., .16, 10, 8192),
-    Profile('very_high', 4, 500., 24., 13., 3., .14, 12, 8192),
-    Profile('ultra', 5, 640., 26., 14., 2., .12, 12, 8192),
+    Profile('high', 3, 350., 22., 12., 3., .16, 6, 4096),
+    Profile('very_high', 4, 500., 24., 13., 3., .14, 4, 3072),
+    Profile('ultra', 5, 640., 26., 14., 2., .12, 2, 2048),
 )}
 WORKER_VALUES = NAMES + ('full', 'lite')
+
+
+def import_vertices(stage=2):
+    """Cheap coverage imports broadly; increasingly detailed imports get smaller."""
+    if stage == 0:return 20000
+    if stage == 1:return 18000
+    return (20000,18000,16000,12000,10000,8000)[current().rank]
 
 
 def current():

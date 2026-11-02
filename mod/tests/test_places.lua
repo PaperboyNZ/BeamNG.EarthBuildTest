@@ -430,8 +430,9 @@ T.check(not li.previewKey(-33.731908, 150.312007):find('[-.]'), 'preview keys: f
 -- the big map's POI list: core_levels sees our level's spawn points less ours (no scene objects: an error each)
 do
   local levelTable = { levelName = 'beamng_earth', spawnPoints = info.spawnPoints }
-  local seen, updates = nil, 0
+  local seen, updates, calls = nil, 0, 0
   local stock = function(id, elements)
+    calls = calls + 1
     seen = {}
     for _, sp in ipairs(core_levels.getLevelByName(id).spawnPoints) do seen[#seen + 1] = sp.objectname end
   end
@@ -447,6 +448,22 @@ do
     'POIs: the level select keeps every spawn point')
   core_levels.onGetRawPoiListForLevel('italy', {})
   T.check(#seen == 2 + #l2, 'POIs: another level as stock')
+  -- A live mod replacement can rebuild core_levels' cache while the main/ directory is absent.
+  -- Its stock hook indexes a nil levelInfo, then leaves the marker quadtree half-built.
+  local savedLevel, before = levelTable, calls
+  levelTable = nil
+  local elements = { { id = 'existing-poi' } }
+  local ok = pcall(core_levels.onGetRawPoiListForLevel, 'beamng_earth', elements)
+  T.check(ok and calls == before, 'POIs: missing Earth metadata does not call the unsafe stock hook')
+  T.check(#elements == 1 and elements[1].id == 'existing-poi', 'POIs: missing metadata preserves other POIs')
+  ok = pcall(core_levels.onGetRawPoiListForLevel, 'BEAMNG_EARTH', {})
+  T.check(ok and calls == before, 'POIs: missing metadata guard accepts case-insensitive Earth names')
+  ok = pcall(core_levels.onGetRawPoiListForLevel, 'italy', {})
+  T.check(not ok and calls == before + 1, 'POIs: another level still uses the stock hook when missing')
+  levelTable = savedLevel
+  core_levels.onGetRawPoiListForLevel('beamng_earth', {})
+  T.check(#seen == 1 and seen[1] == li.DEFAULT and levelTable.spawnPoints == info.spawnPoints,
+    'POIs: normal spawn filtering resumes when Earth metadata returns')
   li.unhookSpawnPois()
   T.check(core_levels.onGetRawPoiListForLevel == stock and updates == 2, 'POIs: the stock function back')
   core_levels, extensions = nil, savedExt

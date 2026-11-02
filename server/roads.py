@@ -8267,6 +8267,18 @@ class GeoTracker:
         self.fast_buildings = False
         self.obsolete_buildings = set()
         self.building_demand = {}
+        self.generation_epoch = 0
+        self.regenerate = set()
+
+    def change_generator(self, conn):
+        """Keep accepted coverage; replace only tiles whose building mode changed."""
+        from buildgen import progressive
+        self.generation_epoch += 1
+        self.regenerate.update(self.sent | self.building)
+        self.plan_refs.clear()
+        self.retry.clear()
+        for key in list(getattr(self, '_building_progress', {})):
+            progressive.finish(self, conn, self.aid, key, False)
 
     def remember_plan(self,key,reference):
         from buildgen.products import valid_reference
@@ -8276,6 +8288,7 @@ class GeoTracker:
             while len(self.plan_refs)>self.PLAN_REFS_KEPT:self.plan_refs.popitem(last=False)
 
     def plan_reference(self,key):
+        if key in self.regenerate:return None
         reference=self.info.get(key,{}).get('acceptedPlan') or self.plan_refs.get(key)
         return dict(reference) if reference is not None else None
 
@@ -8457,7 +8470,7 @@ class GeoTracker:
         for k in start:
             if k in self.building or self.retry.get(k, 0.0) > now:
                 continue
-            if k not in self.sent:
+            if k not in self.sent or k in self.regenerate:
                 jobs.append((k, True, True, "auto"))
                 continue
             make = None
@@ -8516,14 +8529,27 @@ class GeoTracker:
             self.started[k] = now
             builder = build
             progress_token = ''
-            if content and getattr(conn, 'building_progress', False):
+            if content and k in self.regenerate and getattr(conn, 'building_progress', False):
+                import functools
+                builder = functools.partial(build, building_detail=demand.get(k,detail))
+            if content and k not in self.regenerate and getattr(conn, 'building_progress', False):
                 import functools
                 progress_token = progressive.begin(self,k)
                 job_detail=demand.get(k,detail)
-                builder = functools.partial(build, progress_token=progress_token,building_detail=job_detail)
+                camera=getattr(conn,'cam',None) if getattr(conn,'cam_aid',None)==aid else None
+                focus=view if view is not None else (x,y)
+                hint=progressive.local_view(frame,geotiles.geobox(*k),*focus,camera)
+                builder = functools.partial(build, progress_token=progress_token,building_detail=job_detail,building_view=hint)
+            import building_settings, functools
+            mode, epoch = building_settings.current(), self.generation_epoch
+            if isinstance(builder, functools.partial):
+                builder = functools.partial(building_settings.run, mode, builder.func, *builder.args, **builder.keywords)
+            else:
+                builder = functools.partial(building_settings.run, mode, builder)
             fut = self.futs[k] = loop.run_in_executor(self.pool, builder, aid, k[0], k[1], content, skin, make)
-            fut.add_done_callback(lambda f, kk=k, a=aid, c=content, sk=skin, m=make, pt=progress_token:
-                                  self._built(conn, a, kk, f, c, sk, m, progress_token=pt))
+            fut.add_done_callback(lambda f, kk=k, a=aid, c=content, sk=skin, m=make, pt=progress_token, md=mode, ep=epoch:
+                                  building_settings.run(md, self._built, conn, a, kk, f, c, sk, m,
+                                                        progress_token=pt, generation_epoch=ep))
         for k in self.building:
             t0 = self.started.get(k)
             if t0 is not None and now - t0 > TILE_STUCK_S and k not in self.stuck_said:
@@ -8555,13 +8581,17 @@ class GeoTracker:
         if self.retry:
             self.retry = {k: t for k, t in self.retry.items() if t > now}
 
-    def _built(self, conn, aid, key, fut, content, skin, make, progress_token=None):
+    def _built(self, conn, aid, key, fut, content, skin, make, progress_token=None, generation_epoch=None):
         import geotiles
         from buildgen import progressive
         if self.futs.get(key) is fut:
             self.building.discard(key)
             self.futs.pop(key, None)
             self.started.pop(key, None)
+        if generation_epoch is not None and generation_epoch != self.generation_epoch:
+            if not fut.cancelled():fut.exception()  # consume failed obsolete jobs without delivering their geometry
+            progressive.finish(self,conn,aid,key,False,token=progress_token)
+            return
         if fut.cancelled():
             progressive.finish(self,conn,aid,key,False,token=progress_token)
             return
@@ -8603,6 +8633,7 @@ class GeoTracker:
         ex = (res.get("exact") or {}) if aid == self.aid else {}
         if c is not None:
             path, n, info = c[0], c[1], c[2]
+            self.regenerate.discard(key)
             self.sent.add(key)
             self.info[key] = info
             self.remember_plan(key,info.get('acceptedPlan'))

@@ -164,7 +164,7 @@ function M.new(api)
       end
     end
   end
-  function self:prepare(a,focus)
+  function self:prepare(a,focus,camera)
     if not a then return nil end
     self:place(a)
     local at=clock();local velocity={0,0}
@@ -183,13 +183,20 @@ function M.new(api)
       else for _,g in pairs(e.groups) do
         if g.pending then
           local missing=not g.shown and 0 or 1
-          local distance=0;local approach=0
+          local distance=0;local approach=0;local facing=1
           if focus then
             local part=g.pending.parts[1]
             local p=placed(e,{pos=part.center or part.pos,pivot=0},a).pos
             local dx,dy=p[1]-fx,p[2]-fy
             distance=math.sqrt(dx*dx+dy*dy)
             approach=math.max(0,(dx*velocity[1]+dy*velocity[2])/math.max(1,distance))
+            local hx,hy=camera and camera.fx,camera and camera.fy
+            if type(hx)=='number' and type(hy)=='number' then
+              local length=math.sqrt(hx*hx+hy*hy)
+              if length>.001 and length<2 and distance>.001 then
+                facing=1+2*math.max(0,(dx*hx+dy*hy)/(distance*length))
+              end
+            end
           end
           local effort=0
           for i=g.pending.next,#g.pending.parts do effort=effort+work(g.pending.parts[i]) end
@@ -197,7 +204,7 @@ function M.new(api)
           -- Strict missing-coverage priority; within it, bounded-age fairness
           -- precedes approaching-camera benefit per measured import work.
           local reach=math.max(0,distance-approach*2)
-          local benefit=(1+math.min(120,at-g.pending.at)/4)/(1+reach/64)/predictedMs
+          local benefit=facing*(1+math.min(120,at-g.pending.at)/4)/(1+reach/64)/predictedMs
           local late=at-g.pending.at>=M.FAIR_WAIT_S
           if not version or missing<bestMissing or (missing==bestMissing and
             ((late and not bestLate) or (late==bestLate and

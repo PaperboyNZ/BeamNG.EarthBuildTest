@@ -909,7 +909,7 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         mapped_polygons=mapped_surfaces(frame,box,getattr(_s,'surface',None)),clearance=furniture_areas)
     P.shared_courts = ()
     if (buildings and hasattr(tile, 'key') and os.environ.get('BNE_SHARED_SITE_RECORDS')
-            and os.environ.get('BNE_BUILDING_GENERATOR', 'legacy') == 'v2'):
+            and __import__('building_settings').current() == 'v2'):
         from sitegen import shared_courts
         physical = collect(items, drives, walks, chunks=chunks, origin=(x0,y0), bounds=box,
             ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q), frame=frame, fuel_pads=fuel_pads)
@@ -1014,6 +1014,8 @@ def geo_names(key, aid=None, parts=None):
     """The session files of geotile key: {"json", "skin", what -> shape} of its content (aid None) or of anchor aid's
     skin ("json", "road", "walk", "walkcol")."""
     import roads as roadsmod
+    import building_settings
+    key = str(key) + '_' + building_settings.current()
     if aid is None:
         out = {"json": f"rg_{key}.json", "inputs": f"rg_{key}.skin.pkl"}
         for what in roadsmod.shape_files(0, 0, 0):
@@ -1134,7 +1136,7 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
         inputs = {"chunks": P.chunks, "ctx": P.ctx, "walks": P.walks_raw, "h": h}
         _write_bytes(os.path.join(out_dir, names["inputs"]), pickle.dumps(inputs, protocol=4))
         with _geo_lock:
-            _geo_inputs[tile.key] = inputs
+            _geo_inputs[names['inputs']] = inputs
             while len(_geo_inputs) > GEO_INPUTS_KEPT:
                 _geo_inputs.pop(next(iter(_geo_inputs)))
         return f"{vfs_dir}/{names['json']}", n, {"h": h, "parts": parts,
@@ -1185,7 +1187,7 @@ def prebuild_geo(gx, gy, zoom, scratch, buildings, left_hand, mph, gas_stations,
                 except OSError:
                     pass
             with _geo_lock:
-                _geo_inputs.pop(tile_key, None)
+                _geo_inputs.pop(geo_names(tile_key)['inputs'], None)
     return k if os.path.exists(path) else None
 
 
@@ -1272,8 +1274,9 @@ def _skin_inputs(key, out_dir, content):
     """The skin inputs of geotile key (_write_geo_content): kept in memory, else its session file, else content()
     (its content built or loaded again, which writes the file). None when there are none."""
     import pickle
+    cache_key = geo_names(key)['inputs']
     with _geo_lock:
-        got = _geo_inputs.get(key)
+        got = _geo_inputs.get(cache_key)
     if got is not None:
         return got
     p = os.path.join(out_dir, geo_names(key)["inputs"])
@@ -1285,7 +1288,7 @@ def _skin_inputs(key, out_dir, content):
     except (OSError, EOFError, pickle.UnpicklingError):
         return None
     with _geo_lock:
-        _geo_inputs[key] = got
+        _geo_inputs[cache_key] = got
         while len(_geo_inputs) > GEO_INPUTS_KEPT:
             _geo_inputs.pop(next(iter(_geo_inputs)))
     return got
@@ -1508,7 +1511,8 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
         s = r.T @ c
         with open(src, "rb") as f:
             blob = fast._ef.cdae_shear(f.read(), float(e["pos"][2]), float(s[0]), float(s[1]), float(s[2]), piv)
-        name = f"rx_{aid}_{tile.key}_{what}.cdae"
+        import building_settings
+        name = f"rx_{aid}_{tile.key}_{building_settings.current()}_{what}.cdae"
         _write_bytes(os.path.join(out_dir, name), blob)
         out[what] = f"{vfs_dir}/{name}"
         _geo_stats["exact"] += 1
@@ -1517,7 +1521,7 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
 
 def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, lift, buildings, left_hand, mph, q,
               gas_stations, buried=0.0, lamp_region=None, country=None, content=True, skin=True, exact=None,
-              progress_token=None, building_detail='full'):
+              progress_token=None, building_detail='full', building_view=None):
     """earthd.Server.build_roads_geo here (road-tile pool): geotile (gx, gy)'s content (content: built in its own
     frame, or from the revisit cache; gzoom its DEM zoom, the rules its own place's), anchor aid's skin (skin) and its
     parts' exact variants for that anchor (exact: {what: {pivot}}, or "auto": those of the content built here that its
@@ -1528,7 +1532,7 @@ def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, l
     import geotiles
     from buildgen.quality import WORKER_VALUES
     detail_state = DETAIL.set(building_detail if isinstance(building_detail,str) and building_detail in WORKER_VALUES else 'full')
-    progress_state = ACTIVE.set(Publisher(out_dir,vfs_dir,geotiles.geobox(gx,gy),progress_token)
+    progress_state = ACTIVE.set(Publisher(out_dir,vfs_dir,geotiles.geobox(gx,gy),progress_token,building_view)
                                 if progress_token else None)
     try:
         out = {"content": None, "skin": None, "exact": {}, "stages": {}}
@@ -1749,6 +1753,9 @@ def far_geo_names(kind, key, plan_revision=None):
     """The session file names of far geotile key: {"json": ..., "shape": ...} (a far buildings or skyline tile's mesh);
     a far bridge tile's pieces are <prefix>_<key>_<road geotile key>.cdae (far_geo_piece)."""
     pre = FAR_GEO[kind]
+    if kind in ('bldfar', 'bldsky'):
+        import building_settings
+        pre += '_' + building_settings.current()
     if plan_revision is not None:
         if not isinstance(plan_revision,str) or not re.fullmatch(r'[a-f0-9]{64}',plan_revision):
             raise ValueError('invalid far accepted-plan revision')
@@ -1810,7 +1817,7 @@ def _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_pl
                 buildingsmod.built_squares(items,0.,0.,size),raw,lamp_region,own=tile.box)
             data['acceptedPlan']=dict(revision=accepted_plan.revision,
                                       physicalRevision=accepted_plan.value['physical_revision'])
-        mesh = buildingsmod.build(items, lite=True)
+        mesh = buildingsmod.build(items, lite=True, texture_facades=True)
         n = len(items)
     elif kind == "bldsky":
         if plan_refs:
