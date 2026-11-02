@@ -1777,13 +1777,19 @@ class Server:
             import industry
             garage_sound = (garage_sound + industry.refinery_sound_rows(anchor.frame, tx, ty, self.mapdata, elev)
                             + industry.power_plant_sound_rows(anchor.frame, tx, ty, self.mapdata, elev))
+        import roadside_clearance
+        furniture_areas = roadside_clearance.keepouts(walks=walks, items=items,
+                             drives=drives, lines=lines, chunks=chunks, origin=(x0, y0))
+        props = roadside_clearance.clear(props, wires=wires, areas=furniture_areas,
+            walks=walks, items=items, lines=lines, origin=(x0, y0), bounds=box,
+            ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)))
         from sitegen.hardscape import collect
         from sitegen.mapped_surfaces import collect as mapped_surfaces
-        vegetation_exclusions = collect(items, drives, walks if self.sidewalks else (), chunks=chunks,
+        vegetation_exclusions = collect(items, drives, walks, chunks=chunks,
             origin=box[:2], bounds=box,
             ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)),
             frame=anchor.frame, fuel_pads=fuel_pads,
-            mapped_polygons=mapped_surfaces(anchor.frame,box,self.surface))
+            mapped_polygons=mapped_surfaces(anchor.frame,box,self.surface), clearance=furniture_areas)
         return roadsmod.write_tile(self.out_dir, self.vfs_dir, aid, tx, ty, chunks, walks if self.sidewalks else None,
                                    mesh, dmesh, bld, props, wires, park, tunnel_mesh=tmesh, fuel=fuel,
                                    rail_mesh=rmesh, guardrail_rows=guardrail_rows, garage_sound=garage_sound, wells=oil_wells,
@@ -6150,8 +6156,6 @@ async def main_async(args):
             for c in list(server.connections):     # a host that came back while nobody posed
                 c.refresh_status()
     ticker = asyncio.create_task(net_log())
-    profile_task = asyncio.create_task(runtimeprofiler.stream(server))
-
     profile_task = asyncio.create_task(runtimeprofiler.stream(server))
 
     # Debug: event-loop stalls (every message the game sends waits for them). The loop beats; a thread
