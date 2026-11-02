@@ -1,5 +1,10 @@
 # Current dev integration and testing
 
+The latest four-PR preparation, lean building changes, parking optimization,
+validation and explicit merge resolutions are recorded in
+[PR_DEV_PREPARATION_20261102.md](PR_DEV_PREPARATION_20261102.md).
+The three-PR measurements below are the earlier integration history.
+
 Updated 2 November 2026 against `TecnaGamer/BeamNG.Earth` dev
 `b41b4b04edffab6083e78b0c2ef41982869287b2`.
 

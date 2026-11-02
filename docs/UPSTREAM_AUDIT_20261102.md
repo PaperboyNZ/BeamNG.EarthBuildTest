@@ -1,5 +1,10 @@
 # PR integration audit — 2 November 2026
 
+This is the earlier three-PR audit. The subsequent four-PR preparation and
+fresh verification results are in
+[PR_DEV_PREPARATION_20261102.md](PR_DEV_PREPARATION_20261102.md), including current
+passing pool checks, serial session reruns and the latest parking fix.
+
 All three draft branches include upstream dev through
 `b41b4b04edffab6083e78b0c2ef41982869287b2`. Performance and the profiler remain
 independent against dev; world generation includes the latest profiler as its
