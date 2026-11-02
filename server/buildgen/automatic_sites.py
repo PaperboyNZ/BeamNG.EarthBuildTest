@@ -305,6 +305,13 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
     """Install finite, non-overlapping inferred frontages and return road exclusions."""
     from sitegen.commercial_access import propose_access, commit_access
     offset = np.array([x0, y0], float)
+    # Immutable solids are repeatedly queried during seam/connectivity tests.
+    # Keep both object and polygon job-local so ids cannot be recycled.
+    shape_cache = {}
+    def _shape(solid):
+        key=id(solid)
+        if key not in shape_cache:shape_cache[key]=(solid,Polygon([p[:2] for p in solid.top]))
+        return shape_cache[key][1]
     records = []
     if os.environ.get('BNE_BUILDING_PATHS', 'auto') == 'off':
         return records
@@ -356,6 +363,7 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
         lo = np.asarray(bounds[:2], float)-offset
         hi = np.asarray(bounds[2:], float)-offset
         clip = box(lo[0], lo[1], hi[0], hi[1])
+    clip_cover = clip.buffer(1e-7) if clip is not None else None
 
     for spec, _, _ in sorted(items, key=lambda item: _key(item[0])):
         if not eligible(spec):
@@ -413,8 +421,9 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
             # Allow a genuine stock shrub's complete canopy and clearance.
             # Keep the same outer extent and cell budget; only move this split.
             ys = np.r_[.5, np.linspace(3.1, depth, ny)]
-        local_obstacles = [p for p in occupied if p.distance(Polygon([a,a+tangent*length,
-                            a+tangent*length+normal*depth,a+normal*depth])) < .01]
+        available_frontage=Polygon([a,a+tangent*length,
+                            a+tangent*length+normal*depth,a+normal*depth])
+        local_obstacles = [p for p in occupied if p.distance(available_frontage) < .01]
         union = unary_union(local_obstacles) if local_obstacles else Polygon()
         def quad(x0, x1, y0, y1):
             return np.array([a+tangent*x0+normal*y0, a+tangent*x1+normal*y0,
@@ -427,11 +436,13 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
         if shared_fit is not None:
             top=np.asarray(shared_fit[0])
             shared_plane=np.linalg.lstsq(np.c_[top[:,:2],np.ones(4)],top[:,2],rcond=None)[0]
-        grid = np.zeros((ny, nx), bool)
-        for j in range(ny):
-            for i in range(nx):
-                shape = Polygon(quad(xs[i],xs[i+1],ys[j],ys[j+1]))
-                grid[j,i] = (clip is None or clip.buffer(1e-7).covers(shape)) and shape.intersection(union).area < 1e-7
+        # Identical cell corners and GEOS predicates, evaluated as arrays rather
+        # than hundreds of Python/GEOS crossings. No clearance approximation.
+        import shapely
+        cells=shapely.polygons(np.asarray([quad(xs[i],xs[i+1],ys[j],ys[j+1])
+                                          for j in range(ny) for i in range(nx)]))
+        allowed=np.ones(len(cells),bool) if clip_cover is None else shapely.covers(clip_cover,cells)
+        grid=(allowed & (shapely.area(shapely.intersection(cells,union)) < 1e-7)).reshape(ny,nx)
         runs = []
         for i in range(nx):
             j = 0
@@ -513,7 +524,8 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
             lo,hi = uv[:,0].min(),uv[:,0].max()
             near,far = uv[:,1].min(),uv[:,1].max()
             if id(slab) not in reachable or hi-lo < 7.5 or far-near < 11.2: continue
-            z = lambda x,y: float(np.linalg.lstsq(np.c_[uv,np.ones(4)],p[:,2],rcond=None)[0] @ [x,y,1.])
+            parking_plane=np.linalg.lstsq(np.c_[uv,np.ones(4)],p[:,2],rcond=None)[0]
+            z = lambda x,y: float(parking_plane @ [x,y,1.])
             mouth_lo = (lo+hi)/2-3.; mouth_hi = mouth_lo+6.
             source = (tuple((* (a+tangent*mouth_lo+normal*far),z(mouth_lo,far))),
                       tuple((* (a+tangent*mouth_hi+normal*far),z(mouth_hi,far))))
@@ -668,6 +680,11 @@ def resolve(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, bounds=No
     """
     import copy
     items = tuple(items)
+    from .quality import site_level
+    if site_level() < 2:
+        # Do not erase existing geometry during a replan. Cross-policy changes
+        # use a fresh physical product and the normal staged tile handover.
+        return _retained_records(items,walks or (),x0,y0) if any(_accepted_automatic(s.access) for s,_,_ in items) else []
     if os.environ.get('BNE_BUILDING_PATHS', 'auto') == 'off':
         return []
     walks = () if walks is None else walks

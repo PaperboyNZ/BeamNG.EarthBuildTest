@@ -637,9 +637,10 @@ def _primitives(TM, nmat):
     return _vec(out, n, 12)
 
 
-def write(path, positions, tris, **kw):
+def write(path, positions, tris, *, encoded_callback=None, **kw):
     """encode() to path atomically (tmp + rename: the engine never sees a partial file)."""
     data = encode(positions, tris, **kw)
+    if encoded_callback is not None:encoded_callback(data)
     tmp = staging.tmp_for(path)
     with open(tmp, "wb") as f:
         f.write(data)

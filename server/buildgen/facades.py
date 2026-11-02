@@ -512,7 +512,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False, textured=False):
             from .regional_facade_details import draw_opening as draw_modifier_opening
             if draw_modifier_opening(mesh,spec,op,at,quad,lower_body if op.floor==0 else upper_body,
                                      trim,window,lite=opening_lite):continue
-            if not textured_opening(op) and residential.draw_opening(mesh,spec,op,at,quad,
+            if (not textured_opening(op) or quality.rank == 0) and residential.draw_opening(mesh,spec,op,at,quad,
                     lower_body if op.floor==0 else upper_body,trim,window,lite=opening_lite,elevation=elevation):continue
             arch=regional.aperture_shape(spec,regional_profile,elevation,op) if allow_arches and not textured_opening(op) else 'rectangular'
             opening_reveal=op.depth if op.depth is not None else reveal

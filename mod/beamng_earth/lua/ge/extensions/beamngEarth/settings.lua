@@ -57,7 +57,7 @@ M.SCHEMA = {
   -- Applied live by the server; independent of the graphics quality presets.
   buildingGenerator = { kind = 'enum', default = 'legacy', values = { 'legacy', 'v2' },
     label = 'Building generation' },
-  buildingQuality = { kind = 'enum', default = 'ultra', values = { 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
+  buildingQuality = { kind = 'enum', default = 'low', values = { 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
     label = 'Building generation quality' },
   buildingAdaptive = { kind = 'bool', default = true, label = 'Adaptive building performance' },
   buildingDetailM = { kind = 'number', default = 350, min = 100, max = 640,
@@ -274,7 +274,8 @@ function M.fillNewKnobs(data)
   local preset = M.PRESETS[values.quality]
   for _, k in ipairs(M.PRESET_KEYS) do
     if data[k] == nil then
-      if preset then values[k] = preset[k]
+      if k == 'buildingQuality' then values[k] = M.SCHEMA[k].default
+      elseif preset then values[k] = preset[k]
       elseif k == 'treeDistance' and data.trees ~= nil then values[k] = M.TREE_DISTANCE_OF[values.trees] or values[k] end
     end
   end
@@ -311,8 +312,10 @@ function M.resolveAuto(gpu)
   if changed then
     values.quality = M.matchingPreset() or 'custom'
   else
-    for _, k in ipairs(M.PRESET_KEYS) do values[k] = M.PRESETS[pick][k] end
-    values.quality = pick
+    for _, k in ipairs(M.PRESET_KEYS) do
+      if k ~= 'buildingQuality' then values[k] = M.PRESETS[pick][k] end
+    end
+    values.quality = M.matchingPreset() or 'custom'
   end
   log('I', 'beamngEarth', 'settings: quality ' .. values.quality .. ' (detected ' .. values.qualityDetected .. ')')
   if rawget(_G, 'jsonWriteFile') then M.save() end

@@ -226,6 +226,8 @@ def native_props(spec,x0=0.,y0=0.):
     there is deliberately no generated shrub/rock mesh fallback.
     """
     from shapely.geometry import Point,Polygon
+    from .quality import site_level
+    if site_level() == 0 and spec.site is None:return []
     access=getattr(spec,'access',None)
     if access is None or not access.landscape or getattr(spec,'inference',None) is None:return []
     profile=treatment(spec)
@@ -238,6 +240,8 @@ def native_props(spec,x0=0.,y0=0.):
     footprint=getattr(spec,'footprint',None)
     if footprint is not None:hard.append(footprint.shape())
     elif getattr(spec,'ring',None) is not None:hard.append(Polygon(np.asarray(spec.ring)[:,:2]))
+    import shapely
+    hard_array=np.asarray(hard,dtype=object)
     bands=[]
     for index,band in enumerate(access.landscape):
         if band.kind.removeprefix('site_') not in ('garden_bed','lawn_margin'):continue
@@ -258,7 +262,7 @@ def native_props(spec,x0=0.,y0=0.):
             n=min(MAX_SITE_PLANTS_PER_BED,allowance,max(1,int(length/spacing))*lanes)
         else:n=min(3,max(1,int(length/1.8)),min(MAX_PLANTS,profile.plants)-count)
         if n<=0:continue
-        shape=Polygon(p[:,:2]);admitted=0
+        shape=Polygon(p[:,:2]);boundary=shape.boundary;admitted=0
         columns=max(1,math.ceil(n/lanes))
         phase=materials.unit(spec.seed,f'native-landscape-{index}-phase')*2*math.pi
         # Jittered stations and meandering lanes retain gaps and loose clusters,
@@ -278,9 +282,9 @@ def native_props(spec,x0=0.,y0=0.):
                 spread=min(.24,max(.025,(width-1.9)/(2*width)))
                 v=.5+(rand('row')-.5)*2*spread
             centre=_point(p,u,v);point=Point(centre[:2])
-            clearance=float(shape.boundary.distance(point))-.015
+            clearance=float(boundary.distance(point))-.015
             if not shape.covers(point):continue
-            for obstacle in hard:clearance=min(clearance,float(obstacle.distance(point))-.015)
+            if len(hard_array):clearance=min(clearance,float(np.min(shapely.distance(hard_array,point)))-.015)
             rock=rand('kind')<.25
             options=('site_rock',) if rock else ('site_shrub','site_rock')
             for group in options:

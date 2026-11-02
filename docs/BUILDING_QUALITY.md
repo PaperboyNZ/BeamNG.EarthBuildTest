@@ -8,9 +8,11 @@ quality patch does not overwrite those unrelated changes.
 
 ## Quality contract
 
-The six settings are visual ceilings. They do not change source footprints,
+The six settings combine visual ceilings with optional site policies. They do not change source footprints,
 heights, floor counts, seeds, regional selection, roof forms, courtyards, mapped
-materials, accepted entrance/access plans, terrain fitting, or collision. Major
+materials or essential entrance/garage support. Optional paths, inferred commercial
+sites and decorative planting differ at the lowest settings; their collision and
+exclusion plans rebuild together through the existing atomic handover. Major
 supports, deep openings, projected bays, landmark silhouettes, window positions,
 colour families and inexpensive shared surface textures remain recognisable.
 No building is dropped to meet a quality budget.
@@ -34,25 +36,28 @@ that proxy is never a final quality level.
 Shared material normals, colour aging, roof stain control and detail UVs remain
 at every level. They use shared materials and participate in the visual identity.
 This change does not claim shader/GPU savings from disabling material effects.
-Native planting and all physical site planning are retained, so lowered quality
-does not change occupancy/exclusion or introduce disappearing physical props.
+Very Low omits inferred front paths and decorative native planting; Low restores
+those and keeps the cheaper site policy. Medium and above restore inferred
+commercial frontage planning. Explicit mapped sites remain supported throughout.
+See [the lean pipeline measurements](LEAN_BUILDINGS_20261102.md) for current costs.
 
 ## Adaptive performance at every level
 
 `buildingQuality` selects the ceiling. `buildingAdaptive` is a separate boolean,
-enabled by default for all six levels. The existing overall graphics presets map
+enabled by default for all six levels. New settings default to Low; saved quality
+choices and explicit overall graphics presets retain their intended values. The existing overall graphics presets map
 Low/Medium/High/Ultra/Extreme to building Low/Medium/High/Very High/Ultra. Very Low
 is available independently. Existing saved Light becomes Low, Adaptive becomes
 Ultra with adaptation, and Full becomes Ultra without adaptation.
 
 | Ceiling | Refinement reach cap | Fast travel enter / leave | Recovery after pressure | Facade group cap / cost units |
 | --- | ---: | ---: | ---: | ---: |
-| Very Low | 150 m | 16 / 8 m/s | 6 s | 4 / 3,072 |
-| Low | 200 m | 18 / 9 m/s | 5 s | 6 / 4,096 |
+| Very Low | 150 m | 16 / 8 m/s | 6 s | Tile batch / 60,000 import vertices |
+| Low | 200 m | 18 / 9 m/s | 5 s | Tile batch / 40,000 import vertices |
 | Medium | 250 m | 20 / 10 m/s | 4 s | 8 / 6,144 |
-| High | 350 m | 22 / 12 m/s | 3 s | 10 / 8,192 |
-| Very High | 500 m | 24 / 13 m/s | 3 s | 12 / 8,192 |
-| Ultra | 640 m | 26 / 14 m/s | 2 s | 12 / 8,192 |
+| High | 350 m | 22 / 12 m/s | 3 s | 6 / 4,096 |
+| Very High | 500 m | 24 / 13 m/s | 3 s | 4 / 3,072 |
+| Ultra | 640 m | 26 / 14 m/s | 2 s | 2 / 2,048 |
 
 The effective reach is the smaller of the profile cap and the user's refinement
 distance. Existing camera FOV/resolution projection and enter/keep hysteresis
@@ -88,21 +93,21 @@ summed as if they were exclusive costs.
 | Regional/use/material/height inference (`compiler`, `inference`, `presets`, `environments`, regional catalogues) | Measured within fixture planning, before geometry. Resolve once; do not reroll or simplify semantics on quality changes. |
 | Roof form, outline and solution (`roof_outline`, `roofs`, `roof_edges`, regional/commercial roofs) | Shared cached solutions preserve the silhouette across representations. Existing process and job caches remain bounded. Full profiling records roof-solution cost. |
 | Facade/programme/layout planning (`facades.plan`, `programme`, residential/commercial/city grammars) | Retained in immutable accepted plans. Tiny commercial trim planning is skipped at Very Low. Opening placement remains shared across tiers. |
-| Terrain grading, access and shared-site coordination (`access`, `driveways`, `automatic_sites`, `sitework`, `sitegen`) | Safety/ownership-sensitive work remains independent of visual quality. Reuse accepted physical products on refinement instead of rerunning this combined pipeline. New timers expose access/frontage/site coordination. |
-| Stock planting (`landscaping.native_props`) | Keep deterministic fitted assets and exclusion envelopes. Timed separately in full profiling. Plant density is not coupled to this building-detail ladder. |
-| Plan freezing (`plan.freeze_items`) | Measured separately; detached immutable records are shared by visual and physical compilation. No quality fields alter the accepted plan. |
-| Early shells (`progressive.shell`) | Fast coverage, existing shape/roof proxy rules and atomic publication retained. Never a final substitute for valid specialised geometry. |
+| Terrain grading, access and shared-site coordination (`access`, `driveways`, `automatic_sites`, `sitework`, `sitegen`) | Essential access is preserved; optional site policies have separate cache identities. Reuse physical products within a policy and safely replan across policies. New timers expose access/frontage/site coordination. |
+| Stock planting (`landscaping.native_props`) | Skip inferred decorative planting at Very Low. Other tiers retain deterministic fitting/exclusion; boundary reuse and vectorized obstacle distances reduce placement cost. |
+| Plan freezing (`plan.freeze_items`) | Measured separately; detached immutable records are shared by visual and physical compilation. Architectural identity is invariant; optional site policy is part of the accepted physical identity. |
+| Early shells (`progressive.shell`) | Skipped at Very Low/Low; higher tiers retain fast coverage and atomic publication. Never a final substitute for valid specialised geometry. |
 | Lightweight facades / coarse LOD | Low and Very Low compile and publish this final product once, with no second encode or tile-wide lite spool. Higher ceilings reuse lightweight arrays as their final coarse LOD. |
 | Near facade geometry (`facades.draw`, `city.draw`, regional/residential emitters) | Dominant cost for large ordinary blocks. Medium preserves street depth while flattening shallow upper openings. High restores full detail. Repeated city pane and pier clipping sweeps now reuse local tuples, with byte-identical mesh output. |
 | Window surrounds, sills, closed component returns (`components`, `details`, `facades`) | Meaningful geometry at close range; progressively introduced at Medium/High. Shared component batching is preserved. No extra per-window game objects. |
 | Rainwater (`details.rainwater`) | A notable low-house CPU cost. Omitted through High, silhouette-only at Very High, original full assembly at Ultra. |
 | Flashing and rooftop extras (`details.roof_caps`, `commercial_roofs`, legacy clutter) | Small high-cost details are reserved for Ultra. Major equipment/roof panels remain in lightweight form; no change to source roof forms. |
-| Site surfaces and trim (`access.draw`, `sitework.draw_details`) | Broad accepted surfaces remain at all levels. Fine visual restraints/rails enter at High. Physical stair/route geometry is invariant. |
+| Site surfaces and trim (`access.draw`, `sitework.draw_details`) | Essential entrance and garage surfaces remain at all levels. Fine visual restraints/rails enter at High. Optional path/site surfaces follow the physical policy. |
 | Surface aging (`weathering.apply`) | Measured in each visual profile and timed in full runtime profiling. Retained as a bounded shared visual treatment rather than adding per-building materials/textures. |
-| Collision and collider boxes (`buildings.collision_mesh`, `collider_boxes`) | Independently compiled and cached. Quality transitions reuse the same physical hash and collision bytes when the accepted cache is current. Never omit collision to meet a visual budget. |
-| Mesh assembly, splits and LOD (`build_parts`, `split_mesh`, `split_with_lod`) | Existing 20,000-vertex near import cap retained. Split oversized buildings without discarding triangles; coarse triangles are distributed once. Profile group sizes bound batches, not a single emitter's execution time. |
+| Collision and collider boxes (`buildings.collision_mesh`, `collider_boxes`) | Independently compiled and cached. Transitions within Medium–Ultra reuse physical hashes/bytes; crossing optional site policies rebuilds complete matching collision. Never omit collision to meet a visual budget. |
+| Mesh assembly, splits and LOD (`build_parts`, `split_mesh`, `split_with_lod`) | Final import caps are 60k/40k/16k/12k/10k/8k vertices across the six tiers. Split oversized buildings without discarding triangles; coarse triangles are distributed once. Profile group sizes bound batches, not a single emitter's execution time. |
 | UVs, normals/tangents, native encoding and writes (`buildings.write`, `cdae`) | Baseline in-memory encoder timing is separate from actual publication timing, which also includes detail UVs, file writes and metadata. Avoid duplicate encoding; retain final-file adoption. |
-| Cache/refinement (`products`, `productcache`, `revisit`) | Separate quality keys, including safe Very Low/Very High storage names. Accepted plan/physical product is quality-independent. A downgraded or mixed progressive job cannot populate the requested higher-quality cache. Cache misses still use the complete safe planning path. |
+| Cache/refinement (`products`, `productcache`, `revisit`) | Separate quality keys, including safe Very Low/Very High storage names. Accepted plan/physical product is keyed by essential/path/full site policy. A downgraded or mixed progressive job cannot populate the requested higher-quality cache. Cache misses still use the complete safe planning path. |
 | Transport/import/retirement (`progressive`, client `buildingprogress`, `roads`, governor) | Keep bounded polling, revision tokens, cancellation and shared frame admission. Old complete geometry stays visible until replacement is ready; far coverage and collision handover remain authoritative. Native-game timings remain unmeasured here. |
 
 ## Deepening-quality workflow
@@ -116,7 +121,7 @@ summed as if they were exclusive costs.
    vertices, triangles, material primitives, file bytes and first-final latency,
    not just one aggregate generation time. Material draw calls may plateau even
    when triangle counts fall.
-4. Test all six tiers for stable bounds/identity, valid meshes, unchanged collision,
+4. Test all six tiers for stable bounds/identity, valid meshes, matching collision for each site policy,
    unique caches, rising/falling settings, pressure recovery, free camera and
    cancellation. Run the existing client import/handover/governor regressions.
 5. Deepen from an accepted plan through `products.refine`; retain the physical
@@ -132,8 +137,7 @@ summed as if they were exclusive costs.
 The offline checks are complete; native visual/driving, GPU frame-time, dense
 real-data and long-session memory acceptance remain open. Future improvements
 should target measured residuals (including shared material draw calls and
-accepted-cache misses) before adding more geometry. Do not reduce physical work
-or invent lower-fidelity regional identities to obtain a favourable benchmark.
+accepted-cache misses) before adding more geometry. Do not omit essential support or change regional identities to obtain a favourable benchmark.
 
 ## Reproduction and evidence
 

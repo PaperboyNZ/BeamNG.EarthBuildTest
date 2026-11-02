@@ -14,6 +14,7 @@ def address(tile,content_dependencies):
     frame=GeographicFrame(float(tile.frame.lon0),float(tile.frame.lat0))
     dependencies=dict(source=revision.to_dict(),frame=frame.to_dict(),generator=revisit.code_key(),
                       building_generator=__import__('building_settings').current(),
+                      building_site_policy=__import__('buildgen.quality',fromlist=['site_level']).site_level(),
                       terrain_decoder=dem.DECODED_VERSION,plan_schema=__import__('buildgen.plan',fromlist=['SCHEMA_VERSION']).SCHEMA_VERSION,
                       street_access_materials=str(content_dependencies))
     return identity(dependencies),dependencies
@@ -110,6 +111,8 @@ def refine(worker,tile,key,out_dir,vfs_dir,detail):
     store=Store(worker._s.cache_dir)
     plan=load_accepted(store,tile,key)
     if plan is None:return None
+    from .quality import site_level
+    if plan.value.get('dependencies',{}).get('building_site_policy',2) != site_level():return None
     physical=store.load('physical',key)
     if (physical.status!='ready' or not isinstance(physical.value,dict) or
             not {'plan_revision','data','files','n','parts','skin_inputs','fuel_pads'}<=set(physical.value) or
