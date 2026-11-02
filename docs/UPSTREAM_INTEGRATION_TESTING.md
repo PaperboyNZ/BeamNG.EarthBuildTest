@@ -1,11 +1,18 @@
 # Current dev integration and testing
 
-Prepared 2 November 2026 against `TecnaGamer/BeamNG.Earth` dev
-`11cc55572fd5b828f52a0cf0edf0cf449cba1ac0`.
+Updated 2 November 2026 against `TecnaGamer/BeamNG.Earth` dev
+`b41b4b04edffab6083e78b0c2ef41982869287b2`.
 
 The three PRs include this upstream commit. The performance and profiler PRs can
 be reviewed independently against dev. The world-generation PR builds on the
 profiler PR. A separate local integration branch combines all three for testing.
+
+The latest source audit and remaining upstream timeout limitation are recorded
+in [UPSTREAM_AUDIT_20261102.md](UPSTREAM_AUDIT_20261102.md). The update includes
+the published resource-tab profiler, all local playtest follow-ups, upstream's
+single-file mapped mirror and healthy-server edge-warning cap. Live switching
+now rejects every active peer that lacks either road-geotile or building-chunk
+support. Protocol agreement and golden checks cover the additive messages.
 
 ## What belongs in each PR
 
@@ -27,7 +34,7 @@ input is bundled. Those external datasets remain optional.
 
 ## Integration checks
 
-The final broad combined run covers 136 Python test modules: 1,804 cases run,
+The earlier combined run at `11cc5557` covered 136 Python test modules: 1,804 cases run,
 1,794 passed, 10 optional skips, no failures or errors. It includes the latest
 upstream terrain/photo planning changes and final road-fallback fixes. This is a
 selected regression suite, not every test in the repository. Client checks cover 3,970 Lua assertions in
