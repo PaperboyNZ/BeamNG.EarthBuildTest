@@ -253,8 +253,7 @@ def plan(spec, gmin, gmax):
     if regional_profile:trim=b.custom_look(b.PANEL,tuple(regional_profile['trim']))
     if block_profile:trim=b.custom_look(b.PANEL,tuple(block_profile['trim_colour']))
     plinth = b.custom_look(b.PANEL, (.57, .58, .56))
-    garage_colour = materials.choose(spec.seed, "garage-paint", (((.86, .87, .84), 4), ((.35, .38, .39), 3),
-                                                               ((.52, .44, .36), 2), ((.52, .21, .16), 1)))
+    garage_colour = materials.garage_colour(spec.seed)
     diagnostics=commercial.architecture_diagnostics(spec)
     if regional_profile:
         style=spec.inference.house_style

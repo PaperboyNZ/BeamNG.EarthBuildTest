@@ -74,6 +74,7 @@ def draw(mesh, spec, gmin, gmax):
     from .regional_supports import draw as supports
     fp = spec.footprint
     mats = b._Looks(spec.seed)
+    garage_material = mats[b.custom_look(b.SHUTTER,materials.garage_colour(spec.seed))] if spec.garage_opening else None
     base = b.base_z(spec,gmin,gmax)+(spec.min_h or 0.)
     bottom = gmin-b.SKIRT_LITE_M if (spec.min_h or 0.)<=.5 else base
     top = base+spec.height
@@ -156,7 +157,7 @@ def draw(mesh, spec, gmin, gmax):
                 gz=spec.access.garage_z if spec.access and spec.access.garage_z is not None else base
                 def at(s,z):return (a[0]+dx*s+dy*.02,a[1]+dy*s-dx*.02,z)
                 mesh.quad(at(centre-w/2,gz),at(centre+w/2,gz),at(centre+w/2,gz+h),at(centre-w/2,gz+h),
-                          (0,0),(1,0),(1,1),(0,1),mats[b.SHUTTER])
+                          (0,0),(1,0),(1,1),(0,1),garage_material)
     if spec.roof != 'flat':roofs.draw(mesh,spec,top,mats,overhang=False)
     else:
         from . import regional_roof_details as details

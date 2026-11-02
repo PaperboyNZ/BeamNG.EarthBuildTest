@@ -19,6 +19,12 @@ def choose(identity, channel, options):
     return options[-1][0]
 
 
+def garage_colour(seed):
+    """Existing seeded garage paint shared by Full and compact shutters."""
+    return choose(seed, "garage-paint", (((.86, .87, .84), 4), ((.35, .38, .39), 3),
+                                        ((.52, .44, .36), 2), ((.52, .21, .16), 1)))
+
+
 def facade_prior(use, cls, floors, identity):
     if use == "industrial":
         options = (("metal", 7), ("concrete", 2), ("brick", 1))
