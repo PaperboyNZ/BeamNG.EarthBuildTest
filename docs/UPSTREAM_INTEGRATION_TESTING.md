@@ -1,7 +1,16 @@
 # Current dev integration and testing
 
 Prepared 2 November 2026 against original `TecnaGamer/BeamNG.Earth` dev
-`992e11fdad0ccf20531d0768c1c47d73dced5c34` (rechecked before publication).
+`7baa76bf16f39ce25cae4dfdd2e0d469af2d47af` (updated for the local playtest).
+
+The latest upstream update parks sound spaces to avoid a teleport crash, moves
+parking-lot photo painting into native ABI 140, and restores the follow/staleness
+distance to 192 m. Both PR branches include it. Follow-up validation passes:
+208 Python tests across surface, terrain, encoder, roads, vegetation and building
+streaming; 1,733 Lua assertions across ten affected/integration suites. The
+profiler-only branch again passes 180 Python cases (6 optional skips) and 738 Lua
+assertions. `test_follow` and `test_rebase` now pass; their failures below describe
+the initial dev baseline, not the current playtest.
 
 ## Review and merge order
 
@@ -56,7 +65,7 @@ against `55ddc418`, not a second old server bundled into these PRs. The commands
 above compare generators on the new dev terrain. Existing playtest launchers
 and packages are retained locally.
 
-## Validation
+## Initial integration validation at 992e11fd
 
 These are offline results, not native game acceptance or an FPS claim.
 
