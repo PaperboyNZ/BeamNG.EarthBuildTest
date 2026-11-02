@@ -45,13 +45,32 @@ _code = []
 _lock = threading.Lock()
 
 
-def fault():
-    """Something a build may read failed or was not there yet: builds running now are not kept."""
+_tl = threading.local()
+
+
+def fault(lidar=False):
+    """Something a build may read failed or was not there yet: builds running now are not kept. Counted for the process
+    (faults) and, unless lidar (roads.level_ranges' lidar rule: the cell's own, kept for the session), for this thread
+    (thread_faults)."""
     _faults[0] += 1
+    if not lidar:
+        _tl.n = getattr(_tl, "n", 0) + 1
+    else:
+        _tl.lidar = getattr(_tl, "lidar", 0) + 1
 
 
 def faults():
     return _faults[0]
+
+
+def thread_faults():
+    """This thread's faults (fault): what a computation done in this thread alone read short (roads._cell_ranges)."""
+    return getattr(_tl, "n", 0)
+
+
+def thread_lidar_faults():
+    """This thread's lidar rule faults (fault(lidar=True)): built on the rule for want of the lidar."""
+    return getattr(_tl, "lidar", 0)
 
 
 _PRODUCES = re.compile(r"\brevisit\.(?:key|load|store)\(|\b_revisit_tile\(")

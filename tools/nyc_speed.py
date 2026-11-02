@@ -34,6 +34,16 @@ sys.path.insert(0, HERE)
 import mcp  # noqa: E402
 
 LOG = os.path.expanduser("~/.cache/beamng-earth/logs/server.log")
+# another machine's game (BNGE_MCP_URL through a tunnel): its server log read over ssh (BNGE_LOG_SSH=user@host)
+LOG_SSH = os.environ.get("BNGE_LOG_SSH")
+
+
+def log_size():
+    if LOG_SSH:
+        r = subprocess.run(["ssh", "-o", "BatchMode=yes", LOG_SSH, "stat -c %s ~/.cache/beamng-earth/logs/server.log"],
+                           capture_output=True, text=True, timeout=30)
+        return int(r.stdout.strip() or 0)
+    return os.path.getsize(LOG)
 POLL_S = 1.0
 MPH = 0.44704
 GRID = 29.0             # Manhattan's avenues run 29 deg east of north
@@ -187,6 +197,11 @@ class Watch(threading.Thread):
 
 
 def log_lines(since_pos):
+    if LOG_SSH:
+        r = subprocess.run(["ssh", "-o", "BatchMode=yes", LOG_SSH,
+                            f"tail -c +{since_pos + 1} ~/.cache/beamng-earth/logs/server.log"],
+                           capture_output=True, timeout=60)
+        return r.stdout.decode("utf-8", "replace").splitlines()
     with open(LOG, "rb") as f:
         f.seek(since_pos)
         return f.read().decode("utf-8", "replace").splitlines()
@@ -265,12 +280,17 @@ def main():
     ap.add_argument("--restart", action="store_true", help="restart the session (warm cache) first")
     ap.add_argument("--warm-first", action="store_true", help="drive the route once at 40 mph first (untimed)")
     ap.add_argument("--label", default=None)
+    ap.add_argument("--bake", action="append", help="with --cold: a baked pack (.bnge) put in the fresh cache first")
     ap.add_argument("--accel", type=float, default=0.0, help="m/s^2: set off from a near standstill (0: at speed at once)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     if a.cold:
         cache = os.path.join(os.path.abspath(a.out), "cache")
         os.makedirs(cache, exist_ok=True)
+        for pk in a.bake or ():          # (baked packs in the fresh cache: server/bakepack.py)
+            import shutil
+            os.makedirs(os.path.join(cache, "bake"), exist_ok=True)
+            shutil.copy(pk, os.path.join(cache, "bake", os.path.basename(pk)))
         session(a.label or "nyccold", cache)
     elif a.restart:
         session(a.label or "nycwarm")
@@ -292,7 +312,7 @@ def main():
             json.dump(prof, f)
         teleport(*path[0], heading_of(path), wait_s=60)
         print(f"{label}: route {prof['km']:.1f} km, {len(path)} points", flush=True)
-        pos = os.path.getsize(LOG)
+        pos = log_size()
         # (no vehicle-vehicle collisions during the run: traffic and parked cars on the route threw the car off)
         lua("be:setDynamicCollisionEnabled(false) return 1")
         w = Watch(os.path.join(d, "watch.jsonl"))
