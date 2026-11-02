@@ -48,6 +48,8 @@ class TerrainClearanceTests(unittest.TestCase):
     def check_surface(self, builder, ground, exact=True):
         p,t,_,m = builder.arrays()
         triangles = (p+builder.origin)[t[np.isin(m,(1,2,3,4,6))]]
+        edges = triangles[:,1:,:2]-triangles[:,:1,:2]
+        self.assertTrue(np.all(np.abs(edges[:,0,0]*edges[:,1,1]-edges[:,0,1]*edges[:,1,0]) > 1e-12))
         weights = np.array([(i/12,j/12,1-(i+j)/12) for i in range(13) for j in range(13-i)])
         samples = np.einsum('wk,tkd->twd',weights,triangles).reshape(-1,3)
         self.assertGreaterEqual(float(np.min(samples[:,2]-ground(samples[:,0],samples[:,1]))),.009999)

@@ -494,6 +494,9 @@ def clear_terrain(mesh, origin, ground):
             positions.extend(coords-np.asarray(origin))
             textures.extend(out[:, 3:5])
             for j in range(1,len(out)-1):
+                a,b = coords[[j,j+1], :2]-coords[0, :2]
+                if abs(a[0]*b[1]-a[1]*b[0]) < 1e-12:
+                    continue
                 faces.append([base,base+j,base+j+1])
                 materials.append(M[selected[src[i]]])
     keep = np.ones(len(T),bool)
