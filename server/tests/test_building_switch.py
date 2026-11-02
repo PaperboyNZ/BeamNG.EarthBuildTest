@@ -123,6 +123,41 @@ class LiveBuildingSwitchTests(unittest.TestCase):
         self.assertEqual([r[:2] for r in rows], [('legacy', False), ('v2', True), ('legacy', False)])
         self.assertEqual(len({r[2] for r in rows}), 1)
 
+    def test_road_worker_keeps_mode_and_progress_with_running_timeout(self):
+        from unittest.mock import Mock
+        result = {'content': None}
+        future = Future(); future.set_result(result)
+        pool = SimpleNamespace(submit=Mock(return_value=future))
+        anchor = SimpleNamespace(lat=1., lon=2., zooms=(15,))
+        server = SimpleNamespace(anchors={7: anchor}, mapdata=True, road_pool=pool,
+            geo_rules=lambda *args: (False, False, 0., None, 'NZ', 15),
+            out_dir='unused', vfs_dir='/test', sidewalks=True, near_visual='detail',
+            buildings=True, gas_stations=False, anchor_q=lambda a: 0.)
+        with patch.object(earthd.poolsmod, 'result_running', wraps=earthd.poolsmod.result_running) as wait:
+            got = modes.run('legacy', earthd.Server.build_roads_geo, server, 7, 1, 2,
+                            progress_token='progress', building_detail='fast', building_view={'x': 1})
+        self.assertIs(got, result)
+        args = pool.submit.call_args.args
+        self.assertEqual(args[:3], (modes.run, 'legacy', blockworker.roads_geo))
+        self.assertEqual(args[-3:], ('progress', 'fast', {'x': 1}))
+        self.assertIs(wait.call_args.args[0], future)
+        self.assertEqual(wait.call_args.args[1], earthd.ROAD_TILE_TIMEOUT_S)
+
+    def test_area_prebuild_keeps_optional_admission_and_low_priority(self):
+        from unittest.mock import Mock
+        future = Future(); future.set_result('cached')
+        pool = SimpleNamespace(submit=Mock(), submit_low=Mock(return_value=future))
+        server = SimpleNamespace(mapdata=True, road_pool=pool, cache_dir='unused',
+            geo_rules=lambda *args: (False, False, 0., None, 'NZ', 15),
+            buildings=True, gas_stations=False)
+        with patch.object(revisit, 'ON', True):
+            got = modes.run('legacy', earthd.Server.prebuild_geo, server, 1, 2)
+        self.assertEqual(got, 'cached')
+        pool.submit.assert_not_called()
+        self.assertEqual(pool.submit_low.call_args.args[:3],
+                         (modes.prebuild, 'legacy', blockworker.prebuild_geo))
+        self.assertTrue(pool.submit_low.call_args.args[0].__name__.startswith('prebuild'))
+
     def test_only_building_dependent_cache_keys_change(self):
         for kind in ('roads', 'roadsg', 'bldfar', 'bldsky', 'fargeo', 'far', 'plans', 'brfar'):
             a = modes.run('legacy', revisit.key, kind, 'same-input')
