@@ -1,111 +1,94 @@
 # Current dev integration and testing
 
-Prepared 2 November 2026 against original `TecnaGamer/BeamNG.Earth` dev
-`7baa76bf16f39ce25cae4dfdd2e0d469af2d47af` (updated for the local playtest).
+Prepared 2 November 2026 against `TecnaGamer/BeamNG.Earth` dev
+`11cc55572fd5b828f52a0cf0edf0cf449cba1ac0`.
 
-The latest upstream update parks sound spaces to avoid a teleport crash, moves
-parking-lot photo painting into native ABI 140, and restores the follow/staleness
-distance to 192 m. Both PR branches include it. Follow-up validation passes:
-208 Python tests across surface, terrain, encoder, roads, vegetation and building
-streaming; 1,733 Lua assertions across ten affected/integration suites. The
-profiler-only branch again passes 180 Python cases (6 optional skips) and 738 Lua
-assertions. `test_follow` and `test_rebase` now pass; their failures below describe
-the initial dev baseline, not the current playtest.
+The three PRs include this upstream commit. The performance and profiler PRs can
+be reviewed independently against dev. The world-generation PR builds on the
+profiler PR. A separate local integration branch combines all three for testing.
 
-## Review and merge order
+## What belongs in each PR
 
-1. `testing/runtime-profiler` into `dev`: opt-in Frames, Workers, and Network & Disk
-   profiling, Essential/Full modes, bounded telemetry, and instrumentation hooks.
-   It has no `buildgen` or `sitegen` dependency. The default is off.
-2. `testing/building-system` into `testing/runtime-profiler`: the complete current
-   building/site source and supporting road, sidewalk, vegetation, worker-budget,
-   cache, collision-lifetime, progressive streaming, and dissolve changes.
+- Performance (`perf/road-generation-audit`): reuse decoded map data, lane inputs
+  and bridge graph work. It does not introduce new buildings or profiler controls.
+- Profiler (`testing/runtime-profiler`): optional frame, worker, network and disk
+  measurements; Essential and Full modes; continuous collection; a resizable
+  window, compact view, frozen display and snapshot export. It defaults to off.
+- World generation (`testing/building-system`): the v2 building and site system,
+  regional architecture, progressive streaming, collision/resource lifetime,
+  shared worker budgets, six building-quality settings, adaptive refinement,
+  commercial roofs, curved driveways, parking surfaces, source-linked shared
+  sites, weathering and sidewalk refinements. The v2 building generator remains
+  opt-in; supporting road, surface and clearance changes also affect legacy mode.
 
-Review the second PR against the first branch to see only the building work.
-After the first merges, retarget the second PR to `dev`. If the first is squash
-merged, rebase the second onto that new dev head to remove duplicated history.
-The original source snapshot and old playtest packages remain available locally.
+The latest local source and newer package-only fixes were preserved before
+integration. No personal cache, roof-colour catalogue, zoning file or shared-site
+input is bundled. Those external datasets remain optional.
 
-## Test in BeamNG
+## Integration checks
 
-Use the server and mod from the same branch. Close the previous server and game,
-run `python install.py` to install dependencies and the matching mod, then:
+The broad combined run covers 135 Python test modules. The latest result and
+scope are recorded in the PR descriptions. It is a selected regression suite,
+not every test in the repository. Client checks cover 3,970 Lua assertions in
+25 suites, including collision/resource handling, building streaming, settings,
+profiler controls, follow and rebase. Lua runs use a stubbed game environment.
+
+Real localhost CLI checks exercise matching protocol/capability negotiation,
+both profiler modes, probe replies, I/O telemetry and all six quality-setting
+messages. They do not substitute for native game testing.
+
+The final review removed a duplicate profiler publisher from the world-generation
+branch and connected upstream's photo worker to the shared worker budget. The
+road-worker test now also calls the actual server fallback and compares its
+output byte for byte, including the new vegetation-clearance records.
+
+On Windows, two unchanged worker tests hit an upstream temporary-directory
+cleanup error because cached file descriptors remain open. This reproduces on
+unmodified upstream dev at `50e41cac`. An external test-only cleanup adapter closes
+those descriptors before deleting the temporary folders; all five worker tests
+then pass. No production workaround or weakened assertion is included.
+
+## Review and submission order
+
+1. Review performance against dev; it can merge independently.
+2. Review the profiler against dev; it can also merge independently.
+3. Review world generation against `testing/runtime-profiler` to see its own changes.
+
+These are preparation PRs in the contributor's fork. For upstream, submit the
+performance and profiler branches to `TecnaGamer/BeamNG.Earth:dev`. After the
+profiler lands, update world generation onto the actual resulting dev commit and
+submit it there. If the profiler is squash-merged, remove the already-landed
+profiler commits while rebasing world generation so they do not appear twice.
+Keep the fork's dev branch aligned with upstream; do not merge these draft PRs
+into it as a shortcut for combined testing.
+
+## Native playtest still required for the latest combined build
+
+The contributor reported a successful native performance playtest at `ea58fcba`.
+That predates the latest upstream merge and does not establish native acceptance
+of the profiler or world-generation changes. No new in-game FPS claim is made.
+
+Use matching server and mod sources in an isolated test installation. Install
+with `python install.py`, then start the server with one of:
 
 ```powershell
-# PR 1: upstream world generation with the new profiler
 python start.py
-
-# PR 2: new buildings and all integrated changes
 python start.py -- --building-generator v2
-
-# PR 2: legacy buildings for comparison on the same current upstream terrain
 python start.py -- --building-generator legacy
 ```
 
-V2 remains explicitly selected; the default generator is `legacy`. V2 adds
-`shapely>=2.1,<3`. Prepared roof-colour, zoning, and site datasets remain optional
-CLI inputs; no personal cache or local imagery catalogue is included. The 64
-regional themes and versioned architecture catalogues are included in source.
-Normal source/dependency hashing invalidates generated caches as needed.
+The default generator is legacy. The v2 dependencies include `shapely>=2.1,<3`.
+Optional roof-colour, zoning and shared-site inputs should be passed explicitly
+when testing those features. Merely enabling v2 does not supply shared-site data.
 
-Open Pause menu > BeamNG.Earth > Interface > Detailed performance profiler.
-Compare disabled, Essential, and Full modes while driving and teleporting; check
-worker stages, network/disk counters, export, close/reopen, and persistence.
-For V2, inspect courtyards, roofs, commercial sites, driveways and sidewalks;
-drive across generation boundaries and check collision continuity, progressive
-shell/detail replacement, far/near coverage, and restart/rebase behavior.
+In the game, enable the profiler in Pause menu > BeamNG.Earth > Interface >
+Detailed performance profiler. Try Essential and Full, resize it, use compact
+view, freeze/resume, export a snapshot, then stop profiling. Drive and teleport
+with v2 enabled; inspect roofs, parking, driveways and sidewalks, and check that
+wheels remain supported as nearby detail changes. Compare with legacy mode.
 
-The 0.4 s building dissolve uses mod-local hooks generated from the installed
-game's shaders. No engine shader files are redistributed or modified. If shader
-discovery/compatibility fails, the installer disables the dissolve; set
-`BNGE_GAME_DIR` when the game is outside a discovered Steam library.
-
-The historical r13 whole-server old/new selector is a local comparison package
-against `55ddc418`, not a second old server bundled into these PRs. The commands
-above compare generators on the new dev terrain. Existing playtest launchers
-and packages are retained locally.
-
-## Initial integration validation at 992e11fd
-
-These are offline results, not native game acceptance or an FPS claim.
-
-| Check | Result |
-| --- | --- |
-| Profiler-only Python | 180 run, 6 optional cases skipped; no failures/errors |
-| Profiler-only Lua | 738 assertions passed across 8 suites |
-| Integrated profiler Python | 180 run, 6 optional cases skipped; no failures/errors |
-| Integrated profiler Lua | 754 assertions passed across 8 suites |
-| Building/site and related Python | 1,137 tests passed across 95 modules |
-| V2 streaming integration | 154 Python tests and 3,351 Lua assertions passed |
-| Broad integrated Lua | 85 of 89 suites pass; 10,273 assertions in passing suites |
-
-Counts overlap between targeted and broad runs; do not sum them as unique tests.
-The four broad Lua failures reproduce on an unmodified checkout of the exact
-upstream commit: `test_follow` (11 assertions), `test_rebase` (2 assertions),
-`test_scoping` (Windows file enumeration), and `test_sky` (missing module).
-The follow/rebase tests still expect earlier terrain timing constants. These
-are recorded limitations; the broad run is not represented as completely green.
-
-Integration fixes preserve upstream's 1 m terrain and terrain assets, split
-collision encoding alongside shared building LOD bounds, missing-file recovery,
-and furniture restoration after reconnect. Retained source folders include both
-upstream shape paths and the new parked/pending/physics resources. New regression
-coverage checks combined collision/bounds encoding and missing old-session files
-despite unchanged content/physical hashes. Standalone Python import/environment
-fixtures and Lua fixtures were updated for bounded imports, inverse transforms,
-prop residency, and deferred collision retirement.
-
-Reproduction entry points (with server requirements and optional `lupa` LuaJIT
-available; `check_runtime_profiler.py` accepts `--lua-runtime PATH`):
-
-```text
-python -B tools/check_runtime_profiler.py
-python -B tools/check_building_streaming.py
-python -B tools/run_tests.py test_cdae test_building_streaming test_sector_manifest test_buildgen_band_frame
-```
-
-The broad Python run includes every `test_buildgen*` and `test_sitegen*` module,
-the other new server tests, and related buildings, roads, roadmesh, roadcorners,
-furniture, vegetation, terrain, surface, cache, and worker-admission regressions.
-It is not the entire server suite. Native appearance, driving, shader behavior,
-occupied streaming, and performance acceptance are still required before release.
+Building dissolve and weathering hooks are generated locally from compatible
+installed game shaders; engine shader files are not redistributed. If discovery
+or compatibility checks fail, installation disables the relevant effect. Native
+appearance, shader behavior and driving acceptance remain separate from the
+automated checks.
