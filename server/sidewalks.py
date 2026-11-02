@@ -204,7 +204,7 @@ def profile(h=CURB_H, w=2.5, hr=None):
     f = hr / h if h > 0 else 0.0
     # a band narrower than RAMP_RUN (a median's 0.3-0.6 m, an island's 1.2 m) ends its ramp inside it: past its outer
     # edge the profile folded back over itself, and the folded collision caught wheels ("the median eats tires",
-    # GitHub #55; a truck held on an island band in Bodø, 2026-10-20)
+    # GitHub #55; a truck held on an island band in BodÃ¸, 2026-10-20)
     rr = max(CURB_W + NARROW_EDGE_M, min(RAMP_RUN, w - NARROW_EDGE_M))
     zr = h + rr * CROSS_SLOPE
     xp = CURB_W + min(PAD_W, (rr - CURB_W) / 2)
@@ -279,6 +279,7 @@ class Builder:
         self.origin = np.asarray(origin, np.float64)
         self.ground = ground
         self.pieces = []            # (kind, points, dirs, outer, ramps, width, height, caps, slab)
+        self.tree_gardens = []
         self.surface_paths = []     # original run retained across driveway/verge splits
         self._built = None          # the Rust meshes once built (full, lean)
         self.vehicle_meshes = []
@@ -288,11 +289,12 @@ class Builder:
         self.col = _Lean(self) if collision else None
 
     def add_run(self, curb, toward_out, w, h=CURB_H, caps=(True, True), ramps=(), slab=1, driveways=(), verge=False,
-                texture_path=None):
+                texture_path=None, gardens=()):
         """One sidewalk run: curb (k, 3) the curb line (z = the road there), toward_out (k, 2) unit
         vectors from the curb outwards (scaled by the miter), w its width; caps: end caps at the
         (start, end) (not where the run goes on in the next tile or meets a corner piece); ramps:
         curb ramps [(s0, s1)] in arc length along the curb."""
+        self.tree_gardens.extend(gardens)
         curb = np.asarray(curb, np.float64)
         if len(curb) < 2:
             return
@@ -394,6 +396,11 @@ class Builder:
                     p, t, uv, m = corrected
                     collision = (p, t[m != 5], uv, np.zeros(np.count_nonzero(m != 5), np.int64))
                 self._built = corrected, collision
+            if self.tree_gardens:
+                from garden_cutouts import cut
+                visual,collision=self._built
+                self._built=(cut(visual,self.tree_gardens,self.origin),
+                             cut(collision,self.tree_gardens,self.origin) if self.col is not None else collision)
         return self._built
 
     def arrays(self):

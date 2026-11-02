@@ -26,6 +26,29 @@ def tier(name):
 
 
 class MinimumTests(unittest.TestCase):
+    def test_window_batch_boundary_preserves_exact_mesh_streams(self):
+        rng=np.random.default_rng(421)
+        for count in (0,1,2,4,8,16,17,32):
+            for _ in range(25):
+                angle=rng.uniform(-np.pi,np.pi)
+                dx,dy=float(np.cos(angle)),float(np.sin(angle))
+                a=tuple(rng.uniform(-10000,10000,2))
+                left=np.arange(count)*2.5;right=left+1.2
+                bottom=rng.uniform(-10,200,count);top=bottom+1.8
+                actual=b.Mesh();expected=b.Mesh();mat=(3,(123,77,99,255))
+                # A pre-existing face checks indices when appending to a mesh.
+                for mesh in (actual,expected):
+                    mesh.quad((0,0,0),(1,0,0),(1,1,0),(0,1,0),*((0,0),)*4,mat)
+                minimum._windows(actual,a,(dx,dy),left,right,bottom,top,mat)
+                along=np.column_stack((left,right,right,left))
+                heights=np.column_stack((bottom,bottom,top,top))
+                u0,u1,v0,v1=b.WIN_UV
+                xs=a[0]+dx*along+dy*.018;ys=a[1]+dy*along-dx*.018
+                for x,y,z in zip(xs,ys,heights):
+                    expected.quad(*tuple(zip(x,y,z)),(u0,v0),(u1,v0),(u1,v1),(u0,v1),mat)
+                for x,y in zip(actual.arrays(),expected.arrays()):
+                    np.testing.assert_array_equal(x,y)
+
     def test_analytical_roofs_preserve_full_planes_coverage_and_height(self):
         from buildgen import roofs, minimum_roofs
         from shapely.geometry import Polygon

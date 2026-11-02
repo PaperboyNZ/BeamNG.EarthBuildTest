@@ -9,22 +9,22 @@
                              [--weather on|off] [--gravity on|off] [--offline] [--credits on|off]
                              [--cache-cap GB]
 
-Listens on 127.0.0.1 for the mod, builds terrain-block heightmaps (1024² on a world-locked
+Listens on 127.0.0.1 for the mod, builds terrain-block heightmaps (1024Â² on a world-locked
 2 m lattice, 256 m-aligned centres; in mesh near-visual mode the block is physics only) and a
 dynamic-LOD tile field (down to 64 m tiles on the physics lattice in mesh mode) with per-tile
 satellite textures, streamed as swap groups, and writes them into
 <user-dir>/temp/beamngEarth/<sessionId>/.
 
-Tile layout (docs/V1_4_SPEC.md §3.1, M1): --cells 64 (the default in mesh mode since probe P8
+Tile layout (docs/V1_4_SPEC.md Â§3.1, M1): --cells 64 (the default in mesh mode since probe P8
 passed) makes every tile 64 x 64 cells, FORMAT 4, with the exact level L-1, hello.cells and
 far_tile.tex; --cells 32 (and terrain mode) is the v1.3.1 layout, FORMAT 3.
 
-Terrain block (docs/V1_4_SPEC.md §3.5, M4): --block 512 (mesh mode only; the default there since the
-in-game probes P2, P7 and P11 passed; Server() keeps 1024) makes the physics block 512² (collidable [c-512, c+510]) on
+Terrain block (docs/V1_4_SPEC.md Â§3.5, M4): --block 512 (mesh mode only; the default there since the
+in-game probes P2, P7 and P11 passed; Server() keeps 1024) makes the physics block 512Â² (collidable [c-512, c+510]) on
 a 128 m centre grid, sends hello.blockSize and terrain.size 512, and predicts the mod's 512 follow
 table (FOLLOW_RULES, with its fast mode above 150 m/s) for the prefetch.
 
-Horizon (docs/V1_4_SPEC.md §3.6 "Radius", M1h): --horizon (mesh mode only; off by default until the
+Horizon (docs/V1_4_SPEC.md Â§3.6 "Radius", M1h): --horizon (mesh mode only; off by default until the
 in-game probe P12 passes) replaces the 80 km square by a disc out to the line-of-sight horizon: the
 eye's height above sea level from the pose (camera z in the anchor frame, whose h0 is sea level),
 zmax from a coarse DEM pass per anchor (farfield.horizon_grid, in its own worker), RADIUS =
@@ -32,7 +32,7 @@ clamp(sqrt(2R'h_eye) + sqrt(2R'zmax_region), 80 km, 1500 km), the per-tile horiz
 refraction R' = R/(1-0.13), MAX_LEVEL 10, 256/128 px textures from L8, hello.horizon and
 status.radius (the mod's visibleDistance follows it).
 
-Network (docs/research/2026-10-10-rate-limits.md §5): every download goes through one
+Network (docs/research/2026-10-10-rate-limits.md Â§5): every download goes through one
 netfetch.Fetcher (per-host rate limits, priorities, retries, circuit breakers with failover along
 the source chains, daily budgets in <cache-dir>/netstats/, one summary line a minute in the log).
 --offline serves the disk caches only. While a host is unreachable, or tiles fell back to the
@@ -52,7 +52,7 @@ tiles on screen never lose their files.
 """
 import os
 
-# Heavy numpy work must not compete with the game's physics threads (§4.5): one BLAS/OpenMP
+# Heavy numpy work must not compete with the game's physics threads (Â§4.5): one BLAS/OpenMP
 # thread per worker. Set before numpy is imported.
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
@@ -191,8 +191,8 @@ def resolve_cells(cells, near_visual):
     return CLI_CELLS_MESH if near_visual in MESH_LAYOUT else 32
 SERVER_VERSION = netfetch.SERVER_VERSION      # one place: the User-Agent carries it too
 NEAR_VISUALS = ("mesh", "terrain", "detail")
-# detail (2026-10-12, docs/research/2026-10-12-engine-limits-and-worldgen.md §6-7): the mesh layout
-# (64 cells, the 512² block, the horizon) with the physics block drawn as the near ground: aerial photo
+# detail (2026-10-12, docs/research/2026-10-12-engine-limits-and-worldgen.md Â§6-7): the mesh layout
+# (64 cells, the 512Â² block, the horizon) with the physics block drawn as the near ground: aerial photo
 # as its base colour, the surface materials' own detail textures; far tiles under it are hidden or sunk
 # as in terrain mode. MESH_LAYOUT: the modes on the mesh-mode tile layout; BLOCK_DRAWN: the block is seen.
 MESH_LAYOUT = ("mesh", "detail")
@@ -332,7 +332,7 @@ TERRAIN_STUCK_S = 90.0      # s: a terrain request still building this long is l
 HM_KEEP_COMMITTED = 3       # the current terrain and the last two
 HM_KEEP_SENT = 2            # terrains handed to the mod but maybe not committed yet
 # Generated far-tile files kept per server, by layout: a 64-cell tile is ~3.7x the bytes (348 KB)
-# and a pose needs ~300 tiles instead of ~811 (docs/V1_4_SPEC.md §3.1).
+# and a pose needs ~300 tiles instead of ~811 (docs/V1_4_SPEC.md Â§3.1).
 TILE_CACHE = {32: 6000, 64: 2500}
 HM_THREADS = 4
 HM_REQUEST_THREADS = 2          # Server.hm_req_pool: the request lane's (they wait on its block process)
@@ -364,7 +364,7 @@ READY_SET_M = 3000.0        # m: the built blocks round the player the mod is to
 # The mod's terrain-follow rule (mod follow.lua): it asks once the player is more than
 # FOLLOW_PREPARE (Chebyshev) from the block centre, for snap256(player + v * FOLLOW_LEAD),
 # clamped so the player stays within FOLLOW_REACH of the new centre on both axes
-# (1020 - 600 m margin, §1.2; with the 2046 m collidable width of §12 P1 the N/E edge is at
+# (1020 - 600 m margin, Â§1.2; with the 2046 m collidable width of Â§12 P1 the N/E edge is at
 # +1022, so this keeps >= 602 m there). tests/test_protocol_agreement.py checks these
 # against follow.lua.
 FOLLOW_PREPARE = 300.0
@@ -379,7 +379,7 @@ class FollowRule:
     constants; tests/test_protocol_agreement.py checks both sides): centre grid, prepare distance
     (Chebyshev from the centre), target lead (s) and reach (max |centre - player| per axis), the
     prefetch start, and the fast mode (|v| > fast_v: lead fast_lead, reach fast_reach, the prepare
-    test at player + v * fast_ahead). 1024² has no fast mode (fast_v infinite)."""
+    test at player + v * fast_ahead). 1024Â² has no fast mode (fast_v infinite)."""
     grid: float
     prepare: float
     lead: float
@@ -399,7 +399,7 @@ class FollowRule:
         return self.lead, self.reach, 0.0
 
 
-# By the block's width in metres (heightmap.grid): docs/V1_4_SPEC.md §3.5 (M4): the 1 km block (collidable
+# By the block's width in metres (heightmap.grid): docs/V1_4_SPEC.md Â§3.5 (M4): the 1 km block (collidable
 # [c-512, c+510] at 2 m, c+511 at 1 m) on a 128 m grid: prepare at 128 m, lead 5 s (was 2: 2026-10-15, fewer moves),
 # reach 510 - 250 = 260 m; fast mode above 150 m/s: lead 3 s, reach 510 - 90 = 420 m, prepare test 0.75 s ahead; the
 # prefetch starts 28 m before the prepare distance. 2 km: the v1.3.1 block.
@@ -411,13 +411,13 @@ FOLLOW_RULES = {
 BLOCK_SIZES = tuple(int(m / heightmap.SQUARE) for m in sorted(FOLLOW_RULES))    # samples per edge (1024, 2048)
 TERRAIN_BLOCK = farfield.TERRAIN_BLOCK     # terrain mode's frozen 2 km block
 BLOCK_DEFAULT = 1024        # Server()'s block (test_v131_default.py pins the library default)
-# The command line's block in mesh mode: 1 km (M4: in-game 2026-10-10, the 512² block at 2 m; since 2026-11-01 the
-# same kilometre at 1 m, 1024² samples: the stock maps' resolution, a .ter swap of ~29 ms on the Stelvio)
+# The command line's block in mesh mode: 1 km (M4: in-game 2026-10-10, the 512Â² block at 2 m; since 2026-11-01 the
+# same kilometre at 1 m, 1024Â² samples: the stock maps' resolution, a .ter swap of ~29 ms on the Stelvio)
 CLI_BLOCK_MESH = 1024
 # |cx|,|cy| of an anchor's first terrain. A rebase hint stays within ~512 m of the new origin, but
 # a resync (same origin, after a server restart) asks for the block around the player, which can be
 # up to the mod's maximum rebase distance (16 km) away, plus however far the player got past it.
-# Clamping that to ±768 m made the mod reject every answer as stale and re-request forever.
+# Clamping that to Â±768 m made the mod reject every answer as stale and re-request forever.
 ANCHOR_CENTRE_MAX = 21000.0
 # A superseded anchor's files are deleted this long after the new anchor's far_done: the mod
 # still shows (and deletes, time-sliced) old tiles after far_done, and the engine watches
@@ -454,10 +454,10 @@ SURVEY_HALF = 15000.0
 SURVEY_N = 61                       # 500 m apart
 SURVEY_WINDOW = 1.0                 # blocks: the windows survey_q takes the relief of (+ one survey step: an unaligned block)
 SURVEY_PERCENTILE = 99.0            # of the windows' relief the anchor's quantum must hold (the rest: their own, coarser)
-BLOCK_SURVEY_M = 2048.0             # m: the largest block (1024² at 2 m); Server passes its own
+BLOCK_SURVEY_M = 2048.0             # m: the largest block (1024Â² at 2 m); Server passes its own
 SURVEY_ZOOM = 10
 DELTA_MARGIN = 0.1          # m added to measured swap-group deltas (crossings between vertices)
-NICE = 10                   # default niceness of the server process (§4.5)
+NICE = 10                   # default niceness of the server process (Â§4.5)
 NICE_ROADS = 3              # the road tile workers' niceness on top of it (blockworker.init: the terrain blocks first)
 NICE_FAR = 6                # the far field's (the scenery far away last)
 NICE_FAR_BUILDINGS = 9      # the far buildings': after the far field (on a Steam Deck's four cores a teleport's far
@@ -465,7 +465,7 @@ NICE_FAR_BUILDINGS = 9      # the far buildings': after the far field (on a Stea
 IMAGERY_PREFETCH = 40       # queued tiles whose imagery is fetched ahead of their build (only spare request tokens)
 PREFETCH_AGAIN_S = 2.0      # s before a queued tile's imagery prefetch is asked for again
 PREFETCHED_MAX = 8192       # tiles remembered as prefetched (a connection's record starts again past this)
-# status.backlog (docs/V1_4_SPEC.md §3.0, §4): every status message carries the number of desired
+# status.backlog (docs/V1_4_SPEC.md Â§3.0, Â§4): every status message carries the number of desired
 # tiles of the current anchor not shown yet. Status messages only go out on events (v1.3.1); with
 # --status-interval S > 0 the last status is also re-sent from on_pose at most every S seconds
 # while the backlog changed, so tools/drive.py can sample it (M0 harness runs use 1).
@@ -492,7 +492,7 @@ SESSION_SWEEP_S = 30.0      # main_async: how often sweep_sessions runs
 RETEX_RATE = 5.0
 RETEX_INFLIGHT = 1
 RETEX_REPEAT = 3
-# Shown in the mod's UI (V1_3_SPEC §C), after the imagery credits.
+# Shown in the mod's UI (V1_3_SPEC Â§C), after the imagery credits.
 ELEVATION_CREDIT = "Elevation: Mapterhorn (see mapterhorn.com/attribution), AWS Terrain Tiles / Mapzen"
 
 log = logging.getLogger("earthd")
@@ -530,7 +530,7 @@ class TileInfo:
     err: float
     sink: float | None
     skirt: float
-    grid: np.ndarray            # (cells + 1)² absolute vertex heights (float32), for swap deltas
+    grid: np.ndarray            # (cells + 1)Â² absolute vertex heights (float32), for swap deltas
     bytes: int
     seconds: float
     material: str | None = None     # per-tile imagery material (None: the static palette material)
@@ -679,7 +679,7 @@ def _num(msg, name, default=None):
 
 
 def survey_q(frame, dem, block_m=BLOCK_SURVEY_M):
-    """Height quantum of an anchor (§1.3): the smallest ladder step whose block range covers the
+    """Height quantum of an anchor (Â§1.3): the smallest ladder step whose block range covers the
     SURVEY_PERCENTILE relief of the windows of SURVEY_WINDOW blocks (block_m m) of a +-15 km survey at
     DEM z10, plus 10 %. A block only has to hold its own relief (its zBase is its own; one that does not
     fit takes the next coarser step, heightmap.block_params). The whole survey's relief made every
@@ -750,7 +750,7 @@ class Server:
         self.far_format = far_format
         if near_visual not in NEAR_VISUALS:
             raise ValueError(f"unknown near-visual mode {near_visual!r}")
-        # mesh: the TerrainBlock is physics only, the ground is drawn by the finest tiles (§B)
+        # mesh: the TerrainBlock is physics only, the ground is drawn by the finest tiles (Â§B)
         self.near_visual = near_visual
         # the near tiles' asphalt layer (mesh mode: the tiles are the ground seen; surface.road_mask)
         self.road_masks = roadsmod.ROADS_IN_GROUND and near_visual not in BLOCK_DRAWN
@@ -762,8 +762,8 @@ class Server:
         self.layout = farfield.Layout(cells, block, near_visual in MESH_LAYOUT, tex)
         self.follow = FOLLOW_RULES[self.layout.block * heightmap.SQUARE]     # the mod's terrain-follow table for its block
         self.min_level = self.layout.min_level
-        # the finest level under a drawn block's forced box (detail: L-1, whose 128 m edges meet the 512²
-        # block's 128 m-grid edges; terrain: L0 under the 256 m-grid 1024² block)
+        # the finest level under a drawn block's forced box (detail: L-1, whose 128 m edges meet the 512Â²
+        # block's 128 m-grid edges; terrain: L0 under the 256 m-grid 1024Â² block)
         self.forced_level = max(self.min_level, -1) if near_visual == "detail" else 0
         self.near_radii = dict(self.layout.near_radii if near_radii is None else near_radii)
         self.tile_cache = TILE_CACHE[cells]
@@ -780,7 +780,7 @@ class Server:
             sea.dem = self.dem      # the lakes' levels
         if vegetation is not None and vegetation.dem is None:
             vegetation.dem = self.dem   # rocks on bare ground by its slope (vegetation.ROCK_SLOPE)
-        # Satellite imagery (§A); None = --imagery off (v3-style palette tiles).
+        # Satellite imagery (Â§A); None = --imagery off (v3-style palette tiles).
         # De-shadowing of the USGS tiles (--deshadow lambert|full; off = the imagery as served).
         self.deshadow = None
         if deshadow != "off" and imagery and deshadowmod.SOURCE in [getattr(s, "name", s) for s in imagery]:
@@ -1115,14 +1115,14 @@ class Server:
         return gone
 
     def snap(self, v):
-        """Nearest block centre coordinate on the layout's grid (256 m; M4 512²: 128 m)."""
+        """Nearest block centre coordinate on the layout's grid (256 m; M4 512Â²: 128 m)."""
         return heightmap.snap(v, self.layout.grid)
 
     def new_anchor(self, lat, lon):
         a = Anchor(self._next_anchor, lat, lon, geodesy.EnuFrame(lat, lon))
         a.hm_zoom = demmod.zoom_for(lat, 1.25, demmod.FINE_ZOOM)    # ~1 m pixels where the data exists (dem.FINE_ZOOM)
         a.zooms = {lvl: self.layout.dem_zoom(lat, lvl) for lvl in range(1, farfield.HORIZON_MAX_LEVEL + 1)}
-        a.zooms[0] = a.hm_zoom                      # L0 shares the terrain's DEM (§1.4)
+        a.zooms[0] = a.hm_zoom                      # L0 shares the terrain's DEM (Â§1.4)
         a.zf = farfield.global_zoom(lat)            # the global far tiles' finest zoom (geotiles phase 3b)
         if self.deshadow is not None:
             self.deshadow.prepare(lat, lon)         # the regions around it, in the background
@@ -1924,6 +1924,8 @@ class Server:
             ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)))
         from sitegen.hardscape import collect
         from sitegen.mapped_surfaces import collect as mapped_surfaces
+        import streetplanters
+        streetplanters.attach(walks,props)
         vegetation_exclusions = collect(items, drives, walks, chunks=chunks,
             origin=box[:2], bounds=box,
             ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)),
@@ -2204,7 +2206,7 @@ class Server:
                     self.warm_want = [w for w in self.warm_want if w[1] != job[1]]
 
     def make_heightmap(self, anchor, cx, cy, progress, lane=LANE_REQUEST, queued_at=None):
-        """Worker thread: build and write one 1024² terrain. The follow / prefetch blocks (no progress
+        """Worker thread: build and write one 1024Â² terrain. The follow / prefetch blocks (no progress
         callback) build in the block process when there is one; the anchor's first block here, so its
         DEM download reports progress."""
         t0 = time.perf_counter()
@@ -2847,7 +2849,7 @@ class Server:
                 # (at the photo's own size: the engine refuses another, "dont have required size of 4096-4096")
                 rgb = np.array(surfacemod.enlarge(small, n), np.uint8)
                 tq.append(("enlarge", time.perf_counter()))
-            # plain slices, not masks: masked copies took 0.9 s of a 4096² stand-in's 1.4 s, and at 230 mph (a block
+            # plain slices, not masks: masked copies took 0.9 s of a 4096Â² stand-in's 1.4 s, and at 230 mph (a block
             # every 1.2 s) the stand-ins fell behind and the flat base showed between them (the user, 2026-10-30)
             for i0, i1, j0, j1, dy, dx, orgb in parts:
                 rgb[i0:i1, j0:j1] = orgb[i0 + dy:i1 + dy, j0 + dx:j1 + dx]
@@ -2876,9 +2878,9 @@ class Server:
             return None
 
     def write_base(self, anchor, cx, cy, pool=None, rev=0, photo=None, quick=False):
-        """Detail mode: the block footprint's aerial photo (base_px² PNG, row 0 = north, the same imagery
+        """Detail mode: the block footprint's aerial photo (base_pxÂ² PNG, row 0 = north, the same imagery
         chain and corrections as the far tiles), the drawn block's base colour. The game would pack it into
-        BC7 on its main thread (1.5 s for a new 1024² photo); terraincache writes that packed texture into
+        BC7 on its main thread (1.5 s for a new 1024Â² photo); terraincache writes that packed texture into
         the game's cache first (~0.4 s here), so the game takes it as it is. Returns the file name, or None
         when no imagery could be rendered (the block keeps the level's neutral base).
         quick (a teleport's provisional first block): without the roofs' mask and the painted roads when the place's
@@ -3135,7 +3137,7 @@ class Server:
 
     # --- horizon (M1h) -------------------------------------------------------
     def make_horizon_grid(self, anchor, half):
-        """Worker thread: the anchor's zmax grid over [-half, half]² (a coarse DEM pass)."""
+        """Worker thread: the anchor's zmax grid over [-half, half]Â² (a coarse DEM pass)."""
         t0 = time.perf_counter()
         cache = _BoundedLru(self.horizon_blocks, HORIZON_BLOCK_CACHE)
         grid = farfield.horizon_grid(anchor.frame, self.dem, half, cache=cache)
@@ -4450,7 +4452,7 @@ class Connection:
             self.writer.write(protocol.encode(msg))
 
     def backlog(self):
-        """status.backlog: desired tiles of the current anchor that are not shown yet (V1_4_SPEC §4)."""
+        """status.backlog: desired tiles of the current anchor that are not shown yet (V1_4_SPEC Â§4)."""
         aid = self.active
         if aid is None:
             return 0
@@ -5165,7 +5167,7 @@ class Connection:
                        "error": f"invalid request: {type(e).__name__} {e}"})
             return
         if aid == self.active and self.s.layout.block_at(cx, cy) != self.block:
-            # The pending block's L0 tiles stream first, so the commit never waits (§2.3).
+            # The pending block's L0 tiles stream first, so the commit never waits (Â§2.3).
             self.pending_block = self.s.layout.block_at(cx, cy)
             self.pending_at = time.monotonic()
             t1 = time.perf_counter()
@@ -5902,7 +5904,7 @@ class Connection:
     def update_eye(self, frame, x, y, msg):
         """M1h: the eye's height above sea level from a pose in `frame` (the pose's anchor): the camera's
         z, else EYE_ABOVE_PLAYER over the player's. The frame's z is the height above the anchor's
-        tangent plane, whose origin is at sea level, so the exact geodetic height adds the d²/2R the
+        tangent plane, whose origin is at sea level, so the exact geodetic height adds the dÂ²/2R the
         plane lies above the ellipsoid at the player (17.7 m at 15 km). Quantised (EYE_STEP)."""
         cam = msg.get("cam")
         z = cam.get("z") if isinstance(cam, dict) else None
@@ -6013,7 +6015,7 @@ class Connection:
     # --- far field ----------------------------------------------------------
     def forced(self):
         """Boxes refined to L0 (terrain mode: the mod covers L0 under the block; detail mode: to L-1).
-        None in mesh mode: the block is invisible, so tiles never depend on it (V1_3_SPEC §B).
+        None in mesh mode: the block is invisible, so tiles never depend on it (V1_3_SPEC Â§B).
         Detail mode: each box grown by DETAIL_RING_M, so the block's neighbours are L-1 tiles too (2 m
         cells, the block's own lattice: their edge meets the block's; L1 neighbours, 8 m cells, left a
         step and their dark skirt along the block's edge, in-game 2026-10-13)."""

@@ -67,6 +67,36 @@ class SharedCourtTests(unittest.TestCase):
             return sc.build_tile(self.tile, self.tile.frame, lambda lat,lon: np.full(np.shape(lat),20.),
                                  items=kwargs.pop('items', self.items), origin=(*self.tile.box[:2],0.), **kwargs)
 
+    def test_empty_tile_does_not_collect_physical_masks(self):
+        from unittest.mock import Mock
+        collect=Mock(side_effect=AssertionError('unneeded physical masks'))
+        with patch.object(sc,'catalogue',return_value=('fixture',(),())):
+            self.assertEqual(sc.build_tile(self.tile,self.tile.frame,None,obstacle_factory=collect),((),()))
+        collect.assert_not_called()
+
+    def test_lazy_physical_masks_preserve_courts_and_conflict_rejection(self):
+        from unittest.mock import Mock
+        collect=Mock(return_value=())
+        self.assertEqual(self.build(),self.build(obstacle_factory=collect))
+        collect.assert_called_once_with()
+        rings=[[list(p) for p in sc.project_points([(-10,-10,20.),(-5,-10,20.),(-5,10,20.),(-10,10,20.)],
+                    sc._frame(self.plan),self.tile.frame)[:,:2]]]
+        collect=Mock(return_value=[dict(rings=rings,min_z=19.,max_z=21.)])
+        with self.assertRaisesRegex(RuntimeError,'shared_court_physical_conflict'):
+            self.build(obstacle_factory=collect)
+        collect.assert_called_once_with()
+
+    def test_empty_tile_still_rejects_changed_catalogue_before_collecting(self):
+        from unittest.mock import Mock
+        collect=Mock(side_effect=AssertionError('unneeded physical masks'))
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'sites.json';path.write_text('{}')
+            with patch.dict(os.environ,{'BNE_SHARED_SITE_RECORDS':str(path)}), \
+                 patch.object(sc,'catalogue',return_value=('old-digest',(),())):
+                with self.assertRaisesRegex(RuntimeError,'catalogue changed'):
+                    sc.build_tile(self.tile,self.tile.frame,None,obstacle_factory=collect)
+        collect.assert_not_called()
+
     def test_two_members_share_one_closed_court_with_exact_hole(self):
         courts, notes = self.build()
         self.assertEqual(notes, ())

@@ -299,19 +299,21 @@ def drawn_ground(frame, drawn, xy, q=None, cell=GRID_M):
     xy = np.asarray(xy, np.float64).reshape(-1, 2)
     if not len(xy):
         return np.zeros(0)
-    grid, i0, j0 = _height_grid(frame, drawn, xy, q, cell)
+    # Sparse probes (furniture, access edges) need four lattice vertices each,
+    # not every point in their often huge bounding rectangle. Keep the exact
+    # terrain lattice, height quantisation and diagonal interpolation.
     gx, gy = xy[:, 0] / cell, xy[:, 1] / cell
     i, j = np.floor(gx).astype(np.int64), np.floor(gy).astype(np.int64)
-    ny, nx = grid.shape
-    i -= (i - i0 == nx - 1) & (gx == i)         # a point on the grid's last line belongs to the square before it
-    j -= (j - j0 == ny - 1) & (gy == j)
-    li, lj = i - i0, j - j0
-    ok = (li >= 0) & (lj >= 0) & (li + 1 < nx) & (lj + 1 < ny)
-    li, lj = np.clip(li, 0, nx - 2), np.clip(lj, 0, ny - 2)
-    fx, fy = gx - i, gy - j
-    a, b, c, d = grid[lj, li], grid[lj, li + 1], grid[lj + 1, li], grid[lj + 1, li + 1]
-    z = np.where(fy > fx, a + fy * (c - a) + fx * (d - c), a + fx * (b - a) + fy * (d - b))
-    return np.where(ok, z, np.nan)
+    corners=np.stack((np.c_[i,j],np.c_[i+1,j],np.c_[i,j+1],np.c_[i+1,j+1]),axis=1)
+    lattice,inverse=np.unique(corners.reshape(-1,2),axis=0,return_inverse=True)
+    la,lo,_=frame.enu_to_geodetic(lattice[:,0]*cell,lattice[:,1]*cell,0.)
+    h=np.asarray(drawn(la,lo),np.float64)
+    z=np.asarray(frame.geodetic_to_enu(la,lo,h)[2],np.float64)
+    if q:z=np.rint(z/q)*q
+    a,b,c,d=z[inverse].reshape(-1,4).T
+    fx,fy=gx-i,gy-j
+    return np.where(fy>fx,a+fy*(c-a)+fx*(d-c),a+fx*(b-a)+fy*(d-b))
+
 
 
 FOLLOW_STEP_M = 0.45    # a terrain cell whose corners are further apart holds a step (a cutting's wall, the lattice's

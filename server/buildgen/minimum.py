@@ -41,6 +41,15 @@ def _windows(mesh, a, direction, left, right, bottom, top, material):
     import buildings as b
     count = len(left)
     if not count:return
+    if count<=16:
+        dx,dy=direction
+        u0,u1,v0,v1=b.WIN_UV
+        for l,r,lo,hi in zip(left,right,bottom,top):
+            x0=a[0]+dx*l+dy*.018;y0=a[1]+dy*l-dx*.018
+            x1=a[0]+dx*r+dy*.018;y1=a[1]+dy*r-dx*.018
+            mesh.quad((x0,y0,lo),(x1,y1,lo),(x1,y1,hi),(x0,y0,hi),
+                      (u0,v0),(u1,v0),(u1,v1),(u0,v1),material)
+        return
     dx, dy = direction
     along = np.column_stack((left, right, right, left))
     height = np.column_stack((bottom, bottom, top, top))

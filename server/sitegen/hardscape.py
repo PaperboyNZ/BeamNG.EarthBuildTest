@@ -4,6 +4,7 @@ Coordinates are in the road content's frame, not building-local XY. Soft planted
 cover is intentionally absent. This record does not own or modify physical meshes.
 """
 import math
+from shapely import make_valid
 import numpy as np
 from shapely.geometry import Polygon, LineString, box as shape_box
 
@@ -116,14 +117,18 @@ def collect(items=(), drives=(), walks=(), *, chunks=(), origin=(0., 0.), ground
             continue
         width = float(walk.get('w', 2.5))
         curb, outward = sidewalks.run_geometry(walk['pts'], walk['side'], width)
-        profile = sidewalks.profile(w=width)
+        profile = sidewalks.profile(h=float(walk.get('curb_h',sidewalks.CURB_H)),w=width)
         # Include the visible sloping back skin beyond the nominal slab width.
         # Vehicle crossings lower the inner curb, leaving this outer extent.
         back = curb[:,:2]+outward*float(profile[:,0].max())
         for i in range(len(curb)-1):
             p = np.array([curb[i,:2],curb[i+1,:2],back[i+1],back[i]])
             z = curb[i:i+2,2,None]+profile[None,:,1]
-            add(Polygon(p), z, 'footpath')
+            shape=make_valid(Polygon(p))
+            for garden in walk.get('tree_gardens',()):
+                hole=Polygon(np.asarray(garden['ring'])[:,:2])
+                if hole.is_valid:shape=shape.difference(hole)
+            add(shape, z, 'footpath')
     if frame is not None:
         for _, polygons in fuel_pads or ():
             for lat,lon in polygons:

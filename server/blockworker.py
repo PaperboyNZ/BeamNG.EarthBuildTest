@@ -2,7 +2,7 @@
 
 The server is one Python process: its threads share one interpreter lock, so while three far-tile workers
 built, a physics block took 3-10x longer than alone (land cover 1.4 s instead of 0.1 s), too long to follow a
-car at 58 m/s, where the 512² block moves every 2.2 s. This process builds the blocks the follow and the
+car at 58 m/s, where the 512Â² block moves every 2.2 s. This process builds the blocks the follow and the
 prefetch ask for on a core of its own. It keeps its own DEM reader, road plans (grading.Grader per anchor),
 street widths, height chunks and land-cover reader over the same disk caches. All of them are deterministic,
 so a block built here is the one the server would build (the far tiles, graded in the server process, agree
@@ -910,6 +910,8 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
     props = roadside_clearance.clear(props, wires=wires, areas=furniture_areas,
         walks=walks,items=items,lines=lines,origin=(x0,y0),bounds=box,
         ground=lambda xy: roadmeshmod.drawn_ground(frame,drawn,xy,q))
+    import streetplanters
+    streetplanters.attach(walks,props,walks_raw)
     mark("furniture_clearance")
     P.chunks, P.ctx, P.walks, P.box, P.origin = chunks, ctx, walks, box, (x0, y0, 0.0)
     P.bld, P.props, P.wires, P.park, P.fuel, P.fuel_pads = bld, props, wires, park, fuel, fuel_pads
@@ -923,10 +925,12 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
     if (buildings and hasattr(tile, 'key') and os.environ.get('BNE_SHARED_SITE_RECORDS')
             and __import__('building_settings').current() == 'v2'):
         from sitegen import shared_courts
-        physical = collect(items, drives, walks, chunks=chunks, origin=(x0,y0), bounds=box,
-            ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q), frame=frame, fuel_pads=fuel_pads)
+        def shared_obstacles():
+            return collect(items, drives, walks, chunks=chunks, origin=(x0,y0), bounds=box,
+                ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q),
+                frame=frame, fuel_pads=fuel_pads)['polygons']
         P.shared_courts, notes = shared_courts.build_tile(tile, frame, elev, items=items,
-            obstacles=physical['polygons'], origin=(x0,y0,0.))
+            obstacle_factory=shared_obstacles, origin=(x0,y0,0.))
         if notes: log.debug('Shared court fitting %s: %s', tile.key, notes)
         if P.shared_courts:
             P.dmesh = shared_courts.combine(P.dmesh, shared_courts.compile(P.shared_courts, frame, (x0,y0,0.)))
@@ -955,6 +959,8 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
                 for layout in shared:
                     parking,paint,planting=shared_layouts.additions(layout,frame,elev)
                     P.park.extend(parking);P.chunks.extend(paint);P.props.extend(planting)
+    import streetplanters
+    streetplanters.attach(P.walks,P.props,walks_raw)
     mark('shared_courts')
     return P
 
@@ -1365,6 +1371,8 @@ def _map_walks(src, dst, walks):
             wk["corner"] = c
         else:
             wk["pts"] = mp(wk["pts"])
+        if wk.get('tree_gardens'):
+            wk['tree_gardens']=[dict(g,ring=mp(g['ring']).tolist()) for g in wk['tree_gardens']]
         out.append(wk)
     return out
 
@@ -1463,7 +1471,7 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
             ww = wk.get("w", roadsmod.SIDEWALK["w"])
             curb, outv = sidewalksmod.run_geometry(wk["pts"], wk["side"], ww)
             b.add_run(curb, outv, ww, h=wk.get("curb_h", sidewalksmod.CURB_H), caps=wk["caps"], ramps=wk.get("ramps", ()),
-                      slab=sidewalksmod.slab_material(wk),driveways=wk.get('driveways',()), verge=wk.get('verge',False))
+                      slab=sidewalksmod.slab_material(wk),driveways=wk.get('driveways',()), verge=wk.get('verge',False),gardens=wk.get('tree_gardens',()))
         mark("walks")
         if not b.empty():
             P_, T_, UV_, M_ = b.arrays()

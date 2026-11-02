@@ -262,6 +262,13 @@ def native_props(spec,x0=0.,y0=0.):
             n=min(MAX_SITE_PLANTS_PER_BED,allowance,max(1,int(length/spacing))*lanes)
         else:n=min(3,max(1,int(length/1.8)),min(MAX_PLANTS,profile.plants)-count)
         if n<=0:continue
+        # Any directional span bounds the diameter of every inscribed circle.
+        # Reject only when even the smallest native asset plus clearance cannot fit.
+        edge=p[1,:2]-p[0,:2]
+        axis=np.array((-edge[1],edge[0]))/np.linalg.norm(edge)
+        projections=p[:,:2]@axis
+        min_envelope=min(radius*NATIVE_MIN_SCALE+NATIVE_CLEARANCE for radius,_,_ in NATIVE_ASSETS.values())
+        if float(np.ptp(projections)) < 2*(min_envelope+.015)-1e-8:continue
         shape=Polygon(p[:,:2]);boundary=shape.boundary;admitted=0
         columns=max(1,math.ceil(n/lanes))
         phase=materials.unit(spec.seed,f'native-landscape-{index}-phase')*2*math.pi

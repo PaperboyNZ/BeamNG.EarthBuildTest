@@ -1,13 +1,15 @@
 """Final, indexed exclusion of roadside furniture from traversable surfaces."""
 import numpy as np
-from shapely import STRtree
+from shapely import STRtree, make_valid
 from shapely.geometry import LineString, Point, Polygon
 
 # Conservative full footprints (metres), including the prop's overhang and a
 # small clearance. These are not point-in-path tests: a bin's edge matters too.
 RADII = {'bin': .45, 'hydrant': .3, 'bench': 1.4, 'streetlight': .3,
          'pole': .3, 'polelamp': .3, 'lamplens': .3, 'lampglow': .3,
-         'stop': .65, 'giveway': .65, 'signal': .7, 'deciduous': 1.2}
+         'stop': .65, 'giveway': .65, 'signal': .7, 'deciduous': 1.2,
+         'planter_square': .65, 'planter_octagon': .65, 'planter_trough': .65, 'planted_tree': .65,
+         'garden_square': .85, 'garden_octagon': .85, 'garden_trough': .85}
 
 
 def keepouts(walks=(), items=(), drives=(), lines=(), chunks=(), origin=(0., 0.)):
@@ -99,6 +101,12 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         arc=np.r_[0.,np.cumsum(np.linalg.norm(np.diff(curb[:,:2],axis=0),axis=1))]
         if arc[-1]>.01: lanes.append((LineString(curb[:,:2]),curb,out,arc,w,float(walk.get('curb_h',.15))))
     lane_tree=STRtree([lane[0] for lane in lanes])
+    tree_paving=[]
+    for _,curb,out,arc,w,h in lanes:
+        back=curb[:,:2]+out*float(sw.profile(h=h,w=w)[:,0].max())
+        for j in range(len(curb)-1):
+            tree_paving.append(make_valid(Polygon([curb[j,:2],curb[j+1,:2],back[j+1],back[j]])))
+    tree_paving=STRtree(tree_paving)
     def radius(row):
         value=RADII.get(row[0])
         if value is None and str(row[0]).startswith('site_'):
@@ -106,8 +114,10 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
             if row[0] in NATIVE_ASSETS:value=native_radius(row[0],row[6])
         if value is None:return None
         value*=max(1.,float(row[5]))
-        if row[0]=='deciduous':value=max(value,float(row[6])*.25)
+        if row[0]=='deciduous':return max(.18,float(row[6])*.035)*max(1.,float(row[5]))+.25
         return value+.15
+    import streetplanters
+    rows=streetplanters.fit(rows,lanes,tree,obstacle_tree,bounds)
     # Accessories use their support's footprint and selection, never their
     # elevated/offset lens position. Regenerate lenses after moving supports.
     accessories={'lamplens','lampglow'}
@@ -116,6 +126,9 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
     poles={(round(r[1],2),round(r[2],2)):r for r in supports if r[0]=='pole'}
     for r in supports:
         if r[0]=='polelamp': roots[id(r)]=poles.get((round(r[1],2),round(r[2],2)),r)
+    planters={(round(r[1],2),round(r[2],2)):r for r in supports if r[0] in streetplanters.GROUPS}
+    for r in supports:
+        if r[0]=='planted_tree':roots[id(r)]=planters.get((round(r[1],2),round(r[2],2)),r)
     occupied=[];moves={};choices={};old_poles=[]
     # Reserve already-clear supports before moving others, so a relocation
     # cannot steal a later bin/sign's valid original position.
@@ -128,7 +141,41 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
             reserved.append(footprint);reserved_owners.append(id(r))
     reserved_tree=STRtree(reserved)
     stats=dict(kept=0,moved=0,unplaced=0)
-    movable={'streetlight','pole','polelamp','hydrant','bin','bench'}
+    movable={'streetlight','pole','polelamp','hydrant','bin','bench','deciduous'}
+    proposed={}
+    for r in supports:
+        if roots[id(r)] is not r:continue
+        rad=radius(r);old=np.array(r[1:4],float)
+        if rad is not None and r[0] in movable and lanes:
+            lane=lanes[int(lane_tree.nearest(Point(*old[:2])))]
+            line,curb,out,arc,w,h=lane
+            if line.distance(Point(*old[:2]))<=w+3:
+                at=line.project(Point(*old[:2]))
+                proposals=[]
+                # One-metre steps find gaps between frequent entrances; bounded
+                # to 12 m so a prop stays associated with its source station.
+                for shift in (0.,*(v for k in range(1,13) for v in (-float(k),float(k)))):
+                    station=at+shift
+                    end_clear=8. if r[0]=='deciduous' else 1.
+                    if station<rad+end_clear or station>arc[-1]-rad-end_clear:continue
+                    base=np.array([np.interp(station,arc,curb[:,j]) for j in range(3)])
+                    normal=np.array([np.interp(station,arc,out[:,j]) for j in range(2)])
+                    normal/=max(np.linalg.norm(normal),1e-9)
+                    offsets=[]
+                    if r[0]!='deciduous' and w-1.5>=2*rad+.04:offsets.append(rad+.02)
+                    if ground is not None:offsets.extend((float(sw.profile(h=h,w=w)[:,0].max())+rad+.12,
+                                                           float(sw.profile(h=h,w=w)[:,0].max())+rad+.85))
+                    for offset in offsets:
+                        pos=base.copy();pos[:2]+=normal*offset
+                        if offset<=w:pos[2]+=h+sw.CROSS_SLOPE*offset
+                        proposals.append((pos,offset>w))
+                # Prefer the curb furnishing strip before going behind the walk.
+                proposals.sort(key=lambda candidate:candidate[1])
+                proposed[id(r)]=proposals
+    rear=[pos for proposals in proposed.values() for pos,needs_ground in proposals if needs_ground]
+    if rear:
+        heights=np.asarray(ground(np.asarray(rear)[:,:2])).reshape(-1)
+        for pos,z in zip(rear,heights):pos[2]=float(z)
     for r in supports:
         if roots[id(r)] is not r:continue
         rad=radius(r)
@@ -137,6 +184,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         def safe(pos,relocated=False):
             footprint=Point(*pos[:2]).buffer(rad)
             if len(tree.query(footprint,predicate='intersects')):return False
+            if r[0]=='deciduous' and len(tree_paving.query(footprint,predicate='intersects')):return False
             if any(footprint.intersects(p) for p in occupied):return False
             if relocated:
                 if bounds is not None and not (bounds[0]<=pos[0]<bounds[2] and bounds[1]<=pos[1]<bounds[3]):return False
@@ -146,34 +194,10 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
             return True
         candidates=[]
         if safe(old):candidates.append(old)
-        if r[0] in movable and lanes:
-            lane=lanes[int(lane_tree.nearest(Point(*old[:2])))]
-            line,curb,out,arc,w,h=lane
-            if line.distance(Point(*old[:2]))<=w+3:
-                at=line.project(Point(*old[:2]))
-                proposals=[]
-                for shift in (0.,-2.,2.,-4.,4.,-8.,8.,-12.,12.):
-                    station=at+shift
-                    if station<rad+1 or station>arc[-1]-rad-1:continue
-                    base=np.array([np.interp(station,arc,curb[:,j]) for j in range(3)])
-                    normal=np.array([np.interp(station,arc,out[:,j]) for j in range(2)])
-                    normal/=max(np.linalg.norm(normal),1e-9)
-                    offsets=[]
-                    if w-1.5>=2*rad+.04:offsets.append(rad+.02)
-                    if ground is not None:offsets.append(w+rad+.2)
-                    for offset in offsets:
-                        pos=base.copy();pos[:2]+=normal*offset
-                        if offset<=w:pos[2]+=h+sw.CROSS_SLOPE*offset
-                        proposals.append((pos,offset>w))
-                rear=[pos for pos,needs_ground in proposals if needs_ground]
-                heights=iter(np.asarray(ground(np.asarray(rear)[:,:2])).reshape(-1)) if rear else iter(())
-                for pos,needs_ground in proposals:
-                    if needs_ground:
-                        z=next(heights,float('nan'))
-                        if not np.isfinite(z):continue
-                        pos[2]=float(z)
-                    if safe(pos,True) and not any(np.linalg.norm(pos-v)<.1 for v in candidates):candidates.append(pos)
-                    if len(candidates)>=8:break
+        for pos,needs_ground in proposed.get(id(r),()):
+            if not np.isfinite(pos[2]):continue
+            if safe(pos,True) and not any(np.linalg.norm(pos-v)<.1 for v in candidates):candidates.append(pos)
+            if len(candidates)>=8:break
         if candidates:
             selected=candidates[0];delta=selected-old
             moves[id(r)]=delta;choices[id(r)]=[list(map(float,c-selected)) for c in candidates]
@@ -185,6 +209,7 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
     # poles are relocated with the span here; late masks suppress that assembly
     # and its wire owner instead of leaving dangling wires at the old position.
     wired=bool(wires)
+    garden_records={id(r):r[8].get('garden') for r in supports if len(r)>8 and isinstance(r[8],dict)}
     kept=[];pending=[]
     for r in supports:
         root=roots[id(r)];delta=moves.get(id(root))
@@ -194,10 +219,12 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
         kept.append(r)
         pending.append((r,root))
     for r,root in pending:
-        if root[0] in movable:
+        if root[0] in movable or root[0] in streetplanters.GROUPS:
             r.append(dict(root=list(map(float,root[1:4])),group=root[0],height=float(root[6]),scale=float(root[5]),
                           wired=wired and root[0]=='pole',
                           choices=choices.get(id(root),[[0.,0.,0.]])[:1 if wired and root[0]=='pole' else 8]))
+    for r in kept:
+        if garden_records.get(id(r)) is not None and len(r)>8:r[8]['garden']=garden_records[id(r)]
     for r in list(kept):
         if r[0] not in furniture.LAMP_HEADS:continue
         for lens in furniture.lamp_lenses([r]):

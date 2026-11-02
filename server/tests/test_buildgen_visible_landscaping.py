@@ -3,6 +3,7 @@ from dataclasses import replace
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 import numpy as np
 from shapely.geometry import Point, Polygon
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -20,6 +21,23 @@ def example(kind='site_garden_bed',width=3.,length=30.,seed='native',cls='superm
 
 
 class NativeLandscapingTests(unittest.TestCase):
+    def test_impossible_beds_do_not_generate_candidates(self):
+        with patch.object(landscaping,'_point',side_effect=AssertionError('impossible candidate')):
+            self.assertEqual(landscaping.native_props(example(width=1.)),[])
+
+    def test_span_rejection_preserves_thresholds_and_later_bed_budgets(self):
+        # Disable only the conservative span rejection for a reference run;
+        # keep the exact native-size/support and placement tests unchanged.
+        broad=Solid('site_garden_bed',((0,-30,0),(30,-30,0),(30,-24,0),(0,-24,0)),-.1)
+        for width in (.24,.5,.9,1.,1.24,1.2511,1.2512,1.3,2.,3.,6.):
+            for seed in range(6):
+                spec=example(width=width,seed=str(seed));narrow=spec.access.landscape[0]
+                for bands in ((narrow,),(narrow,broad),(broad,narrow),(narrow,broad,narrow,broad)):
+                    spec.access=replace(spec.access,landscape=bands)
+                    actual=landscaping.native_props(spec)
+                    with patch.object(landscaping.np,'ptp',return_value=float('inf')):
+                        self.assertEqual(actual,landscaping.native_props(spec),(width,seed))
+
     def test_both_soft_covers_receive_real_asset_groups(self):
         for kind in ('site_garden_bed','site_lawn_margin'):
             spec=example(kind=kind)

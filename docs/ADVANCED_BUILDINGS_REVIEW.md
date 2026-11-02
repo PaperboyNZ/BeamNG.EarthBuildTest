@@ -1,6 +1,6 @@
 # Advanced building generation: upstream review
 
-This iteration targets upstream `dev` at `78af2ce3`. It consolidates the building
+This iteration targets upstream `dev` at `52e37245`. It consolidates the building
 work previously reviewed in fork PR #2, including the 3 November Minimum preset,
 default settings, door, handover, sidewalk and parking/context fixes.
 
@@ -43,9 +43,10 @@ uses upstream worker scheduling and existing process/cache budgets.
 This PR includes the existing opt-in runtime profiler because generation scopes
 import it directly and streaming reports feed it. It stays disabled until enabled
 each session. The later standalone profiler UI refresh is outside this scope.
-The separate road-performance PR #676 is also excluded. Both touch worker/server
-integration points, so preserve building arguments and road telemetry when merging
-them together. Historical documents describing a stacked profiler PR are superseded
+The separate road-performance PR #676 is also excluded. A trial merge against its
+`529aa44b` head conflicts in `server/blockworker.py` and `server/earthd.py`; preserve
+building arguments and road telemetry when merging them together. Historical
+documents describing a stacked profiler PR are superseded
 by this directly-to-dev submission.
 
 ## Measurements and acceptance limits

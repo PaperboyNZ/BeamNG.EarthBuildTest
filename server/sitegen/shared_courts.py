@@ -290,8 +290,13 @@ def combine(a, b):
             np.concatenate((a[2], b[2])), [*a[3], *b[3]], np.concatenate((a[4], b[4]+len(a[3]))))
 
 
-def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)):
-    """Fit complete source sites; emit only their canonically owned contact."""
+def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.), obstacle_factory=None):
+    """Fit complete source sites; emit only their canonically owned contact.
+
+    Defer expensive host physical masks until a site actually owns this tile.
+    Catalogue validation still runs on empty tiles; selected sites collect all
+    obstacles once, before fitting or accepting any physical resource.
+    """
     import inputwatch
     path = os.environ.get('BNE_SHARED_SITE_RECORDS')
     if path: inputwatch.paths((path,))
@@ -308,6 +313,9 @@ def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)
     if len(selected) > MAX_TILE_SITES: raise RuntimeError('shared_court_tile_budget')
     # Stable ordering makes conflict outcomes independent of record/source order.
     selected.sort(key=lambda p: (p.evidence.identity.namespace, p.evidence.identity.feature_id))
+    if not selected:return (), ()
+    if obstacle_factory is not None:
+        obstacles=(*obstacles,*obstacle_factory())
     accepted, notes = [], []
     from . import shared_layouts
     remaining = shared_layouts.MAX_PROBES if any(p.interfaces for p in selected) else MAX_TILE_POINTS

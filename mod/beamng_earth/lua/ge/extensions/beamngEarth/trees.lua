@@ -213,6 +213,16 @@ M.CATALOG = {
 }
 -- Italy's authored three-metre crash barrier and two end treatments. The back-facing variants reuse
 -- the same mesh with its longitudinal/lateral axes reversed; the caps are swapped to flare outwards.
+-- Three shared low-poly containers, with stock tree LODs above them.
+M.CATALOG.planted_tree={
+  {ECA..'trees/trees_aspen/tree_aspen_small_a',8.3},
+  {ECA..'trees/trees_aspen/tree_aspen_small_c',9.7},
+}
+for _,group in ipairs({'planter_square','planter_octagon','planter_trough','garden_square','garden_octagon','garden_trough'}) do
+  M.CATALOG[group]={{'/levels/beamng_earth/art/shapes/beamngEarth/'..group..'.cdae',group:match('^garden_') and .55 or .65}}
+  M.GROUP_MAX_M[group]=400
+end
+M.GROUP_MAX_M.planted_tree=400
 M.CATALOG.guardrail = { { '/art/shapes/objects/italy_guardrails_basic', 0.9 } }
 M.CATALOG.guardrail_start = { { '/art/shapes/objects/italy_guardrails_basic_end_cw', 0.9 } }
 M.CATALOG.guardrail_end = { { '/art/shapes/objects/italy_guardrails_basic_end_ccw', 0.9 } }
@@ -439,6 +449,8 @@ local function setup()
     if ok and made then M.CATALOG.signal[1][1] = M.STATIC_SIGNAL
     else log('W', 'beamngEarth.trees', 'static signal shape: ' .. tostring(made)) end
   end
+  pcall(loadJsonMaterialsFile, '/levels/beamng_earth/art/shapes/beamngEarth/planters.materials.json')
+  pcall(loadJsonMaterialsFile, '/levels/beamng_earth/art/shapes/beamngEarth/gardens.materials.json')
   ready = true
   return true
 end
@@ -461,9 +473,9 @@ local function itemType(shape, solid)
     d = (worldEditorCppApi and worldEditorCppApi.createObject) and worldEditorCppApi.createObject('TSForestItemData')
       or createObject('TSForestItemData')
     if not d then return nil end
-    d:setField('shapeFile', 0, shape .. '.dae')
+    d:setField('shapeFile', 0, shape:match('%.cdae$') and shape or (shape .. '.dae'))
     d:setField('collidable', 0, solid and '1' or '0')
-    d:setField('windScale', 0, '0.4'); d:setField('branchAmp', 0, '0.1'); d:setField('detailAmp', 0, '0.2')
+    d:setField('windScale', 0, shape:match('%.cdae$') and '0' or '0.4'); d:setField('branchAmp', 0, '0.1'); d:setField('detailAmp', 0, '0.2')
     d:registerObject(name)
     if Sim and Sim.getDataBlockSet then Sim.getDataBlockSet():addObject(d) end
   end
@@ -586,7 +598,7 @@ local naturalGroups = { site_shrub=true,site_rock=true,deciduous=true,conifer=tr
 -- Decoration participates only in precise access masks, not the whole paved
 -- sidewalk. Reuse the streamed-owner index so a late neighbouring driveway
 -- invalidates existing furniture and clearing/unloading restores it correctly.
-local furnitureRadii={bin=.45,hydrant=.3,bench=1.4,streetlight=.3,pole=.3,polelamp=.3,
+local furnitureRadii={garden_square=.85,garden_octagon=.85,garden_trough=.85,planter_square=.65,planter_octagon=.65,planter_trough=.65,planted_tree=.65,bin=.45,hydrant=.3,bench=1.4,streetlight=.3,pole=.3,polelamp=.3,
   lamplens=.3,lampglow=.3,stop=.65,giveway=.65,signal=.7}
 for group in pairs(furnitureRadii) do naturalGroups[group]=true end
 local hardKinds = { pavement=true,driveway=true,parking=true,footpath=true,road=true,fuel=true,hardscape=true,access=true }
@@ -783,7 +795,8 @@ function M.transformSurfaceExclusions(owner,xf)
     unknown_height=r.unknown_height,kind=r.kind} end
   M.setSurfaceExclusions(owner,p,xf,box)
 end
-function M.surfaceRadius(group,height,scale,renderedHeight)
+local trunkGroups={deciduous=true,conifer=true,pine_west=true,oak_west=true,palm=true,juniper=true,tropical=true}
+function M.surfaceRadius(group,height,scale,renderedHeight,crown)
   if not naturalGroups[group] then return 0 end
   if not finite(height) or not finite(scale or 1) or height<0 then return math.huge end
   -- The renderer already sizes assets from height; row scale is otherwise unused.
@@ -791,6 +804,7 @@ function M.surfaceRadius(group,height,scale,renderedHeight)
   scale=math.max(1,math.abs(scale or 1))
   if furnitureRadii[group] then return furnitureRadii[group]*math.max(1,math.abs(scale or 1))+.15 end
   height=math.max(height,renderedHeight or height)
+  if trunkGroups[group] and not crown then return math.max(.18,.035*height)*scale+.25 end
   -- Conservative origin-centred XY radii of these exact stock shapes divided
   -- by their CDAE bounds height. Account for M.pick's minimum 0.3 scale even
   -- when no actual rendered height was supplied by the caller.
@@ -804,7 +818,8 @@ function M.surfaceRadius(group,height,scale,renderedHeight)
 end
 function M.surfaceBlocked(group,x,y,z,height,scale,renderedHeight)
   if not naturalGroups[group] or not next(surfaceGrid) then return false end
-  local radius=M.surfaceRadius(group,height,scale,renderedHeight)
+  local groundRadius=M.surfaceRadius(group,height,scale,renderedHeight)
+  local radius=M.surfaceRadius(group,height,scale,renderedHeight,true)
   if radius>M.SURFACE_MAX_RADIUS or not finite(x) or not finite(y) or not finite(z) then return true end
   local assetHeight=math.max(height,renderedHeight or height)*math.max(1,math.abs(scale or 1))
   local zmin,zmax=z,z+assetHeight
@@ -826,7 +841,11 @@ function M.surfaceBlocked(group,x,y,z,height,scale,renderedHeight)
           if vertices>M.SURFACE_QUERY_VERTICES then M.surfaceQueryOverflow=(M.surfaceQueryOverflow or 0)+1; return true end
           if (not furnitureRadii[group] or (record.kind=='access' and not record.unknown_height))
               and zmax>=record.min_z and zmin<=record.max_z
-              and circleOnSurface(record,x,y,radius) then return true end
+              -- Steps and hillside footpaths are ground surfaces even when
+              -- their uphill end is higher than a neighbouring tree's base.
+              -- Only overhead road/pavement decks require crown clearance.
+              and circleOnSurface(record,x,y,(record.kind=='road' or record.kind=='pavement')
+                and record.min_z>z+.6 and radius or groundRadius) then return true end
         end
       end
     end
@@ -942,7 +961,7 @@ local function roadsideRows(t,rows)
     local m=row[9]
     if type(m)=='table' and type(m.root)=='table' and #m.root==3
       and finite(m.root[1]) and finite(m.root[2]) and finite(m.root[3])
-      and furnitureRadii[m.group] and finite(m.height) and finite(m.scale)
+      and (furnitureRadii[m.group] or m.group=='deciduous') and finite(m.height) and finite(m.scale)
       and type(m.choices)=='table' and #m.choices<=8 then
       local choices={}
       for _,v in ipairs(m.choices) do

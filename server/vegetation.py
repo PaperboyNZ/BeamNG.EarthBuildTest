@@ -34,7 +34,7 @@ import staging
 
 log = logging.getLogger("earthd.vegetation")
 
-VERSION = 21          # (21: all decorations clear paved surfaces by finite footprint, including CHM trees/footways)
+VERSION = 22          # 22: trunk clearance on ground hardscape; retain crown clearance at buildings/decks
                       # (the cached cells hold their groups: 14 for the regional rules of GitHub #110; 16: the roads'
                       # drawn widths and sidewalks kept clear; 17: BC's lidar canopy heights, mapdata's canopy layer 2;
                       # 18: the rounded junction corners kept clear, roadcorners.py; 19: one tree per flat crown, thin_tops; 20: none on or
@@ -341,10 +341,12 @@ class Vegetation:
         if len(rj_):
             vx,vy=push[0,rj_,ri_],push[1,rj_,ri_]
             distance=np.hypot(vx,vy)
-            # Maximum generated CHM scale is 1.15. Reserve the entire resulting
-            # crown footprint before final jitter, then check it again below.
+            # Move the trunk beyond the walking corridor, not the whole crown.
+            # Bushes still reserve their full low foliage footprint.
             latitude=_to4326(mx[ri_],my[rj_])[1]
-            radius=(.12*hs[rj_,ri_]+1.)*1.15+DECORATION_CLEAR_M
+            height=hs[rj_,ri_]
+            radius=np.where(height>=TREE_MIN_M,np.maximum(.18,.035*height),
+                            np.maximum(.12*height+1.,.6*height))*1.15+DECORATION_CLEAR_M
             extra=radius/(chm.dx*np.maximum(.05,np.cos(np.radians(latitude))))
             factor=1.+extra/np.maximum(distance,1e-9)
             nc = np.rint(ri_ + vx*factor).astype(np.int64)
@@ -358,6 +360,7 @@ class Vegetation:
             hs = hs.copy()
             hs[nr[ok], nc[ok]] = np.maximum(hs[nr[ok], nc[ok]], hs[rj_[ok], ri_[ok]])     # keep its height
             tops |= moved
+        structures = blocked.copy()  # buildings, water and elevated decks retain crown clearance
         blocked |= road
         jj, ii = np.nonzero(tops)
         jj, ii = _thin(jj, ii, hs[jj, ii], chm.dx)     # one top per crown (flat crowns had several)
@@ -409,6 +412,7 @@ class Vegetation:
                     log.debug("vegetation: paved surface of %s: %s",(x+dx,y+dy),e)
         scatter = self._scatter(cd, lc, blocked | paved, chm, hs)
         edge = self._edge(cd, lc, blocked | paved, road, chm, hs)
+        tree = _clear_surface_footprints(tree, structures, chm, ground_only=False)
         return _clear_surface_footprints(_concat(_concat(tree,scatter),edge),blocked|paved,chm)
 
     def _edge(self, cd, lc, blocked, road, chm, hs):
@@ -634,7 +638,13 @@ def footprint_radius(items):
     return np.maximum(radius,np.asarray(items.radius,float))*np.asarray(items.scale,float)
 
 
-def _clear_surface_footprints(items,mask,chm):
+def ground_radius(items):
+    """Trunk at ground level; low shrubs and rocks keep their full envelope."""
+    trunk=np.maximum(.18,.035*np.asarray(items.height,float))*np.maximum(1.,np.asarray(items.scale,float))
+    return np.where(items.kind==KIND_TREE,trunk,footprint_radius(items))
+
+
+def _clear_surface_footprints(items,mask,chm,ground_only=True):
     """Reject full finite footprints, after all relocation and position jitter.
 
     One summed-area grid and vectorized rectangle queries; work is bounded by
@@ -643,7 +653,7 @@ def _clear_surface_footprints(items,mask,chm):
     """
     if not len(items):return items
     x,y=_to3857(items.lon,items.lat)
-    radius=footprint_radius(items)+DECORATION_CLEAR_M
+    radius=(ground_radius(items) if ground_only else footprint_radius(items))+DECORATION_CLEAR_M
     pixels=radius/np.maximum(.05,np.cos(np.radians(items.lat)))
     rows,cols=mask.shape
     finite=(np.isfinite(x)&np.isfinite(y)&np.isfinite(pixels)&(pixels>=0)

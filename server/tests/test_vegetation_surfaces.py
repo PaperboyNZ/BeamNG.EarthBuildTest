@@ -77,7 +77,7 @@ class VegetationSurfaceTests(unittest.TestCase):
         road=feature('roads','residential',((80,10),(80,150)),line=True,width=10.)
         veg._mask_roads(road,mask,chm,clear=0.)
         source=items(((86,80),(92,80),(88,80)),groups=(veg.G_DECIDUOUS,veg.G_DECIDUOUS,veg.G_ROCK),height=2.,scale=3.)
-        kept=veg._clear_surface_footprints(source,mask,chm)
+        kept=veg._clear_surface_footprints(source,mask,chm,ground_only=False)
         x,y=veg._to3857(kept.lon,kept.lat)
         self.assertEqual(len(kept),1)
         self.assertAlmostEqual(x[0],92.,places=5)
@@ -127,7 +127,7 @@ class VegetationSurfaceTests(unittest.TestCase):
         px,py=veg._to3857(actual.lon,actual.lat)
         self.assertFalse(((abs(px-x)<20)&(abs(py-y)<20)).any())
         self.assertGreater(len(actual),0)
-        self.assertEqual(veg.VERSION,21)
+        self.assertEqual(veg.VERSION,22)
 
 
 if __name__=='__main__':unittest.main()

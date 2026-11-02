@@ -83,7 +83,7 @@ GRAVEL = {"gravel", "fine_gravel", "compacted", "pebblestone", "wbm", "laterite"
 # ... and the values that do mean "no hard surface": an unrecognised one is not one of these (the class decides)
 UNPAVED = {"unpaved", "ground", "dirt", "earth", "mud", "grass", "grass_paver", "sand", "soil",
            # the rock family: a rough, unpaved surface, never a marked asphalt street (gridmap v2's Rock is a
-           # TerrainMaterial — a heightfield shader, not a surface a decal can carry: 2026-10-22)
+           # TerrainMaterial â€” a heightfield shader, not a surface a decal can carry: 2026-10-22)
            "rock", "rocky", "bedrock",
            # more of OSM's recognised unpaved values, which an unrecognised value must not outrank
            "clay", "shells", "woodchips"}
@@ -208,7 +208,7 @@ WALK_STEP_M = 1.0               # m the ground under a sidewalk may lie off the 
                                 # a drop is there and the sidewalk stops (it was draped up a wall, Munich's McGraw-Graben)
 NEAR_M = 40.0                   # roads this far outside the tile still cut its sidewalks / lines
 # Carriageway = driving width + parking lanes on city streets or paved edge strips on rural roads
-# (docs/research/2026-10-11-official-road-study.md §2: rural paved surface = AI width + 2-2.5 m;
+# (docs/research/2026-10-11-official-road-study.md Â§2: rural paved surface = AI width + 2-2.5 m;
 # West Coast USA's plain streets 12.5 m for 8 m of driving: ~2.3 m of parking each side). A width
 # rule, where Overture has one, is the carriageway already.
 PARKING_M = 2.3
@@ -1330,7 +1330,7 @@ def surface_kind(cls, surface):
 
     The value's base token decides: OSM writes the detail after a colon (`cobblestone:flattened`,
     `paving_stones:30`, `sett:pattern`) and more than one value after a semicolon, and matched whole they all fell
-    through to "dirt", which is drawn with gravel's own material (LOOK) and painted DIRT: İzmir's sett streets read
+    through to "dirt", which is drawn with gravel's own material (LOOK) and painted DIRT: Ä°zmir's sett streets read
     as gravel tracks (2026-10-22). Interlocking pavers have their own names in the map. A value not understood at
     all is the class's own surface, not dirt: an unknown tag must not turn a residential street into a track."""
     if surface is not None:
@@ -3825,7 +3825,7 @@ MAJOR_LOW_H = 5.0       # m: ... on a major road (CONCRETE_WALL_CLASSES: road tu
 # TUNNEL_ROAD_REACH_M of its ends is covered, its carriageway and TUNNEL_ROAD_CLEAR_M past it (along the tunnel: / the
 # sine of the crossing angle, at least TUNNEL_ROAD_MIN_SIN). On lidar each carriageway of a divided motorway over an
 # underpass is its own embankment: the arch under one was 8 m long under 13 m of lanes, its mouths and terrain holes
-# in them (GitHub #450, the A-7 near Málaga).
+# in them (GitHub #450, the A-7 near MÃ¡laga).
 TUNNEL_ROAD_CLEAR_M = 2.0
 TUNNEL_ROAD_MIN_SIN = 0.35
 TUNNEL_ROAD_REACH_M = 15.0
@@ -4156,7 +4156,7 @@ def extras(spec, pts, lon, left_hand=False, country=None, osm=None, ws=None, shi
         if kind == "paved" and (cls in CENTRE_CLASSES or cls in LANE_CLASSES) else None
     if plan is not None:
         # the map's lanes: each line where its lanes meet (OpenStreetMap lanes:forward / backward / both_ways,
-        # overtaking, change:lanes; research §5)
+        # overtaking, change:lanes; research Â§5)
         pat = st.lane_motorway if motorway else (st.lane_urban if urban else st.lane_rural)
         cpat = st.centre_urban if urban else st.centre_rural
         d = (st.double_gap + lw_) / 2
@@ -6442,7 +6442,7 @@ HOLE_JOIN_M = 3.0           # m: a road with an end this near a tunnel part's en
 def spare_carriageways(mask, parts, cells, frame, cx, cy, square):
     """mask with the hole samples inside the carriageway of a ground road that is not the tunnel's (another feature, not
     an approach joined at a mouth) filled again: a portal's opening reaching into a road beside or over it left a hole in
-    its lanes (GitHub #450, the A-7 near Málaga, a 2 m drop at the edge of a carriageway beside an underpass's mouth)."""
+    its lanes (GitHub #450, the A-7 near MÃ¡laga, a 2 m drop at the edge of a carriageway beside an underpass's mouth)."""
     import fast
     own = {str(p[0]).split("#")[0] for p in parts}
     ends = np.array([np.asarray(p[2], np.float64)[k, :2] for p in parts for k in (0, -1) if len(p[2])], np.float64)
@@ -7021,7 +7021,7 @@ def retaining_walls(frame, roads, elev, exact, decks=()):
 
 TWIN_SHARE = 0.8        # a tunnel part beside another for this share of its length (their tubes overlapping) ...
 TWIN_DZ_M = 2.0         # ... with its floor within this of the other's: twin tubes, one tube round both (GitHub #84:
-                        # the Route des Tamarins' two carriageways 9.5 m apart on Réunion, each an 11 m road in its own
+                        # the Route des Tamarins' two carriageways 9.5 m apart on RÃ©union, each an 11 m road in its own
                         # tube, the tubes through each other's walls and portals)
 TWIN_STEP_M = 10.0
 
@@ -7216,7 +7216,7 @@ DECK_CONTEXT_M = 24.0   # m around a tile its bridges' decks are passed as conte
 
 def _deck_look(spec):
     """A bridge deck's look: the concrete of a `surface=concrete` street (it stays concrete over the bridge) or of a
-    motorway's or trunk road's (DECK_CONCRETE_CLASSES), else asphalt — and asphalt for rock/grass surfaces, whose ground mask cannot be painted on a deck at all."""
+    motorway's or trunk road's (DECK_CONCRETE_CLASSES), else asphalt â€” and asphalt for rock/grass surfaces, whose ground mask cannot be painted on a deck at all."""
     if not terrain_surface(spec) and spec.kind == "paved" and spec.surf == "concrete":
         return CONCRETE
     if DECK_CONCRETE_ON and spec.kind == "paved" and spec.cls in DECK_CONCRETE_CLASSES:
@@ -7796,7 +7796,7 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
     for fid, spec, pts, _ in roads:
         if ROADS_IN_GROUND:                     # the carriageway painted into the ground (surface.photo_roads)
             continue
-        # no smooth ribbon over rough ground — but only where the ground layer will paint it (--surface on); with
+        # no smooth ribbon over rough ground â€” but only where the ground layer will paint it (--surface on); with
         # the surface pass off there is no ROCK/GRASS mask, and the road would otherwise vanish entirely
         if terrain_paint and terrain_surface(spec):
             continue
@@ -8899,7 +8899,7 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
             ww = wk.get("w", SIDEWALK["w"])
             curb, out = sidewalks.run_geometry(wk["pts"], wk["side"], ww)
             b.add_run(curb, out, ww, h=wk.get("curb_h", sidewalks.CURB_H), caps=wk["caps"], ramps=wk.get("ramps", ()),
-                      slab=sidewalks.slab_material(wk),driveways=wk.get('driveways',()), verge=wk.get('verge',False))
+                      slab=sidewalks.slab_material(wk),driveways=wk.get('driveways',()), verge=wk.get('verge',False),gardens=wk.get('tree_gardens',()))
         if not b.empty():
             shape = f"walks_{aid}_{tx}_{ty}.cdae"
             b.write(os.path.join(out_dir, shape))

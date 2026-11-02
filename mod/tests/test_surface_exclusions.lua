@@ -309,4 +309,39 @@ roads.update(gov,2,pose(B),nil,B)
 local bx=geotile.apply(pb,26,2,0)
 T.check(physical[bx] and not physical[ax],'rebase rebuilds the relocated collider without old-frame ghosts')
 clean()
+-- Tree crowns can overhang ordinary paving, but not elevated structures.
+trees.setSurfaceExclusions('fixture',pavement(false),nil,{0,0,20,20})
+T.check(not trees.surfaceBlocked('deciduous',21,10,0,10,1),'trunk outside paving retains overhanging crown')
+T.check(trees.surfaceBlocked('deciduous',20.2,10,0,10,1),'trunk envelope still clears path edge')
+local raised=pavement(false);raised.polygons[1].min_z=8;raised.polygons[1].max_z=8.4
+trees.setSurfaceExclusions('fixture',raised,nil,{0,0,20,20})
+T.check(trees.surfaceBlocked('deciduous',21,10,0,10,1),'crown still clears elevated bridge edge')
+clean()
+for _,group in ipairs({'planter_square','planter_octagon','planter_trough','garden_square','garden_octagon','garden_trough'}) do
+  local shape=trees.pick(group,.65,0)
+  T.check(shape:match('%.cdae$')~=nil,'planter uses precompiled shared shape')
+  local pm={root={10,10,.15},group=group,height=.65,scale=1,choices={{0,0,0}}}
+  trees.onRows(1,'planter-pair',{{0,10,10,.15,0,1,.65,0,pm},{1,10,10,.63,0,1,5.2,0,pm}},
+    {group,'planted_tree'})
+  trees.setSurfaceExclusions('fixture',pavement(false),nil,{0,0,20,20});run(1)
+  T.check(count()==2,'planter and its tree stand together on ordinary pavement')
+  trees.setSurfaceExclusions('fixture',access,nil,{0,0,20,20});run(1)
+  T.check(count()==0,'late access suppresses both planter and tree')
+  trees.clearSurfaceExclusions('fixture');run(1)
+  T.check(count()==2,'retiring access restores the full planter assembly')
+  clean()
+end
+-- Ordinary street trees use validated fallback choices without becoming
+-- exempt from pavement. A raised garden step does not become a bridge deck.
+local tm={root={10,10,0},group='deciduous',height=8,scale=1,choices={{0,0,0},{14,0,0}}}
+trees.onRows(1,'bare-tree',{{0,10,10,0,0,1,8,0,tm}},{'deciduous'})
+trees.setSurfaceExclusions('fixture',pavement(false),nil,{0,0,20,20});run(1)
+T.check(count()==1,'ordinary tree survives by relocating off pavement')
+local moved=false;for it in pairs(live) do moved=it.pos.x==24 end
+T.check(moved,'natural tree metadata is used rather than ignored')
+local steps=pavement(false);steps.polygons[1].kind='hardscape';steps.polygons[1].min_z=1;steps.polygons[1].max_z=1.4
+trees.setSurfaceExclusions('fixture',steps,nil,{0,0,20,20})
+T.check(not trees.surfaceBlocked('deciduous',21,10,0,8,1),'canopy over neighbouring garden steps retained')
+T.check(trees.surfaceBlocked('deciduous',20.1,10,0,8,1),'tree trunk still cannot intersect steps')
+clean()
 T.done('test_surface_exclusions')

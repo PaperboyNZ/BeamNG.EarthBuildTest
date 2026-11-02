@@ -1,0 +1,1218 @@
+{
+  "date": "2026-11-03",
+  "base": "52e3724560aa03bb9f23e0b3630d22a98f993b7f",
+  "tested_commit": "a0b27f4c5b813536caeece734fc20647c6f070d8",
+  "environment": {
+    "os": "Windows",
+    "python": "3.14.7",
+    "numpy": "2.5.4",
+    "shapely": "2.2.0",
+    "geos": "3.14.1",
+    "lua": "LuaJIT 2.1 via Lupa"
+  },
+  "python_modules": 119,
+  "python_cases": 1252,
+  "python_skipped": 5,
+  "lua_suites": 26,
+  "lua_assertions": 3477,
+  "failures": [],
+  "package": {
+    "files": 483,
+    "zip_crc": "passed",
+    "isolated_installer_import": "passed",
+    "minimum_assets": 15
+  },
+  "javascript_syntax": "passed",
+  "git_diff_check": "passed",
+  "method": "Each Python module ran in a fresh process. Windows cleanup adapter closes only that temporary test directory's revisit sidecar handles. Tests requiring sockets/processes ran outside the sandbox. Lua suites ran in separate LuaJIT runtimes. No native game session was started.",
+  "initial_findings": "Updated two older six-quality-policy test assumptions for Minimum; fixed source ZIP omission of installer shader helpers and added an isolated packaged-installer regression. Sandbox socket failures/timeouts passed unrestricted reruns; the unfinished restricted runner was stopped and remaining modules run unrestricted.",
+  "native_acceptance": "Pending: visual review, driving/collision, live quality handovers and startup performance. Earlier loading timeouts are not declared resolved.",
+  "results": [
+    {
+      "name": "test_blockworker",
+      "exit_code": 0,
+      "count": 5,
+      "skipped": 0,
+      "seconds": 5.15,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 1.73,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_access",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 1.7,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_architectural_modifiers",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 4.8,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_attics",
+      "exit_code": 0,
+      "count": 5,
+      "skipped": 0,
+      "seconds": 1.85,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_automatic_atomic",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 2.18,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_automatic_sites",
+      "exit_code": 0,
+      "count": 14,
+      "skipped": 0,
+      "seconds": 3.49,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_band_frame",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 20.14,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_chunks",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 7.95,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_churches",
+      "exit_code": 0,
+      "count": 24,
+      "skipped": 0,
+      "seconds": 3.9,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_city",
+      "exit_code": 0,
+      "count": 13,
+      "skipped": 0,
+      "seconds": 4.65,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_commercial",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 2.3,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_commercial_architecture",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 2.28,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_commercial_forms",
+      "exit_code": 0,
+      "count": 9,
+      "skipped": 0,
+      "seconds": 7.63,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_commercial_foundation",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 1.95,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_commercial_roofs",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 2.38,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_components",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 1.39,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_context",
+      "exit_code": 0,
+      "count": 16,
+      "skipped": 0,
+      "seconds": 3.2,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_detail_demand",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 1.45,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_driveways",
+      "exit_code": 0,
+      "count": 21,
+      "skipped": 0,
+      "seconds": 2.14,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_environments",
+      "exit_code": 0,
+      "count": 11,
+      "skipped": 0,
+      "seconds": 2.63,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_facade_bake",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 3.17,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_facades",
+      "exit_code": 0,
+      "count": 20,
+      "skipped": 0,
+      "seconds": 4.46,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_far_plan",
+      "exit_code": 0,
+      "count": 9,
+      "skipped": 0,
+      "seconds": 6.39,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_field_lineage",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 1.93,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_foundation_integration",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 2.41,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_garages",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 1.75,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_house_styles",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 5.11,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_inference",
+      "exit_code": 0,
+      "count": 16,
+      "skipped": 0,
+      "seconds": 2.15,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_landscaping",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 1.63,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_lean",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 3.19,
+      "run": "-rerun"
+    },
+    {
+      "name": "test_buildgen_middle_recess",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 2.28,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_minimum",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 3.36,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_nullable_fields",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 1.16,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_polygon_eaves",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 3.24,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_preset_diversity",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 7.24,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_presets",
+      "exit_code": 0,
+      "count": 14,
+      "skipped": 0,
+      "seconds": 3.46,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_products",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 3.37,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_programme",
+      "exit_code": 0,
+      "count": 13,
+      "skipped": 0,
+      "seconds": 1.36,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_progressive",
+      "exit_code": 0,
+      "count": 23,
+      "skipped": 0,
+      "seconds": 3.53,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_quality",
+      "exit_code": 0,
+      "count": 15,
+      "skipped": 0,
+      "seconds": 4.47,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_regional_blocks",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 6.28,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_regional_openings",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 0.26,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_regional_polish",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 7.27,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_regional_roofs",
+      "exit_code": 0,
+      "count": 9,
+      "skipped": 0,
+      "seconds": 4.25,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_regions",
+      "exit_code": 0,
+      "count": 11,
+      "skipped": 0,
+      "seconds": 2.98,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_representation_boundaries",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 4.31,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_residential_structures",
+      "exit_code": 0,
+      "count": 5,
+      "skipped": 0,
+      "seconds": 4.37,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_road_conflicts",
+      "exit_code": 0,
+      "count": 20,
+      "skipped": 0,
+      "seconds": 1.44,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_roof_colours",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 1.8,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_roof_proportions",
+      "exit_code": 0,
+      "count": 5,
+      "skipped": 0,
+      "seconds": 3.63,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_roofs",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 7.6,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_sites",
+      "exit_code": 0,
+      "count": 18,
+      "skipped": 0,
+      "seconds": 3.11,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_sitework",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 1.43,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_sky_plan",
+      "exit_code": 0,
+      "count": 13,
+      "skipped": 0,
+      "seconds": 6.84,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_specialized",
+      "exit_code": 0,
+      "count": 14,
+      "skipped": 0,
+      "seconds": 1.07,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_terminals",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 1.23,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_texture_lod",
+      "exit_code": 0,
+      "count": 5,
+      "skipped": 0,
+      "seconds": 3.61,
+      "run": "-rerun"
+    },
+    {
+      "name": "test_buildgen_topology",
+      "exit_code": 0,
+      "count": 21,
+      "skipped": 0,
+      "seconds": 2.52,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_typed_mesh",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 1.01,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_visible_landscaping",
+      "exit_code": 0,
+      "count": 11,
+      "skipped": 0,
+      "seconds": 1.57,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_wall_sweep",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 2.75,
+      "run": "initial"
+    },
+    {
+      "name": "test_buildgen_weathering",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 2.77,
+      "run": "initial"
+    },
+    {
+      "name": "test_building_fade_shader",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 0.33,
+      "run": "initial"
+    },
+    {
+      "name": "test_building_settings",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 0.31,
+      "run": "initial"
+    },
+    {
+      "name": "test_building_streaming",
+      "exit_code": 0,
+      "count": 32,
+      "skipped": 0,
+      "seconds": 5.05,
+      "run": "initial"
+    },
+    {
+      "name": "test_building_switch",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 4.73,
+      "run": "-latest-dev"
+    },
+    {
+      "name": "test_buildings",
+      "exit_code": 0,
+      "count": 74,
+      "skipped": 0,
+      "seconds": 2.15,
+      "run": "initial"
+    },
+    {
+      "name": "test_catchup",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 1.57,
+      "run": "-latest-dev"
+    },
+    {
+      "name": "test_cdae",
+      "exit_code": 0,
+      "count": 13,
+      "skipped": 0,
+      "seconds": 0.94,
+      "run": "initial"
+    },
+    {
+      "name": "test_cdae_limits",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 1.07,
+      "run": "initial"
+    },
+    {
+      "name": "test_cli_default",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 3.55,
+      "run": "-latest-dev"
+    },
+    {
+      "name": "test_codefiles",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 2.47,
+      "run": "initial"
+    },
+    {
+      "name": "test_credits",
+      "exit_code": 0,
+      "count": 27,
+      "skipped": 0,
+      "seconds": 147.19,
+      "run": "-unrestricted"
+    },
+    {
+      "name": "test_driveway_curves",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 1.48,
+      "run": "initial"
+    },
+    {
+      "name": "test_exact_vertex_experiment",
+      "exit_code": 0,
+      "count": 1,
+      "skipped": 0,
+      "seconds": 1.1,
+      "run": "initial"
+    },
+    {
+      "name": "test_far_plan_lifecycle",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 1.36,
+      "run": "initial"
+    },
+    {
+      "name": "test_fargeo",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 2,
+      "seconds": 5.89,
+      "run": "initial"
+    },
+    {
+      "name": "test_generation_baseline",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 2.44,
+      "run": "initial"
+    },
+    {
+      "name": "test_grading",
+      "exit_code": 0,
+      "count": 46,
+      "skipped": 0,
+      "seconds": 2.08,
+      "run": "initial"
+    },
+    {
+      "name": "test_inputwatch",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 0.54,
+      "run": "initial"
+    },
+    {
+      "name": "test_ioprofiler",
+      "exit_code": 0,
+      "count": 19,
+      "skipped": 0,
+      "seconds": 1.44,
+      "run": "-io"
+    },
+    {
+      "name": "test_outstanding_regressions",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 8.01,
+      "run": "initial"
+    },
+    {
+      "name": "test_parking_protection_reuse",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 1.47,
+      "run": "initial"
+    },
+    {
+      "name": "test_parking_surfaces",
+      "exit_code": 0,
+      "count": 22,
+      "skipped": 0,
+      "seconds": 2.11,
+      "run": "initial"
+    },
+    {
+      "name": "test_prefetch_chain",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 1.52,
+      "run": "-latest-dev"
+    },
+    {
+      "name": "test_productcache",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 2.71,
+      "run": "initial"
+    },
+    {
+      "name": "test_protocol_agreement",
+      "exit_code": 0,
+      "count": 33,
+      "skipped": 1,
+      "seconds": 133.18,
+      "run": "-latest-dev"
+    },
+    {
+      "name": "test_railtags",
+      "exit_code": 0,
+      "count": 5,
+      "skipped": 0,
+      "seconds": 0.96,
+      "run": "initial"
+    },
+    {
+      "name": "test_revisit",
+      "exit_code": 0,
+      "count": 6,
+      "skipped": 0,
+      "seconds": 1.2,
+      "run": "initial"
+    },
+    {
+      "name": "test_package_buildings",
+      "exit_code": 0,
+      "count": 1,
+      "skipped": 0,
+      "seconds": 0.72,
+      "run": "-rerun"
+    },
+    {
+      "name": "test_install",
+      "exit_code": 0,
+      "count": 11,
+      "skipped": 1,
+      "seconds": 1.02,
+      "run": "-rerun"
+    },
+    {
+      "name": "test_runtimeprofiler_server",
+      "exit_code": 0,
+      "count": 2,
+      "skipped": 0,
+      "seconds": 4.2,
+      "run": "-latest-dev"
+    },
+    {
+      "name": "test_runtimeprofiler",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 5.26,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sector_manifest",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 0.25,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_ships",
+      "exit_code": 0,
+      "count": 14,
+      "skipped": 0,
+      "seconds": 0.95,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sidewalk_collision",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 0.77,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sidewalk_layout",
+      "exit_code": 0,
+      "count": 16,
+      "skipped": 0,
+      "seconds": 2.06,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sidewalk_uv",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 0.78,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_commercial_access",
+      "exit_code": 0,
+      "count": 15,
+      "skipped": 0,
+      "seconds": 0.8,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_contracts",
+      "exit_code": 0,
+      "count": 18,
+      "skipped": 0,
+      "seconds": 0.79,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_hardscape",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 1.61,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_identity",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 0.41,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_mapped_surfaces",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 0.9,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_portals",
+      "exit_code": 0,
+      "count": 4,
+      "skipped": 0,
+      "seconds": 0.64,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_progress_lifecycle",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 1.02,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_runtime_records",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 1.11,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_shared_courts",
+      "exit_code": 0,
+      "count": 12,
+      "skipped": 0,
+      "seconds": 3.06,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_shared_layouts",
+      "exit_code": 0,
+      "count": 10,
+      "skipped": 0,
+      "seconds": 7.4,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_site_obstacles",
+      "exit_code": 0,
+      "count": 7,
+      "skipped": 0,
+      "seconds": 1.04,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_sitegen_surfaces",
+      "exit_code": 0,
+      "count": 16,
+      "skipped": 0,
+      "seconds": 1.21,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_streetscape",
+      "exit_code": 0,
+      "count": 20,
+      "skipped": 0,
+      "seconds": 2.35,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_validate_site_contracts",
+      "exit_code": 0,
+      "count": 9,
+      "skipped": 0,
+      "seconds": 0.86,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_vegetation",
+      "exit_code": 0,
+      "count": 21,
+      "skipped": 0,
+      "seconds": 3.76,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_vegetation_surfaces",
+      "exit_code": 0,
+      "count": 9,
+      "skipped": 0,
+      "seconds": 1.02,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_weathering_shader",
+      "exit_code": 0,
+      "count": 3,
+      "skipped": 0,
+      "seconds": 0.46,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_worker_scheduling",
+      "exit_code": 0,
+      "count": 1,
+      "skipped": 0,
+      "seconds": 0.48,
+      "run": "-remaining"
+    },
+    {
+      "name": "test_world_tour",
+      "exit_code": 0,
+      "count": 8,
+      "skipped": 0,
+      "seconds": 2.51,
+      "run": "-remaining"
+    },
+    {
+      "name": "lua-test_building_fade",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.08,
+      "run": "-latest-dev",
+      "assertions": 54
+    },
+    {
+      "name": "lua-test_building_progress",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 53
+    },
+    {
+      "name": "lua-test_building_quality_handoff",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 102
+    },
+    {
+      "name": "lua-test_building_render_lab",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 0
+    },
+    {
+      "name": "lua-test_building_staging",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 34
+    },
+    {
+      "name": "lua-test_building_streaming",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.12,
+      "run": "-latest-dev",
+      "assertions": 166
+    },
+    {
+      "name": "lua-test_engine_debt",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.12,
+      "run": "-latest-dev",
+      "assertions": 41
+    },
+    {
+      "name": "lua-test_fargeo",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 33
+    },
+    {
+      "name": "lua-test_frameprofile",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.08,
+      "run": "-latest-dev",
+      "assertions": 32
+    },
+    {
+      "name": "lua-test_highway_signs",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.1,
+      "run": "-latest-dev",
+      "assertions": 28
+    },
+    {
+      "name": "lua-test_ioprofile_ui",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 43
+    },
+    {
+      "name": "lua-test_net_profile",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 5
+    },
+    {
+      "name": "lua-test_occupied_resources",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.1,
+      "run": "-latest-dev",
+      "assertions": 36
+    },
+    {
+      "name": "lua-test_physical_handover",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.1,
+      "run": "-latest-dev",
+      "assertions": 610
+    },
+    {
+      "name": "lua-test_places",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 173
+    },
+    {
+      "name": "lua-test_profiler",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.11,
+      "run": "-latest-dev",
+      "assertions": 104
+    },
+    {
+      "name": "lua-test_profiler_modes",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 30
+    },
+    {
+      "name": "lua-test_profiler_view",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 17
+    },
+    {
+      "name": "lua-test_progress_budget",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 1016
+    },
+    {
+      "name": "lua-test_resource_patches",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 279
+    },
+    {
+      "name": "lua-test_roadgeo",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.1,
+      "run": "-latest-dev",
+      "assertions": 45
+    },
+    {
+      "name": "lua-test_roads",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.09,
+      "run": "-latest-dev",
+      "assertions": 100
+    },
+    {
+      "name": "lua-test_sector_manifest",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.08,
+      "run": "-latest-dev",
+      "assertions": 19
+    },
+    {
+      "name": "lua-test_settings",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.1,
+      "run": "-latest-dev",
+      "assertions": 362
+    },
+    {
+      "name": "lua-test_shared_sites",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.07,
+      "run": "-latest-dev",
+      "assertions": 0
+    },
+    {
+      "name": "lua-test_surface_exclusions",
+      "exit_code": 0,
+      "count": 0,
+      "skipped": 0,
+      "seconds": 0.2,
+      "run": "-latest-dev",
+      "assertions": 95
+    },
+    {
+      "name": "test_cpupin",
+      "exit_code": 0,
+      "count": 14,
+      "skipped": 1,
+      "seconds": 0.48,
+      "run": "-latest-dev"
+    }
+  ]
+}

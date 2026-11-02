@@ -648,11 +648,13 @@ def place(roads, walks, box, curb_h=0.15, wires=None, town=False, left_hand=Fals
         curb_h = wk.get("curb_h", .15)
 
         def put(group, spacing, phase, curb_off, height, yaw_fn, clear=END_CLEAR_M):
-            for p, out in _stations(run, line, spacing, phase, clear, side):
+            stations = _stations(run, line, spacing, phase, clear, side)
+            for p, out in stations:
                 q = p[:2] - out * (w / 2 - curb_off)
                 if _owns(box, q[0], q[1]):
                     rows.append([group, round(float(q[0]), 2), round(float(q[1]), 2), round(float(p[2] + curb_h), 2),
                                  round(yaw_fn(out), 1), 1.0, height, 0.0])
+            return bool(stations)
         rule = spacing_of.get(spec.cls)
         # (none along a mountain pass road: no line follows the Stelvio's hairpins, Mapillary 2026-10-31; nor the
         # country roads' below)
@@ -660,7 +662,6 @@ def place(roads, walks, box, curb_h=0.15, wires=None, town=False, left_hand=Fals
             # towns and suburbs: wooden utility poles along one side, wired, a cobra-head lamp on every other
             pole_side = 1 if _h01(fid, "side") < 0.5 else -1
             if side == pole_side:
-                lit.add(fid)
                 run_poles = []
                 ph = _h01(fid, "tphase") * TOWN_POLE_SPACING
                 for p, out in _stations(run, line, TOWN_POLE_SPACING, ph, END_CLEAR_M, side):
@@ -674,6 +675,7 @@ def place(roads, walks, box, curb_h=0.15, wires=None, town=False, left_hand=Fals
                         if lighting.get(fid) != "no" and pole_lamp(spec.cls, k, region):
                             rows.append([G_POLELAMP, round(float(q[0]), 2), round(float(q[1]), 2),
                                          round(float(p[2]) + POLE_LAMP_Z, 2), round(yaw, 1), 1.0, 1.1, 0.0])
+                if run_poles:lit.add(fid)
                 if wires is not None and len(run_poles) > 1:
                     wires.extend(_own_spans(run_poles, box))
             rule = None
@@ -681,12 +683,12 @@ def place(roads, walks, box, curb_h=0.15, wires=None, town=False, left_hand=Fals
             spacing, both = rule
             lamp_side = 1 if _h01(fid, "side") < 0.5 else -1
             if both or side == lamp_side:
-                lit.add(fid)
                 phase = _h01(fid, "phase") * spacing + (spacing / 2 if (both and side < 0) else 0.0)
-                put(G_LAMP, spacing, phase, LAMP_CURB_M, 9.0, lambda out: _yaw(-out[0], -out[1]))
+                if put(G_LAMP, spacing, phase, LAMP_CURB_M, 9.0, lambda out: _yaw(-out[0], -out[1])):
+                    lit.add(fid)
         if spec.urban and spec.cls in STREET_TREE_CLASSES and _h01(fid, "trees") < STREET_TREE_SHARE:
-            # street trees in pits along the curb (the photos' dense streets have rows of them; the canopy
-            # model has few there): small broadleaves, both sides, clear of the junctions
+            # Candidates are moved to supported ground behind the footpath by
+            # roadside_clearance; never infer a tree pit in the paved slab.
             tph = _h01(fid, side, "tph") * STREET_TREE_SPACING
             for p, out in _stations(run, line, STREET_TREE_SPACING, tph, END_CLEAR_M + 4.0, side):
                 q = p[:2] - out * (w / 2 - STREET_TREE_CURB_M)

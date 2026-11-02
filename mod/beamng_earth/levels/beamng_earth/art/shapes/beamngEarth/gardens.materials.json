@@ -1,0 +1,68 @@
+{
+  "bne_garden_square_fence": {
+    "name": "bne_garden_square_fence",
+    "mapTo": "bne_garden_square_fence",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "28334eed-b55e-536e-a212-d21781c6d77e",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.12,
+          0.19,
+          0.16,
+          1
+        ],
+        "metallicFactor": 0.6,
+        "roughnessFactor": 0.65
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_garden_octagon_fence": {
+    "name": "bne_garden_octagon_fence",
+    "mapTo": "bne_garden_octagon_fence",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "05fba155-2793-5ca3-8a20-09c3289f69f0",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.14,
+          0.16,
+          0.17,
+          1
+        ],
+        "metallicFactor": 0.6,
+        "roughnessFactor": 0.65
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_garden_trough_fence": {
+    "name": "bne_garden_trough_fence",
+    "mapTo": "bne_garden_trough_fence",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "d8da4e84-5f70-5141-bc55-007cc8a4e96d",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.28,
+          0.23,
+          0.16,
+          1
+        ],
+        "metallicFactor": 0.6,
+        "roughnessFactor": 0.65
+      },
+      {},
+      {},
+      {}
+    ]
+  }
+}
