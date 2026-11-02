@@ -48,30 +48,51 @@ class FakeDem:
 
 class RoadsTileTest(unittest.TestCase):
     def test_same_as_in_process(self):
+        import earthd
+        lift = earthd.DETAIL_ROAD_LIFT
         f = features([[(-300, 100), (300, 100)], [(120, -100), (120, 300)]], ["secondary", "residential"])
         keys = roads.cells_of_tile(FRAME, 0, 0)
         md = FakeMapData(f, keys[0])
         blockworker._s = SimpleNamespace(md=md, dem=FakeDem(), widths=None, surface=None, airports=None, sea=None, lock=threading.Lock(),
                                          cache_dir=tmp_cache(self),
                                          bridges={}, anchor=lambda aid, lat, lon: (None, None))
-        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
-            got = blockworker.roads_tile(1, LAT, LON, 15, 0, 0, a, "/temp/x", True, 0.05)
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b, tempfile.TemporaryDirectory() as c:
+            got = blockworker.roads_tile(1, LAT, LON, 15, 0, 0, a, "/temp/x", True, lift)
             cells = [md.cell(k).layers.get("roads") for k in keys]
             elev = lambda la, lo: FakeDem().sample(la, lo, 15)      # noqa: E731
             walks = []
             bridges = roads.BridgeProfiles(FRAME, lambda k: md.cell(k).layers.get("roads"), elev)
             chunks = roads.build_tile(FRAME, 0, 0, cells, elev, None, walks=walks, bridges=bridges)
             x0, y0, _, _ = roads.tile_bbox(0, 0)
+            from sitegen.hardscape import collect
+            import roadside_clearance
+            masks = collect(walks=walks, chunks=chunks, origin=(x0, y0), bounds=roads.tile_bbox(0, 0),
+                            ground=lambda xy: roadmesh.drawn_ground(FRAME, elev, xy, None),
+                            clearance=roadside_clearance.keepouts(walks=walks, chunks=chunks, origin=(x0, y0)))
+            self.assertTrue(masks['polygons'], 'road and footpath surfaces reserve vegetation clearance')
             want = roads.write_tile(b, "/temp/x", 1, 0, 0, chunks, walks,
-                                    roadmesh.build(FRAME, chunks, elev, (x0, y0, 0.0), 0.05, clip=roads.tile_bbox(0, 0),
+                                    roadmesh.build(FRAME, chunks, elev, (x0, y0, 0.0), lift, clip=roads.tile_bbox(0, 0),
                                                    follow=True),
-                                    roadmesh.deck(chunks, (x0, y0, 0.0)))
+                                    roadmesh.deck(chunks, (x0, y0, 0.0)), vegetation_exclusions=masks)
             self.assertEqual(got[:2], want)
             self.assertEqual(got[2], [], "no gas stations' pads (gas_stations off)")
             self.assertGreater(got[1], 0)
             self.assertEqual(sorted(os.listdir(a)), sorted(os.listdir(b)))
             for name in os.listdir(a):
                 self.assertEqual(Path(a, name).read_bytes(), Path(b, name).read_bytes(), name)
+            # Exercise the actual no-process fallback as well as the low-level builders.
+            anchor = SimpleNamespace(frame=FRAME, lat=LAT, lon=LON, zooms=(15,), bridges=bridges,
+                                     tunnels=blockworker.tunnel_profiles(None, FRAME, elev, None))
+            server = SimpleNamespace(anchors={1: anchor}, mapdata=md, road_pool=None, road_widths=None,
+                sea=None, surface=None, dem=FakeDem(), grader_for=lambda a: None,
+                ground=lambda frame, lat, lon, z: z, grader_lock=threading.Lock(), gas_stations=False,
+                buildings=False, airports=None, left_hand=lambda a: False, mph=lambda a: True,
+                buried=lambda a: 0., lamp_region=lambda a: None, country=lambda a: None,
+                anchor_q=lambda a: None, near_visual='detail', sidewalks=True, out_dir=c, vfs_dir='/temp/x')
+            self.assertEqual(earthd.Server.build_roads_tile(server, 1, 0, 0), want)
+            self.assertEqual(sorted(os.listdir(a)), sorted(os.listdir(c)))
+            for name in os.listdir(a):
+                self.assertEqual(Path(a, name).read_bytes(), Path(c, name).read_bytes(), name)
 
 
 
