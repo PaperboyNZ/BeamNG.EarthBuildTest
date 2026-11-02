@@ -153,6 +153,72 @@ def _overlap(a,b):
     return Polygon([p[:2] for p in a.top]).intersection(Polygon([p[:2] for p in b.top])).area>1e-7
 
 
+class _AdmittedBeds:
+    """Job-local broad phase; exact overlap checks remain with the caller.
+
+    Small/obstructed scenes keep the linear path. Cell expansion is bounded
+    without dropping large beds or queries, and candidates retain admission order.
+    """
+    __slots__ = ('_polygons', '_bounds', '_bins', '_large')
+    _THRESHOLD = 64
+    _CELL_SIZE = 16.
+    _MAX_CELLS = 256
+
+    def __init__(self):
+        self._polygons = []
+        self._bounds = []
+        self._bins = None
+        self._large = []
+
+    def __len__(self):
+        return len(self._polygons)
+
+    @classmethod
+    def _extent(cls, bounds):
+        x0,y0,x1,y1 = (math.floor(v/cls._CELL_SIZE) for v in bounds)
+        if (x1-x0+1)*(y1-y0+1) > cls._MAX_CELLS:
+            return None
+        return x0,y0,x1,y1
+
+    def _index(self, i, bounds):
+        self._bounds.append(bounds)
+        extent = self._extent(bounds)
+        if extent is None:
+            self._large.append(i)
+            return
+        x0,y0,x1,y1 = extent
+        for x in range(x0,x1+1):
+            for y in range(y0,y1+1):
+                self._bins.setdefault((x,y),[]).append(i)
+
+    def append(self, polygon):
+        i = len(self._polygons)
+        self._polygons.append(polygon)
+        if self._bins is not None:
+            self._index(i,polygon.bounds)
+
+    def query(self, polygon):
+        if len(self) < self._THRESHOLD:
+            return self._polygons
+        bounds = polygon.bounds
+        extent = self._extent(bounds)
+        if extent is None:
+            return self._polygons
+        if self._bins is None:
+            self._bins = {}
+            for i,p in enumerate(self._polygons):
+                self._index(i,p.bounds)
+        x0,y0,x1,y1 = extent
+        ids = set(self._large)
+        for x in range(x0,x1+1):
+            for y in range(y0,y1+1):
+                ids.update(self._bins.get((x,y),()))
+        a,b,c,d = bounds
+        return (self._polygons[i] for i in sorted(ids)
+                if self._bounds[i][0] <= c and self._bounds[i][2] >= a
+                and self._bounds[i][1] <= d and self._bounds[i][3] >= b)
+
+
 
 @profile_step('Building site coordination')
 def coordinate(items):
@@ -208,7 +274,7 @@ def coordinate(items):
     # The cap suppresses optional work, never truncates essential route geometry.
     protected=[r.shape() for r in reservations] if not (overflow or unsupported) else []
     tree=STRtree(protected)
-    admitted=[]
+    admitted=_AdmittedBeds()
     updates=[]
     for owner,spec in owners:
         plan=spec.access;notes=set(plan.diagnostics);gardens=[]
@@ -218,7 +284,7 @@ def coordinate(items):
             def clear(p):
                 return (not (overflow or unsupported) and len(protected)+len(admitted)<MAX_RESERVATIONS
                         and not any(overlaps(p,protected[int(i)]) for i in tree.query(p))
-                        and not any(overlaps(p,q) for q in admitted))
+                        and not any(overlaps(p,q) for q in admitted.query(p)))
             accepted=landscaping.accepted_groundcover(spec,band,clear) if len(gardens)<landscaping.MAX_GROUNDCOVER_PATCHES else None
             if accepted is not None:
                 gardens.append(accepted);admitted.append(shape(accepted))

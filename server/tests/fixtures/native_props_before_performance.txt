@@ -1,0 +1,97 @@
+# Frozen original native_props from 2b6d96eda44680d3c8fe3ffba9e1d2c37dbc0fa8.
+def native_props(spec,x0=0.,y0=0.):
+    """Native Forest rows after final access/driveway/landscape coordination.
+
+    Rows are [group, world X, world Y, origin Z, yaw degrees, 1, height, rank].
+    The client reuses stock assets and their own LODs. Narrow beds fail closed;
+    there is deliberately no generated shrub/rock mesh fallback.
+    """
+    from shapely.geometry import Point,Polygon
+    from .quality import site_level
+    if site_level() <= 0 and spec.site is None:return []
+    access=getattr(spec,'access',None)
+    if access is None or not access.landscape or getattr(spec,'inference',None) is None:return []
+    profile=treatment(spec)
+    hard=[]
+    for solid in (*access.solids,*getattr(getattr(spec,'garage_access',None),'surfaces',())):
+        q=np.asarray(solid.top,float)
+        if q.ndim==2 and q.shape[1]>=2:
+            shape=Polygon(q[:,:2])
+            if shape.is_valid and not shape.is_empty:hard.append(shape)
+    footprint=getattr(spec,'footprint',None)
+    if footprint is not None:hard.append(footprint.shape())
+    elif getattr(spec,'ring',None) is not None:hard.append(Polygon(np.asarray(spec.ring)[:,:2]))
+    import shapely
+    hard_array=np.asarray(hard,dtype=object)
+    bands=[]
+    for index,band in enumerate(access.landscape):
+        if band.kind.removeprefix('site_') not in ('garden_bed','lawn_margin'):continue
+        frame=_patch_frame(band.top)
+        if frame is None:continue
+        p,length,width=frame
+        broad=band.kind.startswith('site_') and width>=.9 and length*width>=5.
+        bands.append((index,band,p,length,width,broad))
+    site_remaining=sum(row[-1] for row in bands)
+    site_count=0;count=0;rows=[];placed=[]
+    for index,band,p,length,width,broad in bands:
+        lanes=max(1,min(4,int(width/2.4))) if broad else 1
+        if broad:
+            available=MAX_SITE_PLANTS-site_count
+            allowance=min(available,max(1,available//site_remaining))
+            site_remaining-=1
+            spacing=2.0 if band.kind=='site_garden_bed' else 2.8
+            n=min(MAX_SITE_PLANTS_PER_BED,allowance,max(1,int(length/spacing))*lanes)
+        else:n=min(3,max(1,int(length/1.8)),min(MAX_PLANTS,profile.plants)-count)
+        if n<=0:continue
+        # Any directional span bounds the diameter of every inscribed circle.
+        # Reject only when even the smallest native asset plus clearance cannot fit.
+        edge=p[1,:2]-p[0,:2]
+        axis=np.array((-edge[1],edge[0]))/np.linalg.norm(edge)
+        projections=p[:,:2]@axis
+        min_envelope=min(radius*NATIVE_MIN_SCALE+NATIVE_CLEARANCE for radius,_,_ in NATIVE_ASSETS.values())
+        if float(np.ptp(projections)) < 2*(min_envelope+.015)-1e-8:continue
+        shape=Polygon(p[:,:2]);boundary=shape.boundary;admitted=0
+        columns=max(1,math.ceil(n/lanes))
+        phase=materials.unit(spec.seed,f'native-landscape-{index}-phase')*2*math.pi
+        # Jittered stations and meandering lanes retain gaps and loose clusters,
+        # instead of a uniform hedge. Retries are capped and never change a row
+        # already admitted, making repeated loads and detail stages identical.
+        for attempt in range(n*6):
+            if admitted>=n:break
+            channel=f'native-landscape-{index}-{attempt}'
+            rand=lambda name:materials.unit(spec.seed,channel+'-'+name)
+            station=attempt%n;lane=station%lanes;column=station//lanes
+            u=(column+.15+.7*rand('station'))/columns
+            drift=.13*math.sin(u*math.pi*2+phase) if lanes>1 else 0.
+            v=np.clip((lane+.5+.65*(rand('row')-.5))/lanes+drift,.04,.96)
+            if lanes==1:
+                # A strip still wanders, but does not squander its little
+                # plantable width by repeatedly proposing along the curb edge.
+                spread=min(.24,max(.025,(width-1.9)/(2*width)))
+                v=.5+(rand('row')-.5)*2*spread
+            centre=_point(p,u,v);point=Point(centre[:2])
+            clearance=float(boundary.distance(point))-.015
+            if not shape.covers(point):continue
+            if len(hard_array):clearance=min(clearance,float(np.min(shapely.distance(hard_array,point)))-.015)
+            rock=rand('kind')<.25
+            options=('site_rock',) if rock else ('site_shrub','site_rock')
+            for group in options:
+                radius,nominal,min_z=NATIVE_ASSETS[group]
+                desired=(.24+.15*rand('height')) if group=='site_rock' else (.72+.48*rand('height'))
+                height=min(desired,(clearance-NATIVE_CLEARANCE)*nominal/radius)
+                if height<nominal*NATIVE_MIN_SCALE:continue
+                envelope=native_radius(group,height)
+                if envelope>clearance+1e-9:continue
+                if any(np.linalg.norm(centre[:2]-other)<envelope+other_radius
+                       for other,other_radius in placed):continue
+                scale=height/nominal
+                support=_support_range(p,centre[:2],radius*scale)
+                if support is None or support[1]-support[0]>min(.28,height*.4):continue
+                origin=float(support[0]-min_z*scale-.018)
+                rows.append([group,float(centre[0]+x0),float(centre[1]+y0),origin,
+                             float(rand('yaw')*360.),1.,float(height),float(rand('rank')*.18)])
+                placed.append((centre[:2].copy(),envelope));admitted+=1
+                if broad:site_count+=1
+                else:count+=1
+                break
+    return rows

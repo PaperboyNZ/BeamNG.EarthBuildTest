@@ -270,6 +270,9 @@ def native_props(spec,x0=0.,y0=0.):
         min_envelope=min(radius*NATIVE_MIN_SCALE+NATIVE_CLEARANCE for radius,_,_ in NATIVE_ASSETS.values())
         if float(np.ptp(projections)) < 2*(min_envelope+.015)-1e-8:continue
         shape=Polygon(p[:,:2]);boundary=shape.boundary;admitted=0
+        # _patch_frame validated this quad. Cache its exact horizontal support
+        # once; candidates still establish full native-envelope containment.
+        flat_support=(float(p[0,2]),float(p[0,2])) if np.all(p[:,2]==p[0,2]) else None
         columns=max(1,math.ceil(n/lanes))
         phase=materials.unit(spec.seed,f'native-landscape-{index}-phase')*2*math.pi
         # Jittered stations and meandering lanes retain gaps and loose clusters,
@@ -301,10 +304,13 @@ def native_props(spec,x0=0.,y0=0.):
                 if height<nominal*NATIVE_MIN_SCALE:continue
                 envelope=native_radius(group,height)
                 if envelope>clearance+1e-9:continue
-                if any(np.linalg.norm(centre[:2]-other)<envelope+other_radius
+                if any(math.hypot(centre[0]-other[0],centre[1]-other[1])<envelope+other_radius
                        for other,other_radius in placed):continue
                 scale=height/nominal
-                support=_support_range(p,centre[:2],radius*scale)
+                # Full native-envelope containment was established above. A
+                # horizontal bed has one support height across that footprint;
+                # sloped and twisted beds still use the triangle/circle solver.
+                support=flat_support if flat_support is not None else _support_range(p,centre[:2],radius*scale)
                 if support is None or support[1]-support[0]>min(.28,height*.4):continue
                 origin=float(support[0]-min_z*scale-.018)
                 rows.append([group,float(centre[0]+x0),float(centre[1]+y0),origin,

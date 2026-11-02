@@ -1817,6 +1817,7 @@ class Server:
         if self.airports is not None:   # runway markings, drawn by the road mesh like the lane lines
             chunks += self.airports.tile_chunks(anchor.frame, tx, ty, elev, roadsmod.tile_bbox)
         x0, y0, _, _ = roadsmod.tile_bbox(tx, ty)
+        lot_context = parkingmod.prepare_lot_context(anchor.frame, tx, ty, self.mapdata)
         if items is not None:           # front doors and shopfronts, driveways into the road mesh
             # (no street tree in a house: its own or the next tile's)
             rings = buildingsmod.near_rings(anchor.frame, tx, ty, self.mapdata, skip=skip)
@@ -1847,10 +1848,10 @@ class Server:
             props.extend(buildingsmod.landscape_props(items, x0, y0))
             chunks += [d for d in drives if not d.get('bne_access_only')]
             park = parkingmod.clear_of(park, props, drives)
-            park = parkingmod.tile_lot_spots(anchor.frame, tx, ty, self.mapdata, elev, items, park)
+            park = parkingmod.tile_lot_spots(anchor.frame, tx, ty, self.mapdata, elev, items, park, lot_context=lot_context)
             park = gasstationsmod.clear_park(park, fuel)
             buildingsmod.brick_walks(walks, items, anchor.lat, anchor.lon)
-        chunks += parkingmod.finish_markings(anchor.frame, tx, ty, self.mapdata, elev, items, marks)
+        chunks += parkingmod.finish_markings(anchor.frame, tx, ty, self.mapdata, elev, items, marks, lot_context=lot_context)
 
         # Share the bridge mesh's exact parapet geometry with the tile builder.
         # Mapped rails on a deck are replaced by guardrails.bridge_rows(); the parapet runs also feed the fallback matching.

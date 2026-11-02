@@ -21,6 +21,56 @@ def example(kind='site_garden_bed',width=3.,length=30.,seed='native',cls='superm
 
 
 class NativeLandscapingTests(unittest.TestCase):
+    def test_rows_exactly_match_original_across_width_seed_and_support_cases(self):
+        # Keep a fixed pre-optimization oracle rather than importing another
+        # checkout, whose source and imports could silently change underneath us.
+        namespace=dict(vars(landscaping))
+        reference=Path(__file__).with_name('fixtures')/'native_props_before_performance.txt'
+        exec(compile(reference.read_text(encoding='utf-8'),str(reference),'exec'),namespace)
+        original=namespace['native_props']
+        for width in (1.,1.2511,1.2512,1.3,2.,3.,6.,8.):
+            for seed in range(6):
+                for terrain in ('flat','slope','steep','twisted'):
+                    spec=example(width=width,seed=str(seed));band=spec.access.landscape[0]
+                    top=np.array(band.top,float)
+                    if terrain=='slope':top[:,2]=.03*top[:,0]
+                    elif terrain=='steep':top[:,2]=.1*top[:,0]
+                    elif terrain=='twisted':top[:,2]=(.0,.3,.05,-.1)
+                    spec.access=replace(spec.access,landscape=(replace(band,top=tuple(map(tuple,top))),))
+                    with self.subTest(width=width,seed=seed,terrain=terrain):
+                        self.assertEqual(original(spec),landscaping.native_props(spec))
+        # A failed narrow bed must preserve allowances and output ordering for
+        # later beds, including the 48-plant total and per-bed limits.
+        for seed in range(6):
+            spec=example(width=1.2511,seed=str(seed));narrow=spec.access.landscape[0]
+            broad=replace(narrow,top=((0,-30,0),(30,-30,0),(30,-24,0),(0,-24,0)))
+            for beds in ((narrow,broad),(broad,narrow),(narrow,broad,narrow,broad)):
+                spec.access=replace(spec.access,landscape=beds)
+                self.assertEqual(original(spec,123.,-456.),landscaping.native_props(spec,123.,-456.))
+
+    def test_only_exact_horizontal_valid_contained_footprints_bypass_support_solver(self):
+        spec=example(width=6.)
+        with patch.object(landscaping,'_support_range',side_effect=AssertionError('flat solver')):
+            self.assertTrue(landscaping.native_props(spec))
+            # Candidates outside the accepted footprint cannot use a known
+            # horizontal datum to manufacture a supported plant.
+            with patch.object(landscaping,'_point',return_value=np.array([100.,100.,0.])):
+                self.assertEqual(landscaping.native_props(spec),[])
+            bad=((0,-12,0),(30,-12,0),(1,-10,0),(0,-6,0))
+            spec.access=replace(spec.access,landscape=(Solid('site_garden_bed',bad,-1.),))
+            self.assertEqual(landscaping.native_props(spec),[])
+        for heights in ((0.,.9,.9,0.),(0.,.3,.05,-.1),(1.,1.,np.nextafter(1.,2.),1.)):
+            spec=example(width=6.);band=spec.access.landscape[0]
+            top=tuple((x,y,z) for (x,y,_),z in zip(band.top,heights))
+            spec.access=replace(spec.access,landscape=(replace(band,top=top),))
+            with patch.object(landscaping,'_support_range',wraps=landscaping._support_range) as solver:
+                self.assertTrue(landscaping.native_props(spec))
+                self.assertGreater(solver.call_count,0)
+        # The general helper has no native_props containment precondition.
+        # A horizontal patch cannot support a circle entirely outside it.
+        p=np.array(example(width=6.).access.landscape[0].top,float)
+        self.assertIsNone(landscaping._support_range(p,(100.,100.),.5))
+
     def test_impossible_beds_do_not_generate_candidates(self):
         with patch.object(landscaping,'_point',side_effect=AssertionError('impossible candidate')):
             self.assertEqual(landscaping.native_props(example(width=1.)),[])

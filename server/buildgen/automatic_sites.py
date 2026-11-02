@@ -47,7 +47,7 @@ def eligible(spec):
             and (spec.min_h or 0.) <= .5)
 
 
-def _frontage_edge(spec, lines, offset):
+def _frontage_edge(spec, lines, offset, roads=None):
     """Use an entrance when known, otherwise the closest usable street facade.
 
     An inferred service yard does not assert a missing door or a cadastral parcel.
@@ -60,28 +60,26 @@ def _frontage_edge(spec, lines, offset):
         length = float(np.linalg.norm(c-a))
         if length < 5.: continue
         tangent = (c-a)/length
-        depth = _road_depth(a, tangent, np.array([tangent[1], -tangent[0]]), length, lines, offset)
+        depth = _road_depth(a, tangent, np.array([tangent[1], -tangent[0]]), length, lines, offset, roads)
         if depth is not None: candidates.append((depth, -length, edge))
     return min(candidates)[2] if candidates else None
 
-def _road_depth(origin, tangent, normal, length, lines, offset):
+def _road_depth(origin, tangent, normal, length, lines, offset, roads=None):
     from sitegen.commercial_access import BLOCKED_ROADS
+    from sitegen.prepared_roads import PreparedRoads
+    roads = roads if roads is not None else PreparedRoads(lines, offset)
     candidates = []
-    for line in lines:
+    for a, b, v, n, midpoint, line in roads.raw():
         if len(line) > 2 and line[2] in BLOCKED_ROADS:
             continue
-        points = np.asarray(line[0], float)
-        for a, b in zip(points[:-1, :2]-offset, points[1:, :2]-offset):
-            v = b-a
-            n = np.linalg.norm(v)
-            if n < 1e-6 or abs(v@tangent/n) < .96:
-                continue
-            along = sorted(((a-origin)@tangent, (b-origin)@tangent))
-            if min(length, along[1])-max(0., along[0]) < min(4., length*.5):
-                continue
-            d = float(((a+b)/2-origin)@normal)-float(line[1])
-            if 1.7 < d <= MAX_DEPTH+3.:
-                candidates.append(d)
+        if n < 1e-6 or abs(v@tangent/n) < .96:
+            continue
+        along = sorted(((a-origin)@tangent, (b-origin)@tangent))
+        if min(length, along[1])-max(0., along[0]) < min(4., length*.5):
+            continue
+        d = float((midpoint-origin)@normal)-float(line[1])
+        if 1.7 < d <= MAX_DEPTH+3.:
+            candidates.append(d)
     return min(candidates) if candidates else None
 
 
@@ -304,7 +302,9 @@ def _curbed_beds(beds, origin, tangent, normal, openings=()):
 def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, bounds=None, obstacles=()):
     """Install finite, non-overlapping inferred frontages and return road exclusions."""
     from sitegen.commercial_access import propose_access, commit_access
+    from sitegen.prepared_roads import PreparedRoads
     offset = np.array([x0, y0], float)
+    roads = None
     # Immutable solids are repeatedly queried during seam/connectivity tests.
     # Keep both object and polygon job-local so ids cannot be recycled.
     shape_cache = {}
@@ -377,7 +377,8 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
             spec.access = replace(spec.access, site_layout=Layout(owner, '1', diagnostics=(note,)))
         if ground is None:
             finish('automatic_missing_terrain'); continue
-        edge = _frontage_edge(spec, lines, offset)
+        if roads is None:roads = PreparedRoads(lines, offset)
+        edge = _frontage_edge(spec, lines, offset, roads)
         if edge is None:
             finish('automatic_no_compatible_road'); continue
         a, c = np.asarray(spec.ring[edge], float), np.asarray(spec.ring[(edge+1) % len(spec.ring)], float)
@@ -386,7 +387,7 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
             finish('automatic_frontage_too_narrow'); continue
         tangent = (c-a)/length
         normal = np.array([tangent[1], -tangent[0]])
-        depth = _road_depth(a, tangent, normal, length, lines, offset)
+        depth = _road_depth(a, tangent, normal, length, lines, offset, roads)
         if depth is None:
             finish('automatic_no_compatible_road'); continue
         # Reserve enough transition behind the actual nearby sidewalk to
@@ -530,7 +531,7 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
             source = (tuple((* (a+tangent*mouth_lo+normal*far),z(mouth_lo,far))),
                       tuple((* (a+tangent*mouth_hi+normal*far),z(mouth_hi,far))))
             proposal = propose_access(source, lines, walks, ground, x0, y0, owner=owner,
-                                      receiving=(slab,), obstacles=scene_obstacles, bounds=bounds)
+                                      receiving=(slab,), obstacles=scene_obstacles, bounds=bounds, _roads=roads)
             if proposal is None: continue
             if not commit_access(proposal, walks, raw_walks, records):
                 proposal = None; continue
@@ -563,7 +564,7 @@ def _resolve_staged(items, lines, x0, y0, *, ground, walks=(), raw_walks=None, b
                               for u in (middle-width/2,middle+width/2)]
                     proposal = propose_access(source, lines, walks, ground, x0, y0, owner=owner,
                         receiving=(slab,), obstacles=(*scene_obstacles,
-                        *(_shape(v) for v in (*slabs,*beds) if v is not slab)), bounds=bounds)
+                        *(_shape(v) for v in (*slabs,*beds) if v is not slab)), bounds=bounds, _roads=roads)
                     if proposal is not None and commit_access(proposal, walks, raw_walks, records):
                         slabs.extend(proposal.surfaces)
                         connections.append('service')

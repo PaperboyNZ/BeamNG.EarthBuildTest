@@ -794,6 +794,7 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
     mark("airports")
     x0, y0, _, _ = box
     drives = []
+    lot_context = parkingmod.prepare_lot_context(frame, tx, ty, _s.md)
     if items is not None:               # front doors and shopfronts, driveways into the road mesh
         props[:] = furniture.off_buildings(props, buildingsmod.near_rings(frame, tx, ty, _s.md, skip=skip))     # (no street tree in a house)
         from buildgen.road_conflicts import filter_items
@@ -824,7 +825,7 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         props.extend(buildingsmod.landscape_props(items, x0, y0))
         chunks += [d for d in drives if not d.get('bne_access_only')]
         park = parkingmod.clear_of(park, props, drives)
-        park = parkingmod.tile_lot_spots(frame, tx, ty, _s.md, elev, items, park)
+        park = parkingmod.tile_lot_spots(frame, tx, ty, _s.md, elev, items, park, lot_context=lot_context)
         if fuel:
             import gasstations
             park = gasstations.clear_park(park, fuel)
@@ -832,7 +833,7 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         if walks_raw is not None:
             buildingsmod.brick_walks(walks_raw, items, centre[0], centre[1], side)
     mark("doors_park")
-    chunks += parkingmod.finish_markings(frame, tx, ty, _s.md, elev, items, marks)
+    chunks += parkingmod.finish_markings(frame, tx, ty, _s.md, elev, items, marks, lot_context=lot_context)
     mark("markings")
     # Share the bridge mesh's exact parapet geometry with the tile builder.
     # (the junction pads on the bridges round the tile: their decks' parapets stop at them; the tile draws its own:

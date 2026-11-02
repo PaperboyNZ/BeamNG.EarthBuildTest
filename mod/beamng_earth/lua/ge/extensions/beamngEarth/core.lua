@@ -2241,7 +2241,7 @@ end
 -- level lifecycle
 
 local function onLevelStart()
-  -- the connection outlives levels: keep its session and the request id sequence
+  -- A main-menu connection can precede the level: keep its hello and request sequence.
   local sessionId, nextRequestId, mapPort = st.sessionId, st.nextRequestId, st.mapPort
   resetState()
   st.sessionId, st.nextRequestId, st.mapPort = sessionId, nextRequestId, mapPort   -- the connection's (hello)
@@ -2333,9 +2333,10 @@ local function onClientEndMission()
   nightlights.reset()
   parking.reset()
   navgraph.reset()
-  local sessionId, nextRequestId, mapPort = st.sessionId, st.nextRequestId, st.mapPort
+  -- The scene is gone: reconnect so the server's new client streams it in full.
+  -- Also discard old queued requests, partial replies and connection events.
+  net.close()
   resetState()
-  st.sessionId, st.nextRequestId, st.mapPort = sessionId, nextRequestId, mapPort   -- the connection's (hello)
 end
 
 local function onExtensionLoaded()

@@ -40,7 +40,10 @@ def for_items(items,mapdata,frame,bounds,*,chunks=(),fuel_pads=(),surface=None,c
     """Avoid any extra inventory work on tiles without an eligible frontage."""
     import os
     from buildgen.automatic_sites import eligible
-    if os.environ.get('BNE_BUILDING_PATHS','auto')=='off' or not any(eligible(s) for s,_,_ in items):
+    from buildgen.quality import site_level
+    # Only automatic frontage consumes this inventory. Lower policies retain
+    # installed sites without proposing replacements, so need no new hazards.
+    if site_level() < 2 or os.environ.get('BNE_BUILDING_PATHS','auto')=='off' or not any(eligible(s) for s,_,_ in items):
         return ()
     try:
         water=cached_water(mapdata,keys)

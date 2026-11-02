@@ -105,7 +105,7 @@ ui_imgui = setmetatable({
 ------------------------------------------------------------------------------------------
 -- fake luasocket + scripted server
 
-local server = { inbox = framing.newReassembler(), sent = {}, toClient = '' }
+local server = { inbox = framing.newReassembler(), sent = {}, toClient = '', connects = 0, closes = 0 }
 local function serverSend(msg) server.toClient = server.toClient .. framing.encode(jsonEncode(msg)) end
 local function received(typ)
   local r = {}
@@ -121,12 +121,19 @@ package.preload['socket'] = function()
   function socket.tcp()
     local c = {}
     function c:settimeout() end
-    function c:connect() return 1 end
+    function c:connect() server.connects = server.connects + 1; return 1 end
     function c:setoption() end
     function c:getpeername() return '127.0.0.1', 47613 end
-    function c:close() end
+    function c:close()
+      if not self.closed then server.closes = server.closes + 1 end
+      self.closed = true
+      -- Data belongs to the closed TCP stream, not the next scripted connection.
+      server.toClient = ''
+      server.inbox:reset()
+    end
     function c:send(data, i)
       i = i or 1
+      if server.blockSend then return nil, 'timeout', i - 1 end
       server.inbox:feed(data:sub(i))
       while true do
         local p = server.inbox:pop()
@@ -137,7 +144,7 @@ package.preload['socket'] = function()
     end
     function c:receive(n)
       -- deliver a random-sized slice so frames arrive split across frames
-      local k = math.min(#server.toClient, math.random(0, 40))
+      local k = math.min(#server.toClient, server.receiveSize or math.random(0, 40))
       local chunk = server.toClient:sub(1, k)
       server.toClient = server.toClient:sub(k + 1)
       if server.failErr and server.toClient == '' then
@@ -669,13 +676,71 @@ local refused = false
 for _, w in ipairs(statusLog) do if w:match('Unexpected terrain_ready %(size 1024%)') then refused = true end end
 T.check(refused and #received('prepare_terrain') > 0, 'a 1024² terrain in a 512 session is refused')
 -- a level change in a 512 session: the flat start block is the 512² one
-core.onClientEndMission()
+do
+  local net = require('beamngEarth/net')
+  local closes, connects, hellos = server.closes, server.connects, #received('hello')
+  local anchors = #received('prepare_anchor')
+  -- Leave both an outbound request and a partial inbound frame on the old stream.
+  server.blockSend = true
+  T.check(net.send({ type = 'old_scene_request' }), 'reload: old scene request queued')
+  local stale = framing.encode(jsonEncode({ type = 'status', text = 'old scene status', backlog = 999 }))
+  server.toClient, server.receiveSize = stale:sub(1, 2), 2
+  net.update(.05)
+  server.receiveSize = nil
+  server.toClient = stale:sub(3)
+  core.onClientEndMission()
+  T.check(server.closes == closes + 1 and not net.isConnected() and net.state() == 'disconnected',
+    'reload: scene end closes its connection exactly once')
+  T.check(core._state().sessionId == nil and core._state().mapPort == nil and core._state().nextRequestId == 1
+    and core._state().anchor == nil and core._state().pending == nil,
+    'reload: no closed connection session, map port, request sequence or anchor survives')
+  T.check(server.toClient == '' and farfield.stats().live == 0,
+    'reload: old connection replies and old scene tiles discarded')
+  server.blockSend = nil
+  frames(1)
+  T.check(server.connects == connects + 1 and #received('hello') == hellos + 1,
+    'reload: next normal update connects and sends a fresh hello')
+  T.check(#received('old_scene_request') == 0 and core._state().serverBacklog == nil,
+    'reload: queued requests and partial old-scene replies cannot reach the new session')
+  T.check(core._state().sessionId == nil and #received('prepare_anchor') == anchors,
+    'reload: no anchor requested before the fresh server hello')
+  local hello = last('hello')
+  T.check(#hello.sessions == 0 and #(hello.slotsHeld or {}) == 0,
+    'reload: fresh client advertises no scene or object slots held')
+  -- Same live server/session id; only its per-connection stream trackers are new.
+  serverSend({ type = 'hello', protocol = 4, format = 4, cells = 64, blockSize = 512,
+    serverVersion = '0.4.0', sessionId = 's5', mapPort = 47614, farFormat = 'cdae',
+    material = 'bngEarthFar_v3', nearVisual = 'mesh' })
+  T.check(pumpUntil(function() return core._state().sessionId == 's5' end, 20),
+    'reload: fresh hello accepted after discarded partial framing')
+  T.check(#received('prepare_anchor') == anchors and core._state().mapPort == 47614,
+    'reload: main-menu handshake waits for the new level')
+end
 local impFlat = calls.importMaps
 core.onClientStartMission()
 T.check(calls.importMaps == impFlat + 1 and tb.lastImport.path:match('beamngEarth_flat_512%.png$') ~= nil,
   '512: level start imports the 512² flat map')
 T.check(tb.lastImport.maps[1].path:match('beamngEarth_layer_512%.png$') ~= nil and tb.pos.x == -512 and tb.pos.y == -512,
   '512: flat block 1024 m centred on the origin')
+do
+  local rq = last('prepare_anchor')
+  T.check(rq.requestId == 1 and core._state().pending ~= nil and core._state().sessionId == 's5',
+    'reload: level start uses its fresh hello to request the first anchor again')
+  serverSend({ type = 'anchor_ready', requestId = rq.requestId, anchorId = 8, lat = rq.lat, lon = rq.lon,
+    groundZ = 1180, terrain = { cx = rq.cx, cy = rq.cy, heightmap = '/temp/beamngEarth/s5/hm_8.png',
+      size = 512, squareSize = SQ, zBase = 1120, maxHeight = 1024, q = 1 / 64 } })
+  T.check(pumpUntil(function() return core._state().anchorId == 8 end, 30),
+    'reload: fresh client anchor commits')
+  T.check(last('commit_anchor').anchorId == 8 and last('commit_terrain').anchorId == 8,
+    'reload: new scene begins its full anchor and terrain handshake')
+  T.check(pumpUntil(function() return last('pose').anchorId == 8 end, 20),
+    'reload: new scene poses request streaming for the new anchor')
+  serverSend({ type = 'far_tile', anchorId = 8, key = '1_9_0', level = 1,
+    shape = '/temp/beamngEarth/s5/far_8_1_9_0.cdae', pos = { 4608, 0, 1000 }, err = .8, state = 'group' })
+  serverSend({ type = 'far_swap', anchorId = 8, id = 1, add = { '1_9_0' }, remove = {}, dIn = 0, dOut = 0 })
+  T.check(pumpUntil(function() return farfield.stats().live == 1 end, 30),
+    'reload: same-key far geometry streams again into the cleared scene')
+end
 -- a server without hello.blockSize: back to the v1.3.1 block
 serverSend({ type = 'hello', protocol = 4, format = 4, cells = 64, serverVersion = '0.4.0', sessionId = 's6',
   farFormat = 'cdae', material = 'bngEarthFar_v3', nearVisual = 'mesh' })
@@ -718,6 +783,15 @@ T.near(scenetree.theLevelInfo.visibleDistance, 440000, 1e-6, '400 km: 440 km')
 -- a level change: the sky goes back before the level ends, and is applied again on the next start
 core.onClientEndMission()
 T.check(sky.atmoPlanetRadius == 6360, 'level end: the level\'s sky planet radius restored')
+do
+  local hellos = #received('hello')
+  frames(1)
+  T.check(#received('hello') == hellos + 1, 'horizon reload: fresh connection hello')
+  serverSend({ type = 'hello', protocol = 4, format = 4, cells = 64, horizon = true,
+    serverVersion = '0.4.0', sessionId = 's7', farFormat = 'cdae', material = 'bngEarthFar_v3', nearVisual = 'mesh' })
+  T.check(pumpUntil(function() return core._state().sessionId == 's7' end, 20),
+    'horizon reload: live server acknowledges the fresh connection')
+end
 scenetree.theLevelInfo.visibleDistance = 1000             -- the next level's LevelInfo
 core.onClientStartMission()
 T.check(sky.atmoPlanetRadius == 6371, 'level start in horizon mode: planet radius applied again')
@@ -741,7 +815,7 @@ frames(2)                                               -- no extension: ignored
 local gotWeather = nil
 beamngEarth_weather = { onWeather = function(m) gotWeather = m end }
 serverSend({ type = 'weather', v = 1, code = 3, tempC = 20.5 })
-frames(2)
+pumpUntil(function() return gotWeather ~= nil end, 20)
 T.check(gotWeather and gotWeather.code == 3 and gotWeather.tempC == 20.5, 'weather message handed to beamngEarth_weather')
 -- real gravity: the same hand-off; a new session (hello) clears the previous session's value
 local gotGravity, cleared = nil, 0
@@ -815,7 +889,7 @@ T.check(sc[#sc - 2].capGb == 0 and sc[#sc - 1].clear == true and sc[#sc].capGb =
   'cache requests: cap (0 = unlimited), clear, a plain usage request')
 serverSend({ type = 'cache', v = 1, usedBytes = 200000000, capBytes = 0, files = 12, ready = true, managed = true,
   clearedBytes = 1034567890 })
-frames(2)
+pumpUntil(function() return core.cacheState() and core.cacheState().clears == 1 end, 20)
 cs = core.cacheState()
 T.check(cs.clears == 1 and cs.clearedBytes == 1034567890 and cs.usedBytes == 2e8, 'a clear\'s answer counted')
 serverSend({ type = 'cache', v = 1, usedBytes = 210000000, capBytes = 0, files = 13, ready = true, managed = true })

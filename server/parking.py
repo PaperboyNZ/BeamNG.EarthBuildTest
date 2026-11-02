@@ -142,12 +142,14 @@ def _polygons(rings):
 def _lot_layout(rings, blockers=()):
     """One layout for overlapping mapped lots; test the whole stall, including obstacles."""
     import buildings
-    from shapely.geometry import Polygon
+    from shapely import covers, intersects, polygons, prepare
     from shapely.ops import unary_union
     shape = unary_union(_polygons(rings))
     blocked = unary_union(_polygons(blockers))
+    prepare(blocked)
     parts = [shape] if shape.geom_type == "Polygon" else list(getattr(shape, "geoms", ()))
     for area in sorted(parts, key=lambda p: (*p.bounds, p.area)):
+        prepare(area)
         ring = np.asarray(area.exterior.coords)
         c, u, hl, hw = buildings.oriented_box(ring)
         v = np.array([-u[1], u[0]])
@@ -160,8 +162,23 @@ def _lot_layout(rings, blockers=()):
         for off, nose in rows:
             centres = c + along[:, None] * u + (off - hw) * v
             hx, hy = u * LOT_SPOT_W_M / 2, v * LOT_SPOT_D_M / 2
-            ok = np.array([area.covers(stall) and not blocked.intersects(stall)
-                           for q in centres for stall in [Polygon([q-hx-hy, q+hx-hy, q+hx+hy, q-hx+hy])]])
+            if len(centres) <= 1024:
+                stalls = polygons(np.stack([centres-hx-hy, centres+hx-hy,
+                                            centres+hx+hy, centres-hx+hy],axis=1))
+                ok = covers(area,stalls)
+                ok[ok] = ~intersects(blocked,stalls[ok])
+                del stalls
+            else:
+                # Bound temporary GEOS polygons without dropping any supplied bays.
+                ok = np.empty(len(centres),dtype=bool)
+                for start in range(0,len(centres),1024):
+                    chunk = centres[start:start+1024]
+                    stalls = polygons(np.stack([chunk-hx-hy, chunk+hx-hy,
+                                                chunk+hx+hy, chunk-hx+hy],axis=1))
+                    covered = covers(area,stalls)
+                    covered[covered] = ~intersects(blocked,stalls[covered])
+                    ok[start:start+len(chunk)] = covered
+                    del stalls
             yield c, u, v, along, off, hw, nose, ok, round(off, 3) not in paired
 
 
@@ -302,7 +319,30 @@ def _lot_context(frame, tx, ty, md):
     return feats, corridors + lot_rings(frame, feats, holes=True)
 
 
-def tile_lot_spots(frame, tx, ty, md, elev, items=None, existing=None):
+def prepare_lot_context(frame, tx, ty, md):
+    """Lazy evidence shared by one tile job's lot spots and markings.
+
+    Cache complete successes only. A failed or faulted read must be retried by
+    the next consumer, which retains its existing fallback. Item blockers remain
+    consumer-local because entrance/site planning can change them during a job.
+    """
+    cached = None
+
+    def context():
+        nonlocal cached
+        if cached is not None:
+            return cached
+        import revisit
+        faults = revisit.faults()
+        result = _lot_context(frame, tx, ty, md)
+        if revisit.faults() == faults:
+            cached = result
+        return result
+
+    return context
+
+
+def tile_lot_spots(frame, tx, ty, md, elev, items=None, existing=None, *, lot_context=None):
     """existing (the tile's other spots) with its lot stalls (aisle_spots' rows, kind 1) inside a building or a
     mapped lot dropped, plus lot_spots of road tile (tx, ty): the lots of the map cells under it (md:
     mapdata.MapData), the tile's buildings (items: buildings.road_tile_items' result, rings tile-local) as blockers,
@@ -312,7 +352,7 @@ def tile_lot_spots(frame, tx, ty, md, elev, items=None, existing=None):
     box = roads.tile_bbox(tx, ty)
     blockers = _item_blockers(items, np.array(box[:2]))
     try:
-        feats, corridors = _lot_context(frame, tx, ty, md)
+        feats, corridors = _lot_context(frame, tx, ty, md) if lot_context is None else lot_context()
         rings = lot_rings(frame, feats)
     except Exception:
         rings, corridors = [], []
@@ -622,14 +662,14 @@ def drop_covered(chunks, rings):
     return kept
 
 
-def finish_markings(frame, tx, ty, md, elev, items=None, marks=()):
+def finish_markings(frame, tx, ty, md, elev, items=None, marks=(), *, lot_context=None):
     """A road tile's stall-line chunks: the aisle lines (marks, from build_tile) that are not inside a
     building or a mapped lot, plus lot_markings of the paved lots under the tile. elev(lat, lon) the ground."""
     import roads
     box = roads.tile_bbox(tx, ty)
     blockers = _item_blockers(items, np.array(box[:2]))
     try:
-        feats, corridors = _lot_context(frame, tx, ty, md)
+        feats, corridors = _lot_context(frame, tx, ty, md) if lot_context is None else lot_context()
         rings = lot_rings(frame, feats, paved_only=True)
         all_rings = lot_rings(frame, feats)
         unpaved = lot_rings(frame, feats, unpaved_only=True)

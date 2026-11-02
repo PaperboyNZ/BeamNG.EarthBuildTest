@@ -137,7 +137,7 @@ def _shared_source(source, receiving, cover):
 
 
 def propose_access(source_edge, lines, walks, ground, x0, y0, *, owner,
-                   receiving=(), obstacles=(), bounds=None):
+                   receiving=(), obstacles=(), bounds=None, _roads=None):
     """Return one frozen access, without mutating scene dictionaries.
 
     source_edge: two LOCAL XYZ points across the already fitted aisle mouth.
@@ -146,7 +146,7 @@ def propose_access(source_edge, lines, walks, ground, x0, y0, *, owner,
     whose complete bounded grid must fit in the same single terrain batch.
     """
     from buildgen.garages import _walk_contact
-    from sitegen.portals import simplified_lines
+    from sitegen.prepared_roads import PreparedRoads
     if ground is None or not isinstance(owner, str) or not owner:
         return None
     source = np.asarray(source_edge, float)
@@ -175,18 +175,13 @@ def propose_access(source_edge, lines, walks, ground, x0, y0, *, owner,
     planning_walks = [_without_owned(w, owner) for w in walks]
     obstacles = tuple(obstacles)
     candidates = []
-    nearby = []
-    for line in simplified_lines(lines):
-        points = np.asarray(line[0], float)[:, :2]-offset
-        half = float(line[1])
-        if not math.isfinite(half) or half <= 0:
-            continue
-        for a, c in zip(points[:-1], points[1:]):
-            if LineString([a, c]).distance(Point(portal)) <= MAX_LENGTH+half:
-                nearby.append((a, c, half, line))
+    roads = _roads if _roads is not None else PreparedRoads(lines, offset)
+    if not np.array_equal(roads.offset, offset):
+        raise ValueError('prepared roads belong to a different planning frame')
+    nearby = roads.nearby(portal, MAX_LENGTH)
     if len(nearby) > MAX_ROAD_SEGMENTS:
         return None
-    for a, c, half, line in nearby:
+    for index, (a, c, half, line) in nearby:
         if len(line) > 2 and line[2] in BLOCKED_ROADS:
             continue
         v = c-a; length = float(np.linalg.norm(v))
@@ -217,8 +212,8 @@ def propose_access(source_edge, lines, walks, ground, x0, y0, *, owner,
             continue
         # Do not traverse another road to reach the selected one, including
         # controlled carriageways which are never direct-access candidates.
-        if any(mouth.intersection(LineString([ra, rb]).buffer(hw, cap_style=2)).area > 1e-6
-               for ra, rb, hw, other in nearby if not (ra is a and rb is c)):
+        if any(mouth.intersection(roads.corridor(other)).area > 1e-6
+               for other, _ in nearby if other != index):
             continue
         contact = _walk_contact(portal, tangent, normal, road_end, width, planning_walks, offset)
         if contact is None:

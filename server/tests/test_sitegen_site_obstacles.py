@@ -1,5 +1,7 @@
 """Site exclusions preserve map geometry and never fetch missing layers."""
 from pathlib import Path
+import os
+import copy
 import sys
 import tempfile
 import threading
@@ -25,6 +27,66 @@ class SiteObstacleTests(unittest.TestCase):
         p = np.array(xy, float)
         lat, lon, _ = self.frame.enu_to_geodetic(p[:, 0], p[:, 1], np.zeros(len(p)))
         return np.column_stack((lon, lat))
+
+    def test_lower_policies_skip_eligible_frontage_inventory_before_any_work(self):
+        from buildgen import automatic_sites, quality
+        class Eligible:
+            access=object();site=None;door=(0,0);min_h=0
+            inference=SimpleNamespace(use=SimpleNamespace(value='commercial'))
+        spec=Eligible()
+        with patch.dict(os.environ,{'BNE_BUILDING_PATHS':'auto'}):
+            self.assertTrue(automatic_sites.eligible(spec))
+            for detail in ('minimum','very_low','low'):
+                with self.subTest(detail=detail), \
+                     patch.object(automatic_sites,'eligible',side_effect=AssertionError('eligibility scan')), \
+                     patch.object(site_obstacles,'cached_water',side_effect=AssertionError('water inventory')), \
+                     patch.object(site_obstacles,'collect',side_effect=AssertionError('hazard inventory')):
+                    self.assertEqual(quality.run(detail,site_obstacles.for_items,
+                        [(spec,0,0)],object(),self.frame,self.bounds,keys=range(65)),())
+
+    def test_complete_site_policies_keep_full_eligible_frontage_inventory(self):
+        from buildgen import quality
+        class Eligible:
+            access=object();site=None;door=(0,0);min_h=0
+            inference=SimpleNamespace(use=SimpleNamespace(value='commercial'))
+        water=object();cell=object();result=(Point(2,3).buffer(1.),)
+        chunks=[object()];drives=[object()];pads=[object()];surface=object()
+        for detail in ('medium','high','very_high','ultra'):
+            with self.subTest(detail=detail), patch.dict(os.environ,{'BNE_BUILDING_PATHS':'auto'}), \
+                 patch.object(site_obstacles,'cached_water',return_value=(water,)) as cached, \
+                 patch.object(site_obstacles,'collect',return_value=result) as collect:
+                got=quality.run(detail,site_obstacles.for_items,[(Eligible(),0,0)],None,
+                    self.frame,self.bounds,keys=('key',),cells=(cell,),chunks=chunks,
+                    drives=drives,fuel_pads=pads,surface=surface)
+                self.assertIs(got,result)
+                cached.assert_called_once_with(None,('key',))
+                collect.assert_called_once_with(self.frame,self.bounds,chunks=chunks,
+                    fuel_pads=pads,surface=surface,cells=(cell,water),drives=drives)
+
+    def test_inventory_gate_preserves_accepted_lower_policy_frontage(self):
+        from buildgen import automatic_sites,quality
+        from test_buildgen_commercial import fixture
+        from test_buildgen_automatic_sites import road,flat
+        with patch.dict(os.environ,{'BNE_BUILDING_PATHS':'auto'}):
+            item=quality.run('medium',fixture,'supermarket',40,20)
+            quality.run('medium',automatic_sites.resolve,[item],road(),0,0,ground=flat)
+            spec=item[0];accepted=spec.access
+            self.assertIsNotNone(accepted.site_layout)
+            self.assertTrue(any(s.kind.startswith('site_') for s in accepted.solids))
+            walks=[dict(pts=[[0.,-20.,0.],[50.,-20.,0.]],side=1,w=2.5)]
+            original_walks=copy.deepcopy(walks)
+            retained=automatic_sites._retained_records([item],walks,0,0)
+            for detail in ('minimum','very_low','low'):
+                with self.subTest(detail=detail), \
+                     patch.object(site_obstacles,'cached_water',side_effect=AssertionError('water inventory')), \
+                     patch.object(site_obstacles,'collect',side_effect=AssertionError('hazard inventory')), \
+                     patch.object(automatic_sites,'_resolve_staged',side_effect=AssertionError('replacement planning')):
+                    obstacles=quality.run(detail,site_obstacles.for_items,[item],None,self.frame,self.bounds)
+                    result=quality.run(detail,automatic_sites.resolve,[item],road(),0,0,
+                        ground=lambda p:self.fail('ground query'),walks=walks,obstacles=obstacles)
+                    self.assertEqual(result,retained)
+                    self.assertIs(spec.access,accepted)
+                    self.assertEqual(walks,original_walks)
 
     def test_water_hole_and_rail_use_frame_then_tile_origin(self):
         outer = self.ring([(102,202),(118,202),(118,218),(102,218),(102,202)])
