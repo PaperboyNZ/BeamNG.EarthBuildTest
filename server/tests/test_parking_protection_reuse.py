@@ -39,4 +39,16 @@ class ProtectionReuseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'geometry budget'):
                 self.pg._protected(FRAME,box(-20,-10,20,10))
 
+    def test_faulted_preparation_is_never_reused(self):
+        import revisit
+        original=parkinggrade.roads.road_specs
+        def incomplete(*args,**kwargs):
+            revisit.fault()
+            return original(*args,**kwargs)
+        with patch.object(parkinggrade.roads,'road_specs',side_effect=incomplete):
+            with self.assertRaisesRegex(ValueError,'incomplete'):
+                self.pg._road_reservations('cell',self.feats)
+        self.assertFalse(self.pg.protection_rows)
+        self.assertEqual(self.pg.protection_bytes,0)
+
 if __name__=='__main__':unittest.main()
