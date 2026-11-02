@@ -35,13 +35,16 @@ def fixture():
                     flags=[(2, "is_bridge", 0.45, 0.6)])
 
 
-def plans_digest():
-    g = grading.Grader(FRAME, FakeMD(fixture()), lambda la, lo: 10.0 + 0.002 * np.asarray(lo) * 0
+def plans_heights(offset=0.):
+    g = grading.Grader(FRAME, FakeMD(fixture()), lambda la, lo: 10.0 + offset + 0.002 * np.asarray(lo) * 0
                        + 0.0 * np.asarray(la))
     e, n = np.meshgrid(np.linspace(-380, 380, 77), np.linspace(-380, 380, 77))
     la, lo, _ = FRAME.enu_to_geodetic(e.ravel(), n.ravel(), 0.0)
-    z = g.apply(la, lo, 10.0 + 0.01 * e.ravel())
-    return hashlib.sha1(np.round(np.asarray(z, np.float64), 4).tobytes()).hexdigest()
+    return g.apply(la, lo, 10.0 + 0.01 * e.ravel())
+
+
+def plans_digest():
+    return hashlib.sha1(np.round(np.asarray(plans_heights(), np.float64), 4).tobytes()).hexdigest()
 
 
 def facts_digest():
@@ -80,6 +83,11 @@ class FormatTest(unittest.TestCase):
 
     def test_plans_format(self):
         self.check("plans", plancache.PLANS_FORMAT, plans_digest())
+
+    def test_roundoff_at_retaining_cut_does_not_change_wall_choice(self):
+        reference = plans_heights()
+        for offset in (-1e-10, 1e-10):
+            self.assertLess(float(np.max(np.abs(plans_heights(offset) - reference))), 1e-7)
 
     def test_facts_format(self):
         self.check("facts", roads.FACTS_FORMAT, facts_digest())

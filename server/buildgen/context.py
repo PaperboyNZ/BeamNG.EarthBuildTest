@@ -253,7 +253,9 @@ class Provider:
         if build:
             try:
                 cds = [self.md.cell(k, layers=LAYERS, kind="background" if background else "demand") for k in keys]
-                bundle = _Bundle(key, cds, revision)
+                from . import contextcache
+                bundle = contextcache.get(self.md, key, cds, revision,
+                    lambda: _Bundle(key, cds, revision), background=background)
             except BaseException as exc:
                 future.set_exception(exc)
                 with self._lock:

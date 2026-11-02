@@ -3,6 +3,9 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 from shapely.geometry import box
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import parkinggrade
 from test_roads import FRAME,features
 

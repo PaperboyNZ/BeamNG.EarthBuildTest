@@ -204,7 +204,7 @@ def profile(h=CURB_H, w=2.5, hr=None):
     f = hr / h if h > 0 else 0.0
     # a band narrower than RAMP_RUN (a median's 0.3-0.6 m, an island's 1.2 m) ends its ramp inside it: past its outer
     # edge the profile folded back over itself, and the folded collision caught wheels ("the median eats tires",
-    # GitHub #55; a truck held on an island band in BodÃ¸, 2026-10-20)
+    # GitHub #55; a truck held on an island band in Bodø, 2026-10-20)
     rr = max(CURB_W + NARROW_EDGE_M, min(RAMP_RUN, w - NARROW_EDGE_M))
     zr = h + rr * CROSS_SLOPE
     xp = CURB_W + min(PAD_W, (rr - CURB_W) / 2)

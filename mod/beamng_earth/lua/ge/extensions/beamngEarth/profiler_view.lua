@@ -115,7 +115,11 @@ function M.mean(history,key)
 end
 function M.total(values)
   local sum=0
-  for _,r in ipairs(M.rank(values)) do sum=sum+r.ms end
+  -- A total does not need a ranked, allocated row per phase. Charts ask this
+  -- for every retained observation on every drawn frame.
+  for _,value in pairs(values or {}) do
+    if type(value)=='number' and value==value and value>0 and value<math.huge then sum=sum+value end
+  end
   return sum
 end
 function M.scale(history,budget)

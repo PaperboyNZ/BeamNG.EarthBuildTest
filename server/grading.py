@@ -90,7 +90,10 @@ BUCKET = 32.0               # m, query-point buckets
 ROAD_LIFT = 0.04            # m the physics ground is raised under roads (see Grader.apply)
 BLEND_R = 4.0               # m: roads near each other blend their targets by 1 / (1 + (d / BLEND_R)^2)
 PROFILE_ZOOM = int(os.environ.get("BNE_DEM_ZOOM", "16"))   # DEM zoom of the profiles (one zoom for every caller)
-WALL_CUT_M = 2.0            # a road cut deeper than this into the ground: a retaining wall at the core's edge
+WALL_CUT_M = 2.0 + 1e-7     # a retaining cut deeper than 2 m; allow 0.1 micrometre of height roundoff
+# Flat 10 m profiles can differ by ~1e-14 m after smoothing on Windows/Linux.
+# At an exact 2 m cut, the discontinuous wall/slope choice amplified that into
+# 21 cm of terrain disagreement. Apply the same tolerance to grading and walls.
 WALL_T_M = 0.8              # (roadmesh.retaining_walls) and the ground at its natural height right behind it, over
                             # this; on a 1:2 slope Central Park's sunken transverse was a grassy ditch between its
                             # stone walls (the user, 2026-10-17)

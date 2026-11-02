@@ -2,7 +2,7 @@
 
 The server is one Python process: its threads share one interpreter lock, so while three far-tile workers
 built, a physics block took 3-10x longer than alone (land cover 1.4 s instead of 0.1 s), too long to follow a
-car at 58 m/s, where the 512Â² block moves every 2.2 s. This process builds the blocks the follow and the
+car at 58 m/s, where the 512² block moves every 2.2 s. This process builds the blocks the follow and the
 prefetch ask for on a core of its own. It keeps its own DEM reader, road plans (grading.Grader per anchor),
 street widths, height chunks and land-cover reader over the same disk caches. All of them are deterministic,
 so a block built here is the one the server would build (the far tiles, graded in the server process, agree

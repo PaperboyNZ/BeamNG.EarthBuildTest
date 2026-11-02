@@ -10,14 +10,26 @@ local function text(im,s) im.TextUnformatted(tostring(s)) end
 local function wrap(im,s) im.PushTextWrapPos(0);text(im,s);im.PopTextWrapPos() end
 local function ms(v) return v and string.format('%.2f ms',v) or 'Unavailable' end
 local function rate(v) return v and IO.bytes(v)..'/s' or 'Warming up' end
-local function color(im,c,a) return im.GetColorU322(im.ImVec4(c[1],c[2],c[3],a or 1)) end
+-- ImDrawList copies these values during the call. Reuse FFI arguments instead
+-- of producing thousands of short-lived vectors while drawing each history.
+local pointA,pointB,shade
+local function color(im,c,a)
+  shade=shade or im.ImVec4(0,0,0,1)
+  shade.x,shade.y,shade.z,shade.w=c[1],c[2],c[3],a or 1
+  return im.GetColorU322(shade)
+end
+local function points(im,x,y,x2,y2)
+  pointA=pointA or im.ImVec2(0,0);pointB=pointB or im.ImVec2(0,0)
+  pointA.x,pointA.y=x,y;pointB.x,pointB.y=x2,y2
+  return pointA,pointB
+end
 local function rect(im,dl,x,y,w,h,c)
-  if w>0 and h>0 then im.ImDrawList_AddRectFilled(dl,im.ImVec2(x,y),im.ImVec2(x+w,y+h),c) end
+  if w>0 and h>0 then local a,b=points(im,x,y,x+w,y+h);im.ImDrawList_AddRectFilled(dl,a,b,c) end
 end
 local function line(im,dl,x,y,x2,y2,c)
-  im.ImDrawList_AddLine(dl,im.ImVec2(x,y),im.ImVec2(x2,y2),c,1)
+  local a,b=points(im,x,y,x2,y2);im.ImDrawList_AddLine(dl,a,b,c,1)
 end
-local function label(im,dl,x,y,s,c) im.ImDrawList_AddText1(dl,im.ImVec2(x,y),c,s,nil) end
+local function label(im,dl,x,y,s,c) local a=points(im,x,y,0,0);im.ImDrawList_AddText1(dl,a,c,s,nil) end
 local function clip(v,low,high) return math.max(low,math.min(high,v)) end
 local function tableRows(im,id,headers,rows)
   if im.BeginTable(id,#headers,im.TableFlags_Resizable+im.TableFlags_RowBg+im.TableFlags_BordersInnerV) then

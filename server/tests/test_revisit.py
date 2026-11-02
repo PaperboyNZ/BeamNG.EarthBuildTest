@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
+from contextlib import ExitStack
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import netfetch  # noqa: E402
@@ -69,7 +70,8 @@ class RevisitTest(unittest.TestCase):
         """store(where=...) appends one line to this process's sidecar; compact() folds older files into one, the
         last line per item, without the items whose zip is gone; a file written after `before` stays as it is."""
         import time
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory() as d, ExitStack() as cleanup:
+            cleanup.callback(revisit.close, d)
             sig = revisit.sig(sidewalks=True, md={"overture": "2026-09-23.1"})
             ks = [revisit.key("roads", 39.28, -76.56, i) for i in range(3)]
             for i, k in enumerate(ks):

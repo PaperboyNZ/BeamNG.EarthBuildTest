@@ -19,6 +19,7 @@ the file): the code_key, the settings it was built with (sig(): one short hash p
 earthd.Server.world_signature()), kind, key, the anchor and the item's box in degrees. compact() (the server's start)
 folds the files into one and drops the lines whose zip is gone."""
 import hashlib
+import atexit
 import json
 import os
 import re
@@ -204,19 +205,29 @@ def _note(cache_dir, kind, k, wh):
     try:
         lat, lon, s, w, n, e, settings = wh
         line = (f"{code_key()}\t{settings}\t{kind}\t{k}\t{lat:.7f}\t{lon:.7f}\t{s:.6f}\t{w:.6f}\t{n:.6f}\t{e:.6f}\n")
-        fd = _where.get(cache_dir)
-        if fd is None:
-            with _lock:
-                fd = _where.get(cache_dir)
-                if fd is None:
-                    d = os.path.join(cache_dir, SUBDIR, WHERE_DIR)
-                    os.makedirs(d, exist_ok=True)
-                    fd = _where[cache_dir] = os.open(os.path.join(d, f"{os.getpid()}_{_START}.tsv"),
-                                                     os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0),
-                                                     0o644)
-        os.write(fd, line.encode("utf-8"))
+        with _lock:
+            fd = _where.get(cache_dir)
+            if fd is None:
+                d = os.path.join(cache_dir, SUBDIR, WHERE_DIR)
+                os.makedirs(d, exist_ok=True)
+                fd = _where[cache_dir] = os.open(os.path.join(d, f"{os.getpid()}_{_START}.tsv"),
+                                                 os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0),
+                                                 0o644)
+            os.write(fd, line.encode("utf-8"))
     except Exception:
         pass
+
+
+def close(cache_dir=None):
+    """Release sidecar handles when their owner closes (required on Windows)."""
+    with _lock:
+        for directory in list(_where) if cache_dir is None else (cache_dir,):
+            fd = _where.pop(directory, None)
+            if fd is not None:
+                os.close(fd)
+
+
+atexit.register(close)
 
 
 def parse_where(line):

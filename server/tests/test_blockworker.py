@@ -38,6 +38,8 @@ def tmp_cache(test):
     """A revisit cache folder of the test's own (the tiles' keep-for-the-next-visit cache), removed after it."""
     d = tempfile.TemporaryDirectory()
     test.addCleanup(d.cleanup)
+    import revisit
+    test.addCleanup(revisit.close, d.name)
     return d.name
 
 
@@ -159,7 +161,8 @@ class FarTileTest(unittest.TestCase):
         layout = farfield.Layout(cells=64)
         tile = farfield.Tile(3, 1, -2)
         px = 128
-        with tempfile.TemporaryDirectory() as cache, tempfile.TemporaryDirectory() as out:
+        cache = tmp_cache(self)
+        with tempfile.TemporaryDirectory() as out:
             blockworker._s = SimpleNamespace(dem=FakeDem(), md=None, widths=None, surface=None, airports=None, sea=None,
                                              cache_dir=cache, imagery=None,
                                              anchor=lambda aid, lat, lon: (None, None))

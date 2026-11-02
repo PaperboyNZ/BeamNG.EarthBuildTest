@@ -35,7 +35,9 @@ def canonical_ring(points, ccw=True):
         raise InvalidFootprint("ring must contain finite XY coordinates")
     if len(p) > MAX_VERTICES + 1:
         raise InvalidFootprint("ring exceeds the vertex budget")
-    keep = np.r_[True, np.any(p[1:] != p[:-1], axis=1)]
+    keep = np.empty(len(p), dtype=bool)
+    keep[0] = True
+    np.any(p[1:] != p[:-1], axis=1, out=keep[1:])
     p = p[keep]
     if len(p) > 1 and np.array_equal(p[0], p[-1]):
         p = p[:-1]
@@ -43,15 +45,19 @@ def canonical_ring(points, ccw=True):
         raise InvalidFootprint("ring has fewer than three distinct consecutive vertices")
     # Subtract an origin before the shoelace sum to avoid cancellation far from 0.
     local = p - p[0]
-    area2 = float(np.sum(local[:, 0] * np.roll(local[:, 1], -1) -
-                         local[:, 1] * np.roll(local[:, 0], -1)))
+    # The closing term is zero after subtracting p[0]. Keep the original
+    # reduction length/order, without allocating two rolled coordinate arrays.
+    cross = np.empty(len(local), dtype=np.float64)
+    cross[:-1] = local[:-1, 0] * local[1:, 1] - local[:-1, 1] * local[1:, 0]
+    cross[-1] = 0.
+    area2 = float(np.sum(cross))
     if area2 == 0:
         raise InvalidFootprint("ring has zero area")
     if (area2 > 0) != ccw:
         p = p[::-1]
     start = int(np.lexsort((p[:, 1], p[:, 0]))[0])
-    p = np.roll(p, -start, axis=0)
-    return tuple((float(x) + 0., float(y) + 0.) for x, y in p)
+    result = tuple((float(x) + 0., float(y) + 0.) for x, y in p)
+    return result[start:] + result[:start]
 
 
 @dataclass(frozen=True, slots=True)
