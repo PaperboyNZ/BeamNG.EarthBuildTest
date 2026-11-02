@@ -102,5 +102,3 @@ def uv(positions,tris):
     u=np.where(axis==0,positions[:,1],positions[:,0])
     v=np.where(axis==2,positions[:,1],positions[:,2])
     return np.column_stack((u,v))/6.
-
-
