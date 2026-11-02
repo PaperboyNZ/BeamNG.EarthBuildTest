@@ -4722,7 +4722,8 @@ class Connection:
             error = 'Choose Simple or Advanced building generation.'
         elif not getattr(self, 'road_geo', False) or not getattr(self, 'building_chunks_supported', False):
             error = 'Live building switching needs the matching Earth mod and global road tiles.'
-        elif any(c.active is not None and not getattr(c, 'road_geo', False) for c in self.s.connections):
+        elif any(c.active is not None and (not getattr(c, 'road_geo', False)
+                 or not getattr(c, 'building_chunks_supported', False)) for c in self.s.connections):
             error = 'A connected older mod does not support live building switching.'
         elif mode == 'v2':
             try:

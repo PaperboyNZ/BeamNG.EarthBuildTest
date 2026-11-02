@@ -137,6 +137,7 @@ MOD_TO_SERVER = {
     "terrain_patch": {"anchorId": F(int), "key": F(str), "x0": F(NUM), "y0": F(NUM), "x1": F(NUM), "y1": F(NUM)},
     # the performance log (perflog.lua; additive): lines for the server's log (hitches, drops, minutes, the machine)
     "runtime_profiler": {"enabled": F(bool), "mode": F(str, OPT), "probe": F(int, OPT)},
+    "building_generator": {"value": F(str)},
     "perf_log": {"lines": F((list, dict))},
     # BeamMP shared generation (peerwork.py, mpsession.lua): our world server serves our group; the players on our
     # anchor ({id, host, port, code, weight} each). (Commented out 2026-10-27: shared world building is off.)
@@ -216,6 +217,8 @@ SERVER_TO_MOD = {
     "map_tiles_ready": {"tiles": F(list)},  # [z, x, y, ok, layer] each: written to <user>/temp/beamngEarth/maptiles
     "runtime_profiler_pong": {"probe": F(int)},
     "runtime_profiler": {"profile": F(dict)},
+    "building_generator": {"value": F(str), "sessionId": F(str), "anchorId": F(int, NULL),
+                           "error": F(str, OPT)},
     "hello": {"runtimeProfiler": F(int, OPT), "protocol": F(int), "format": F(int), "serverVersion": F(str), "appVersion": F(str), "sessionId": F(str),
               "farFormat": F(str), "material": F(str),
               "nearVisual": F(str), "attribution": F(str),          # protocol 4
@@ -227,6 +230,7 @@ SERVER_TO_MOD = {
               "roadGeo": F(int, OPT),           # road tiles as geotiles (hello.roadGeo, the road processes on)
               "buildingProgress": F(int, OPT),
               "buildingChunks": F(int, OPT),    # negotiated complete building chunk lists
+              "buildingGenerator": F(str, OPT), "buildingGeneratorSwitch": F(int, OPT),
               "sectorManifest": F(int, OPT),
               "farGeo": F(int, OPT),            # far buildings / skyline / far bridges as geotiles (hello.farGeo)
               "globalFar": F(int, OPT),         # far levels >= 3 as global tiles (hello.globalFar, --global-far)
@@ -342,7 +346,7 @@ SERVER_TO_MOD = {
 WEATHER_NESTED = {"cover": {"total", "low", "mid", "high"}, "wind": {"ms", "fromDeg", "gustMs"},
                   "aloft": {"ms", "fromDeg"}}
 # message types the plain session cannot produce (each has its own session test below)
-EXERCISED_ELSEWHERE = {"building_progress", "far_retex", "roads_tile", "roads_drop",   # roads: needs map data (roads tests)
+EXERCISED_ELSEWHERE = {"building_generator", "building_progress", "far_retex", "roads_tile", "roads_drop",   # roads: needs map data (roads tests)
                        "roads_skin", "roads_exact",                  # road geotiles (test_roadgeo)
                        "terrain_refresh",                            # a provisional first block: --grading (map data)
                        "runtime_profiler", "runtime_profiler_pong",  # opt-in feed/probe (test_runtimeprofiler_server)

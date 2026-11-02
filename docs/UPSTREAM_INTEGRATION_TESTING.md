@@ -1,46 +1,18 @@
 # Current dev integration and testing
 
-Local combined integration updated 2 November 2026 through `TecnaGamer/BeamNG.Earth`
-dev `0c790738f3ab0ddc2bb7330ee3be23cd875caaf7`. The published draft PRs remain at
-their earlier `11cc55572fd5b828f52a0cf0edf0cf449cba1ac0` baseline.
+Updated 2 November 2026 against `TecnaGamer/BeamNG.Earth` dev
+`b41b4b04edffab6083e78b0c2ef41982869287b2`.
 
-The three published PRs include that earlier upstream commit. The performance and profiler PRs can
+The three PRs include this upstream commit. The performance and profiler PRs can
 be reviewed independently against dev. The world-generation PR builds on the
 profiler PR. A separate local integration branch combines all three for testing.
 
-## Latest local dev merge
-
-The combined branch includes all four dev commits since `11cc5557`: ready-block
-and stand-in fixes, provisional follow blocks in workers and separate request
-threads, lower-priority vegetation jobs with timeout measured after queueing,
-and cached lane-flow rows with NumPy neighbourhood assembly.
-
-Before merging, all existing combined-playtest follow-ups were checkpointed at
-`09df47ff` and retained on `archive/pre-dev-0c790738-20261102`. This includes the
-live Simple/Advanced switch, weathering, texture/geometry fixes and terrain/curb
-protection. The source checkout matched every playtest source file before merging.
-
-Lane-flow conflict resolution uses upstream's cached rows, road-class defaults,
-ID selection and NumPy assembly while retaining endpoint-only native inputs,
-short-feature semantics, no-op solve avoidance and lane-column invalidation.
-Offline comparison with exact upstream gives identical results for 16,480 road
-decisions in nine Auckland cells (49 source cells, 57,935 source features).
-
-Worker conflict resolution retains per-job building mode and progressive detail
-arguments, combines optional prebuild admission with upstream's low-priority
-queue, and uses the new running-time timeout. Two integration regressions check
-those combinations.
-
-Latest targeted validation: 277 Python cases, 272 passed and five optional skips;
-990 Lua assertions passed in six suites. Four skips need complete real-map
-fixtures; the fifth needs a LuaJIT executable. Lua assertions instead ran through
-the installed LuaJIT library. The five worker tests use the existing external
-Windows descriptor-cleanup adapter without changing their assertions. Localhost
-and asyncio tests run outside the Windows sandbox; temporary files use a writable
-workspace folder. Native game appearance and driving acceptance remain pending.
-
-This merge is local. Published draft branches and their existing validation
-records have not been changed by this update.
+The latest source audit and remaining upstream timeout limitation are recorded
+in [UPSTREAM_AUDIT_20261102.md](UPSTREAM_AUDIT_20261102.md). The update includes
+the published resource-tab profiler, all local playtest follow-ups, upstream's
+single-file mapped mirror and healthy-server edge-warning cap. Live switching
+now rejects every active peer that lacks either road-geotile or building-chunk
+support. Protocol agreement and golden checks cover the additive messages.
 
 ## What belongs in each PR
 
@@ -62,7 +34,7 @@ input is bundled. Those external datasets remain optional.
 
 ## Integration checks
 
-The final broad combined run covers 136 Python test modules: 1,804 cases run,
+The earlier combined run at `11cc5557` covered 136 Python test modules: 1,804 cases run,
 1,794 passed, 10 optional skips, no failures or errors. It includes the latest
 upstream terrain/photo planning changes and final road-fallback fixes. This is a
 selected regression suite, not every test in the repository. Client checks cover 3,970 Lua assertions in

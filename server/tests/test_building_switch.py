@@ -41,7 +41,7 @@ class LiveBuildingSwitchTests(unittest.TestCase):
         c.bldsky = vegetation.Tracker(kind='bldsky', geo=True)
         c.brfar = vegetation.Tracker(kind='brfar', geo=True)
         c.veg = vegetation.Tracker(geo=True)
-        c.s = SimpleNamespace(connections=[c], anchors={7: object()}, out_dir=None,
+        c.s = SimpleNamespace(sid='fixture', connections=[c], anchors={7: object()}, out_dir=None,
                               mapdata=object(), imagery=object(), dem=object())
         return c
 
@@ -67,6 +67,8 @@ class LiveBuildingSwitchTests(unittest.TestCase):
             self.assertEqual(c.brfar.generation_epoch, 0)
             self.assertEqual(c.building_progress, value == 'v2')
         self.assertTrue(all(m['type'] == 'building_generator' for m in c.messages))
+        from test_protocol_agreement import ServerMessagesTest
+        for message in c.messages:ServerMessagesTest.check(self, message)
 
     def test_invalid_or_incompatible_request_preserves_mode_and_world(self):
         c = self.connection()
@@ -88,6 +90,26 @@ class LiveBuildingSwitchTests(unittest.TestCase):
         self.assertNotIn(key, c.roads.info)
         self.assertIn(key, c.roads.regenerate)
         self.assertFalse(any(m['type'] == 'roads_tile' for m in c.messages))
+
+    def test_active_peer_without_building_chunks_blocks_live_switch(self):
+        c = self.connection()
+        peer = self.connection()
+        peer.building_chunks_supported = False
+        c.s.connections.append(peer)
+        self.assertFalse(earthd.Connection.change_building_generator(c, 'legacy'))
+        self.assertEqual(modes.current(), 'v2')
+        self.assertEqual(c.roads.generation_epoch, 0)
+        self.assertEqual(peer.roads.generation_epoch, 0)
+        self.assertIn('older mod', c.messages[-1]['error'])
+
+    def test_inactive_older_peer_does_not_block_live_switch(self):
+        c = self.connection()
+        peer = self.connection()
+        peer.active = None
+        peer.building_chunks_supported = False
+        c.s.connections.append(peer)
+        self.assertTrue(earthd.Connection.change_building_generator(c, 'legacy'))
+        self.assertEqual(modes.current(), 'legacy')
 
     def test_late_far_job_cannot_replace_current_generation(self):
         c = self.connection(); key = (65536, 65536)
