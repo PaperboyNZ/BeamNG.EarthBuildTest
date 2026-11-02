@@ -27,9 +27,10 @@ input is bundled. Those external datasets remain optional.
 
 ## Integration checks
 
-The broad combined run covers 135 Python test modules. The latest result and
-scope are recorded in the PR descriptions. It is a selected regression suite,
-not every test in the repository. Client checks cover 3,970 Lua assertions in
+The final broad combined run covers 136 Python test modules: 1,804 cases run,
+1,794 passed, 10 optional skips, no failures or errors. It includes the latest
+upstream terrain/photo planning changes and final road-fallback fixes. This is a
+selected regression suite, not every test in the repository. Client checks cover 3,970 Lua assertions in
 25 suites, including collision/resource handling, building streaming, settings,
 profiler controls, follow and rebase. Lua runs use a stubbed game environment.
 
