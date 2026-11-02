@@ -166,6 +166,7 @@ class ParkingGrader:
     def _road_reservations(self, key, feats):
         """Bounded immutable source preparation, shared by neighbouring patches."""
         import sidewalks
+        import revisit
         from streetscape import STYLES
         cache_key = str(key)
         cached = self.protection_rows.get(cache_key)
@@ -175,6 +176,7 @@ class ParkingGrader:
         if cached is not None:
             self.protection_rows.pop(cache_key)
             self.protection_bytes -= cached[-1]
+        before = revisit.faults()
         rings, reaches, identities, count, backs = [], [], [], 0, {}
         curb_h = max(style.height for style in STYLES.values())
         for i, spec in enumerate(roads.road_specs(feats, None, self.widths)):
@@ -196,6 +198,8 @@ class ParkingGrader:
                 if len(ring) < 2:continue
                 rings.append(ring);reaches.append(reach)
                 identities.append((str(feats.ids[i]), ring.tobytes(), reach))
+        if revisit.faults() != before:
+            raise ValueError("incomplete parking road-protection data")
         lengths = np.asarray([len(r) for r in rings], dtype=np.intp)
         starts = np.r_[0, np.cumsum(lengths)[:-1]].astype(np.intp) if len(rings) else np.zeros(0,dtype=np.intp)
         ll = np.concatenate(rings) if rings else np.empty((0,2))
