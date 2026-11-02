@@ -2361,7 +2361,7 @@ class PlanStore:
         self.shared = None
         self.lock = threading.Lock()
         import parkinggrade
-        self.parking = parkinggrade.ParkingGrader(mapdata, elev)
+        self.parking = parkinggrade.ParkingGrader(mapdata, elev, widths)
         self.planners = OrderedDict()   # (rx, ry) -> _Planner, the least recently used first
 
     @staticmethod

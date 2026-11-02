@@ -947,6 +947,8 @@ local function onMessage(msg)
     if w and w.clearGravity then w.clearGravity() end
     st.deshadow = msg.deshadow -- server-side imagery de-shadowing ('lambert' / 'full'; nil = off), shown on the settings page
     st.colormatch = msg.colormatch -- server-side imagery colour-seam removal ('s2'; nil = off), likewise
+    st.buildingGenerator = msg.buildingGenerator
+    st.buildingGeneratorError = nil
     seasonlook.setMode(msg.season) -- the imagery's season (server --season): the leaves follow it
     st.mapPort = msg.mapPort -- the world map's tile endpoint on 127.0.0.1 (server/maptiles.py; nil = an older server)
     -- the download cache: the new server's usage follows its hello; it gets the page's size cap (the
@@ -954,6 +956,10 @@ local function onMessage(msg)
     cacheInfo = nil
     local settings = rawget(_G, 'beamngEarth_settings')
     if settings and settings.cacheCapGb then net.send({ type = 'cache', capGb = settings.cacheCapGb() }) end
+    if msg.buildingGeneratorSwitch == 1 and settings and settings.get then
+      local chosen = settings.get('buildingGenerator')
+      if chosen and chosen ~= msg.buildingGenerator then net.send({ type = 'building_generator', value = chosen }) end
+    end
     -- gas stations on, after every hello (a server started without them too; this comes before any tile request)
     net.send({ type = 'gas_stations', on = true })
     -- the highway signs' switch (settings highwaySigns): no sign tiles built while it is off
@@ -1015,6 +1021,9 @@ local function onMessage(msg)
     st.serverBacklog = tonumber(msg.backlog)
     -- M1h: the far-field radius rides on every status in horizon mode (the view distance follows it)
     if msg.radius ~= nil then M.setFarRadius(msg.radius) end
+  elseif t == 'building_generator' then
+    st.buildingGenerator = msg.value
+    st.buildingGeneratorError = msg.error
   elseif t == 'load_progress' then      -- the loading line's counts (server Connection.send_progress)
     st.loadProgress = msg
   -- elseif t == 'share' then           -- our world server serving our BeamMP group (shared world building,
@@ -2134,7 +2143,7 @@ local function onUpdate(dtReal, dtSim)
     -- the roads before the far tiles: they share the governor's budget and the first to ask gets it; after a
     -- teleport the far field's hundreds of tiles took it frame after frame and the road meshes under the car
     -- came after it had passed (Brasov, Sinaia 2026-10-15: the car drove bare ground)
-    roads.update(gov, st.anchorId, st.player, M.viewAway(), st.anchor)
+    roads.update(gov, st.anchorId, st.player, M.viewAway(), st.anchor, st.cam)
     if roads.takeResync() then net.send({type='roads_reset'}) end
     gasstations.update(gov)
     t = mark('roads', t)

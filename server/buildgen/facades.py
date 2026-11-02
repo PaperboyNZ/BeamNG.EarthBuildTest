@@ -347,11 +347,14 @@ def shallow_openings(spec,elevation,block_profile,regional_profile,lite):
 
 
 @profile_step('Building facade geometry')
-def draw(mesh, spec, gmin, gmax, bottom, lite=False):
+def draw(mesh, spec, gmin, gmax, bottom, lite=False, textured=False):
     import buildings as b
     from . import components as templates
     from .quality import current
     quality = current()
+    # Distant tiles use the existing window atlas for sash, frame and recess
+    # shading. Projected bays/balconies still retain their actual silhouettes.
+    textured = textured and lite
     if getattr(spec, 'city', None) is not None:
         from .city import draw as draw_city
         return draw_city(mesh, spec, gmin, gmax, bottom, lite=lite)
@@ -432,8 +435,10 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
         if quality.rank == 2:shallow=frozenset()
         # Close/middle share aperture positions. Assemblies and deep recesses
         # retain holes and closed returns; only shallow openings use overlays.
-        deep=frozenset(op for op in openings if (op.depth if op.depth is not None else reveal)>=MIDDLE_RECESS_M)
-        structural=[op for op in openings if op.assembly or op in deep]
+        def textured_opening(op):return textured and not op.assembly.startswith('regional_')
+        deep=frozenset(op for op in openings if not textured_opening(op)
+                      and (op.depth if op.depth is not None else reveal)>=MIDDLE_RECESS_M)
+        structural=[op for op in openings if not textured_opening(op) and (op.assembly or op in deep)]
         structural_set=frozenset(structural) if quality.rank == 2 else ()
         cuts=([op for op in openings if op.floor < 2 or op in structural_set]
               if quality.rank == 2 else openings)
@@ -464,10 +469,13 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
                              regional.components(spec,elevation,regional_profile,regional_budget))
         regional_budget-=len(regional_components)
         components=components+regional_components+residential.frame_components(spec,elevation,dwelling)
-        if quality.rank == 0:
+        if quality.rank == 0 or textured:
             # Broad bands and structural timber carry regional identity.
             components=tuple(c for c in components if c.kind in (
                 'deep_beam','upper_cornice','floor_band','corner_board','dwelling_frame','block_screen'))
+        elif quality.rank < 5:
+            # The window atlas already contains sash bars and mullions.
+            components=tuple(c for c in components if c.kind not in ('sash','mullion'))
         band_at=None
         def detail(component):
             nonlocal band_at
@@ -504,9 +512,9 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
             from .regional_facade_details import draw_opening as draw_modifier_opening
             if draw_modifier_opening(mesh,spec,op,at,quad,lower_body if op.floor==0 else upper_body,
                                      trim,window,lite=opening_lite):continue
-            if residential.draw_opening(mesh,spec,op,at,quad,
+            if not textured_opening(op) and residential.draw_opening(mesh,spec,op,at,quad,
                     lower_body if op.floor==0 else upper_body,trim,window,lite=opening_lite,elevation=elevation):continue
-            arch=regional.aperture_shape(spec,regional_profile,elevation,op) if allow_arches else 'rectangular'
+            arch=regional.aperture_shape(spec,regional_profile,elevation,op) if allow_arches and not textured_opening(op) else 'rectangular'
             opening_reveal=op.depth if op.depth is not None else reveal
             flattened=opening_lite and op not in deep
             depth = .02 if flattened else -opening_reveal
@@ -586,7 +594,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False):
         for component in components:
             if component.overlay and not (lite and component.near_only):detail(component)
         from .regional_facade_details import draw_surface_details
-        draw_surface_details(mesh,spec,elevation,at,quad,mats,lite=lite)
+        if not textured:draw_surface_details(mesh,spec,elevation,at,quad,mats,lite=lite)
         run += length
     if not lite and quality.rank >= 3:
         from .details import corners

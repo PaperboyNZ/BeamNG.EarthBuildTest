@@ -562,4 +562,26 @@ end
 files[settings.FILE] = {version=1,quality='custom',buildingQuality='ultra',buildingAdaptive=false}
 T.check(settings.load().buildingAdaptive == false, 'explicit nonadaptive setting persists')
 files[settings.FILE] = nil
+-- Generation persists and switches live, independently of visual quality.
+settings.load()
+local net = require('beamngEarth/net')
+local generationMessages, priorSend = {}, net.send
+net.send = function(msg) if msg.type == 'building_generator' then generationMessages[#generationMessages+1] = msg.value end end
+T.check(settings.get('buildingGenerator') == 'legacy', 'missing generation setting defaults to Simple')
+for _, mode in ipairs({'v2', 'legacy', 'v2'}) do
+  T.check(settings.uiSet('buildingGenerator', mode).ok, 'accept generation mode ' .. mode)
+  T.check(files[settings.FILE].buildingGenerator == mode, 'save generation mode ' .. mode)
+  T.check(settings.load().buildingGenerator == mode, 'restore generation mode ' .. mode)
+  settings.setQuality('low')
+  T.check(settings.get('buildingGenerator') == mode, 'graphics preset preserves generation mode ' .. mode)
+end
+T.check(not settings.uiSet('buildingGenerator', 'invalid').ok and settings.get('buildingGenerator') == 'v2',
+  'invalid generation does not overwrite saved Advanced')
+T.check(generationMessages[#generationMessages] == 'v2', 'selector sends the live generation request')
+net.send = priorSend
+stTbl.buildingGenerator = 'legacy'
+beamngEarth_core = { _state = function() return stTbl end }
+T.check(settings.uiState().status.buildingGenerator == 'legacy' and settings.get('buildingGenerator') == 'v2',
+  'active server mode remains separate from the requested mode until acknowledged')
+files[settings.FILE] = nil
 T.done('test_settings')

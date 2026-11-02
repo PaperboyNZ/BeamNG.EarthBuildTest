@@ -125,7 +125,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.48,
+        "detailBaseColorMapStrength": 0.312,
         "normalMap": "/assets/materials/tileable/roofing/asphalt_roof/t_asphalt_roof_nm.normal.png",
         "ambientOcclusionMap": "/assets/materials/tileable/roofing/asphalt_roof/t_asphalt_roof_ao.data.png",
         "normalMapStrength": 1.35,
@@ -164,7 +164,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.48,
+        "detailBaseColorMapStrength": 0.312,
         "normalMapStrength": 1.35,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 1.0
@@ -200,7 +200,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.48,
+        "detailBaseColorMapStrength": 0.312,
         "normalMapStrength": 1.35,
         "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "roughnessMapUseUV": 1
@@ -237,7 +237,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMapStrength": 0.65,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 1.0
@@ -298,7 +298,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMapStrength": 0.35,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 1.0
@@ -334,7 +334,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.48,
+        "detailBaseColorMapStrength": 0.312,
         "normalMapStrength": 1.5,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 0.96,
@@ -370,7 +370,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMap": "/assets/materials/tileable/concrete/concrete_precast1/t_concrete_precast1_nm.normal.png",
         "ambientOcclusionMap": "/assets/materials/tileable/concrete/concrete_precast1/t_concrete_precast1_ao.data.png",
         "normalMapStrength": 0.5,
@@ -407,7 +407,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMap": "/assets/materials/tileable/metal/m_metal_wall_corrugate/t_metal_wall_corrugated_nm.normal.png",
         "ambientOcclusionMap": "/assets/materials/tileable/metal/m_metal_wall_corrugate/t_metal_wall_corrugated_ao.data.png",
         "normalMapStrength": 0.65,
@@ -471,7 +471,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMapStrength": 0.8,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 1.0
@@ -508,7 +508,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMapStrength": 0.2,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 1.0
@@ -545,7 +545,7 @@
           -1.03125,
           1
         ],
-        "detailBaseColorMapStrength": 0.52,
+        "detailBaseColorMapStrength": 0.338,
         "normalMapStrength": 0.7,
         "roughnessMapUseUV": 1,
         "roughnessFactor": 1.0

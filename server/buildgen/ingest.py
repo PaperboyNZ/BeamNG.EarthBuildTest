@@ -10,9 +10,8 @@ log = logging.getLogger(__name__)
 
 
 def enabled():
-    # Read at request time: CLI arguments are applied after module imports, and
-    # the same environment is inherited by spawned geometry workers.
-    return os.environ.get("BNE_BUILDING_GENERATOR", "legacy") == "v2"
+    import building_settings
+    return building_settings.current() == "v2"
 
 
 def components(f, i):

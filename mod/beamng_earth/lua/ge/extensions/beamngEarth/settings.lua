@@ -54,6 +54,9 @@ M.SCHEMA = {
   -- how far the far buildings, the skyline and the far bridges reach (M.BUILDING_DISTANCE: buildingScale)
   buildingDistance = { kind = 'enum', default = 'normal', values = { 'near', 'normal', 'far', 'max' },
     label = 'Building draw distance' },
+  -- Applied live by the server; independent of the graphics quality presets.
+  buildingGenerator = { kind = 'enum', default = 'legacy', values = { 'legacy', 'v2' },
+    label = 'Building generation' },
   buildingQuality = { kind = 'enum', default = 'ultra', values = { 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
     label = 'Building generation quality' },
   buildingAdaptive = { kind = 'bool', default = true, label = 'Adaptive building performance' },
@@ -130,7 +133,7 @@ M.SCHEMA = {
   updateDismissed = { kind = 'string', default = '', maxLen = 40, label = 'Update notice dismissed (version)' },
   devNoticeSeen = { kind = 'string', default = '', maxLen = 40, label = 'Development build notice seen (version)' },
 }
-M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'buildingQuality', 'buildingAdaptive', 'buildingDetailM', 'objectDetail',
+M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'buildingGenerator', 'buildingQuality', 'buildingAdaptive', 'buildingDetailM', 'objectDetail',
   'grassDistance', 'nightLights', 'rebaseDistance', 'viewDistanceMode', 'viewDistanceKm', 'hazeStrength', 'skyMode', 'clouds',
   'weatherMode', 'realGravity', 'groundCover', 'groundCoverDensity', 'rocks', 'roads', 'highwaySigns', 'dashboardSatellite',
   'hudVisible', 'statusBar', 'profilerMode', 'runtimeProfiler',
@@ -464,6 +467,9 @@ M.APPLY = {
   terrainDetail = sendGraphics,
   buildingDistance = sendGraphics,
   buildingQuality = sendGraphics,
+  buildingGenerator = function()
+    net.send({ type = 'building_generator', value = values.buildingGenerator })
+  end,
   buildingAdaptive = sendGraphics,
   buildingDetailM = sendGraphics,
   groundPhoto = function(v)
@@ -601,6 +607,8 @@ function M.uiState()
   status.gravity = w and w.gravityLine and w.gravityLine() or nil
   status.deshadow = st and st.deshadow or 'off'
   status.colormatch = st and st.colormatch or 'off'
+  status.buildingGenerator = st and st.buildingGenerator or nil
+  status.buildingGeneratorError = st and st.buildingGeneratorError or nil
   -- the download cache: the server's last numbers, fresh ones asked every CACHE_POLL-th call (the page
   -- polls every 2 s while it is open)
   cachePolls = cachePolls + 1

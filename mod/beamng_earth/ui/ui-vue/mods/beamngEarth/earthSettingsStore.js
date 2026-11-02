@@ -45,6 +45,10 @@ export const settingsSchema = [
   {
     name: "World",
     items: [
+      { id: "buildingGenerator", type: "select", default: "legacy", name: "Building generation", desc: "Simple uses the original building generator. Advanced uses the new building system with detailed architecture, courtyards and multipart buildings. Your choice is saved for future sessions.",
+        note: "Applies while you play. Existing buildings stay visible until their replacements are ready. Terrain and downloaded data are kept.",
+        options: [ { label: "Simple", value: "legacy" }, { label: "Advanced", value: "v2" } ] },
+      { id: "activeBuildingGenerator", type: "info", name: "Active building generation", desc: "The building system selected by the connected Earth server. Changed buildings and their associated geometry update progressively." },
       { id: "skyMode", type: "select", default: "real", name: "Sun and stars", desc: "Real time: the sun, moon and stars follow the real clock and date where you are. Manual: use the game's own Time & Weather controls. Changing the time in the pause menu switches this to Manual by itself; choose Real time to go back.",
         note: "Changing the time in the pause menu switches this to Manual.",
         options: [ { label: "Real time", value: "real" }, { label: "Manual", value: "manual" } ] },
@@ -230,6 +234,13 @@ export function fmt(v, digits) {
 
 export function infoValue(item) {
   const s = status.value
+  if (item.id === "activeBuildingGenerator") {
+    const labels = { legacy: "Simple", v2: "Advanced" }
+    const active = labels[s.buildingGenerator]
+    if (s.buildingGeneratorError) return s.buildingGeneratorError
+    if (s.connection !== "connected" || !active) return "Connect to a matching Earth server to view"
+    return s.buildingGenerator === config.value.buildingGenerator ? active : `${active} (switching to ${labels[config.value.buildingGenerator]})`
+  }
   if (item.id === "connection") return connectionText.value
   if (item.id === "anchor") return s.anchorId ? `#${s.anchorId}  ${fmt(s.anchorLat, 5)}, ${fmt(s.anchorLon, 5)}` : "none"
   if (item.id === "player") return (typeof s.playerLat === "number") ? `${fmt(s.playerLat, 5)}, ${fmt(s.playerLon, 5)}  (${fmt(s.dist / 1000, 1)} km from origin)` : "-"

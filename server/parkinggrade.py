@@ -11,12 +11,14 @@ import time
 import threading
 
 import numpy as np
-from shapely import contains_xy, distance, points, from_wkb
+from shapely import contains_xy, distance, points, from_wkb, union_all
 from shapely.geometry import Polygon, LineString
 
 import geodesy
+import heightmap
 import mapcells
 import roads
+import terrainpatch
 
 STEP_M = 2.0
 SIGMA_M = 3.0
@@ -26,6 +28,13 @@ STRENGTH = 0.75
 MAX_GRID_POINTS = 300000
 CACHE_SIZE = 256
 CACHE_BYTES = 64 * 1024 * 1024
+# Keep supporting lattice vertices outside decorative cut/fill, including the
+# coarser collision islands used by remote vehicles as well as near terrain.
+HARDSCAPE_GUARD_M = max(heightmap.SQUARE, heightmap.FAR_SQUARE, terrainpatch.STEP_M) * np.sqrt(2.0)
+HARDSCAPE_FADE_M = 4.0
+ROAD_SEARCH_M = 128.0
+MAX_PROTECTION_CELLS = 64
+MAX_PROTECTION_POINTS = 65536
 log = logging.getLogger("earthd.parkinggrade")
 
 
@@ -46,8 +55,8 @@ def _smooth(z):
 
 
 class Patch:
-    def __init__(self, frame, shape, elev):
-        self.frame, self.shape = frame, shape
+    def __init__(self, frame, shape, elev, protected=None):
+        self.frame, self.shape, self.protected = frame, shape, protected
         x0, y0, x1, y1 = shape.bounds
         # Coarse geographic rejection before converting potentially millions of block samples.
         pad = FALLOFF_M + 1.
@@ -66,6 +75,7 @@ class Patch:
             raise ValueError("non-finite parking elevations")
         # Smoothly limit cut/fill rather than clipping to a new hard height plateau.
         self.delta = MAX_CHANGE_M * np.tanh(STRENGTH * (_smooth(z) - z) / MAX_CHANGE_M)
+        self.nbytes = self.delta.nbytes + (len(protected.wkb) if protected is not None else 0)
 
     def corrections(self, lat, lon):
         a0, b0, a1, b1 = self.bounds_ll
@@ -85,6 +95,12 @@ class Patch:
         d[~inside] = distance(self.shape, points(x[~inside], y[~inside]))
         t = np.clip(1 - d/FALLOFF_M, 0., 1.)
         weight = t*t*(3-2*t)
+        if self.protected is not None and not self.protected.is_empty:
+            # Distance is zero throughout the complete reserved envelope. Both
+            # positive and negative corrections vanish there; smoothstep also
+            # keeps the transition's slope continuous outside the guard.
+            t = np.clip(distance(self.protected, points(x, y))/HARDSCAPE_FADE_M, 0., 1.)
+            weight *= t*t*(3-2*t)
         gx, gy = (x-self.x0)/STEP_M, (y-self.y0)/STEP_M
         ix, iy = np.floor(gx).astype(int), np.floor(gy).astype(int)
         fx, fy = gx-ix, gy-iy
@@ -128,14 +144,84 @@ def _sources(feats):
 
 
 class ParkingGrader:
-    def __init__(self, md, elev):
-        self.md, self.elev = md, elev
+    def __init__(self, md, elev, widths=None):
+        self.md, self.elev, self.widths = md, elev, widths
         self.cache = OrderedDict()
         self.cache_bytes = 0
         self.cells = OrderedDict()
-        self.road_features = {}
+        self.road_features = OrderedDict()
         self.failed = {}
         self.lock = threading.RLock()
+
+    def _remember_roads(self, key, feats):
+        self.road_features[str(key)] = feats
+        self.road_features.move_to_end(str(key))
+        while len(self.road_features) > 64:
+            self.road_features.popitem(last=False)
+
+    def _protected(self, frame, footprint):
+        """Fixed source-road reservations for the WHOLE patch, never the query.
+
+        Include neighbouring cells even when parking footprints came from disk.
+        A missing road inventory rejects optional smoothing instead of treating
+        unknown space as free. No sidewalk meshes or terrain samples are needed.
+        """
+        import revisit
+        import sidewalks
+        from streetscape import STYLES
+
+        halo = footprint.buffer(FALLOFF_M + HARDSCAPE_FADE_M)
+        x0, y0, x1, y1 = halo.bounds
+        la, lo, _ = frame.enu_to_geodetic(
+            np.array([x0-ROAD_SEARCH_M, x1+ROAD_SEARCH_M]*2),
+            np.array([y0-ROAD_SEARCH_M]*2 + [y1+ROAD_SEARCH_M]*2), 0.)
+        keys = mapcells.cells_for_points(la, lo)
+        if len(keys) > MAX_PROTECTION_CELLS:
+            raise ValueError("parking road-protection cell budget")
+        before = revisit.faults()
+        shapes, seen, count = [], set(), 0
+        # Reserve the tallest regional back skin, including narrow median curbs.
+        curb_h = max(style.height for style in STYLES.values())
+        for key in sorted(keys, key=str):
+            if str(key) not in self.road_features:
+                cd = self.md.cell(key, layers=("roads",), kind="demand")
+                if revisit.faults() != before:
+                    raise ValueError("incomplete parking road-protection data")
+                self._remember_roads(key, cd.layers.get("roads"))
+            feats = self.road_features[str(key)]
+            if feats is None:
+                continue
+            for i, spec in enumerate(roads.road_specs(feats, None, self.widths)):
+                if spec is None:
+                    continue
+                # Land cover can later enable urban sidewalks. Protect that
+                # possible extent now, including explicitly tagged sidewalks.
+                urban = spec._replace(urban=True)
+                width = max(spec.width, roads.carriageway(spec.cls, spec.kind, True, None,
+                                                          spec.oneway, spec.lanes))
+                walk = max(spec.walk, roads.MEDIAN_SLAB_M/2) if roads.has_sidewalks(urban) else 0.
+                back = float(sidewalks.profile(h=curb_h, w=walk)[:, 0].max()) if walk else 0.
+                # Offsets have a 2x miter limit. A conservative envelope also
+                # contains junction returns, flares and one-sided walk bands.
+                reach = 2*(width/2 + back) + HARDSCAPE_GUARD_M
+                if reach + FALLOFF_M + HARDSCAPE_FADE_M > ROAD_SEARCH_M:
+                    raise ValueError("unsupported parking road-protection width")
+                for ring in roads.ground_parts(feats, i):
+                    ring = np.asarray(ring, np.float64)
+                    count += len(ring)
+                    if count > MAX_PROTECTION_POINTS:
+                        raise ValueError("parking road-protection geometry budget")
+                    ident = (str(feats.ids[i]), ring.tobytes(), reach)
+                    if len(ring) < 2 or ident in seen:
+                        continue
+                    seen.add(ident)
+                    x, y, _ = frame.geodetic_to_enu(ring[:, 1], ring[:, 0], 0.)
+                    shape = LineString(np.c_[x, y]).buffer(reach, cap_style=3, join_style=2, mitre_limit=2)
+                    if shape.intersects(halo):
+                        shapes.append(shape.intersection(halo))
+        if revisit.faults() != before:
+            raise ValueError("incomplete parking road-protection data")
+        return union_all(shapes)
 
     def _cell(self, key, shared):
         # Reuse source footprints across workers and revisits, like road plans. Only
@@ -157,7 +243,7 @@ class ParkingGrader:
         cell = list(_sources(cd.layers.get("infrastructure"))) + list(_sources(cd.layers.get("roads")))
         if revisit.faults() != before:
             raise ValueError("incomplete parking map data")
-        self.road_features[str(key)] = cd.layers.get("roads")
+        self._remember_roads(key, cd.layers.get("roads"))
         if persist:
             rows = [[*ident[:3], ident[3].hex(), frame.lat0, frame.lon0] for ident, frame, _ in cell]
             revisit.store(persist[0], "parking", cache_key, {"footprints.json": json.dumps(rows).encode()})
@@ -201,15 +287,16 @@ class ParkingGrader:
                     patch = self.cache.get(ident)
                     if patch is None:
                         try:
-                            patch = Patch(frame, footprint, self.elev)
-                        except ValueError as exc:
+                            protected = self._protected(frame, footprint)
+                            patch = Patch(frame, footprint, self.elev, protected)
+                        except Exception as exc:
                             log.debug("parking smoothing skipped: %s", exc)
                             continue
                         self.cache[ident] = patch
-                        self.cache_bytes += patch.delta.nbytes
+                        self.cache_bytes += patch.nbytes
                         while len(self.cache) > CACHE_SIZE or self.cache_bytes > CACHE_BYTES:
                             _, old = self.cache.popitem(last=False)
-                            self.cache_bytes -= old.delta.nbytes
+                            self.cache_bytes -= old.nbytes
                     else:
                         self.cache.move_to_end(ident)
                     patches[ident] = patch

@@ -71,6 +71,8 @@ def apply(positions,colors,tris,materials,ranges):
         # extra vertex stream, or per-frame CPU work for the roof-stain blend.
         # Alpha is unused by stock opaque PBR; only our opted-in hook reads it.
         result[start:end,3]=np.where(np.abs(normal[:,2])<=.3,np.rint(h*255),0).astype(np.uint8)
+        # Keep seeded condition and packed stain controls; soften tint by 35%.
+        age*=.65
         up=np.clip(normal[:,2],0.,1.)
         shade=np.clip(normal[:,1]*pole,0.,1.)
         # Lower walls collect splashback; shallow upward faces retain deposits.

@@ -22,7 +22,7 @@ def horizontal(mesh, footprint, z, material, scale=6., down=False):
         mesh.tri(*points, *uv, material)
 
 
-def draw(mesh, spec, gmin, gmax, collision=False, lite=False):
+def draw(mesh, spec, gmin, gmax, collision=False, lite=False, texture_facades=False):
     import buildings as b
     from . import regional_blocks
     from .quality import current
@@ -46,7 +46,7 @@ def draw(mesh, spec, gmin, gmax, collision=False, lite=False):
                 mesh.quad((*a, bottom), (*c, bottom), (*c, top), (*a, top), *((0., 0.),) * 4, wall)
     elif spec.inference is not None:
         from .facades import draw as draw_facades
-        draw_facades(mesh, spec, gmin, gmax, bottom, lite=lite)
+        draw_facades(mesh, spec, gmin, gmax, bottom, lite=lite, textured=texture_facades)
     else:
         b._walls(mesh, spec, ring, bottom, top, mats, lite)
         if fp.holes:
