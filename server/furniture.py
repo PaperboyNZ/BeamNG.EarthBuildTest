@@ -645,6 +645,7 @@ def place(roads, walks, box, curb_h=0.15, wires=None, town=False, left_hand=Fals
             continue
         side = wk["side"]
         w = wk.get("w", 2.5)
+        curb_h = wk.get("curb_h", .15)
 
         def put(group, spacing, phase, curb_off, height, yaw_fn, clear=END_CLEAR_M):
             for p, out in _stations(run, line, spacing, phase, clear, side):

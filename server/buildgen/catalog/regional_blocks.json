@@ -1,0 +1,8584 @@
+{
+  "schema": 1,
+  "version": "regional-blocks-v1",
+  "source_sha256": "c163b73e3781f92ac91530332ef4478942c88dffe89a4d12026352316957277c",
+  "note": "Approved block proposals; all A/B/C variants selectable. Window proportions are deliberately restrained. No regional_profiles dependency.",
+  "regions": {
+    "us_northeast": [
+      {
+        "id": "us_northeast-a",
+        "name": "Brick pier block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Red or umber brick; pale stone base; dark bronze frames"
+      },
+      {
+        "id": "us_northeast-b",
+        "name": "Joined street fronts",
+        "grammar": "terrace",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.55,
+          0.43,
+          0.34
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.55,
+          0.43,
+          0.34
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Brown brick, buff masonry and muted painted panels"
+      },
+      {
+        "id": "us_northeast-c",
+        "name": "Contemporary warehouse infill",
+        "grammar": "frame",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Dark brick piers; warm precast spandrels; charcoal metal"
+      }
+    ],
+    "us_southeast": [
+      {
+        "id": "us_southeast-a",
+        "name": "Porch rhythm block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm cream render; muted brick base; painted timber accents"
+      },
+      {
+        "id": "us_southeast-b",
+        "name": "Brick garden block",
+        "grammar": "masonry",
+        "bay": [
+          3.0,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.64,
+          0.4,
+          0.29
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Russet brick; pale lintels; olive or dark metal"
+      },
+      {
+        "id": "us_southeast-c",
+        "name": "Gulf shade frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; light render; bronze or white screens"
+      }
+    ],
+    "us_midwest": [
+      {
+        "id": "us_midwest-a",
+        "name": "Brick two-flat rhythm",
+        "grammar": "masonry",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Red-brown brick; limestone-coloured sills; dark frames"
+      },
+      {
+        "id": "us_midwest-b",
+        "name": "Prairie horizontal block",
+        "grammar": "ribbon",
+        "bay": [
+          4.0,
+          5.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.78,
+          0.7,
+          0.56
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Buff brick; sand render; dark timber-toned metal"
+      },
+      {
+        "id": "us_midwest-c",
+        "name": "Great Lakes utility frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.28,
+          0.3,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm precast; red brick infill; graphite frames"
+      }
+    ],
+    "us_southwest": [
+      {
+        "id": "us_southwest-a",
+        "name": "Desert deep-reveal block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.5
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Sand, clay or chalk render; dark recessed glazing"
+      },
+      {
+        "id": "us_southwest-b",
+        "name": "Spanish Revival urban front",
+        "grammar": "arcade",
+        "bay": [
+          3.2,
+          4.4
+        ],
+        "groups": [
+          3,
+          4
+        ],
+        "reveal": [
+          0.14,
+          0.3
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.7,
+          0.47,
+          0.35
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; muted terracotta accents; dark iron-toned metal"
+      },
+      {
+        "id": "us_southwest-c",
+        "name": "Desert modern shade grid",
+        "grammar": "screen",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; bronze screens; charcoal glazing"
+      }
+    ],
+    "us_pacific": [
+      {
+        "id": "us_pacific-a",
+        "name": "Craftsman-derived urban frame",
+        "grammar": "timber",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.55,
+          0.43,
+          0.34
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted green or brown siding; masonry base; dark frames"
+      },
+      {
+        "id": "us_pacific-b",
+        "name": "California courtyard-language block",
+        "grammar": "gallery",
+        "bay": [
+          3.3,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.89,
+          0.88,
+          0.83
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm white render; clay-coloured bands; muted metal"
+      },
+      {
+        "id": "us_pacific-c",
+        "name": "Pacific modern slab",
+        "grammar": "ribbon",
+        "bay": [
+          4.0,
+          5.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; charcoal panels; limited warm wood accents"
+      }
+    ],
+    "canada_atlantic": [
+      {
+        "id": "canada_atlantic-a",
+        "name": "Quebec masonry block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Grey stone or red brick; pale lintels; dark frames"
+      },
+      {
+        "id": "canada_atlantic-b",
+        "name": "Maritime painted panel block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted blue, ochre or red cladding; pale trim; grey base"
+      },
+      {
+        "id": "canada_atlantic-c",
+        "name": "Atlantic winter infill",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale precast; dark brick base; warm metal accents"
+      }
+    ],
+    "canada_prairie": [
+      {
+        "id": "canada_prairie-a",
+        "name": "Railway-town brick block",
+        "grammar": "terrace",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Buff or red brick; cream lintels; dark storefront metal"
+      },
+      {
+        "id": "canada_prairie-b",
+        "name": "Prairie sheltered slab",
+        "grammar": "ribbon",
+        "bay": [
+          4.0,
+          5.4
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.55,
+          0.43,
+          0.34
+        ],
+        "accent_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Sand precast; muted brown panels; grey glazing"
+      },
+      {
+        "id": "canada_prairie-c",
+        "name": "Interior modular civic block",
+        "grammar": "panel",
+        "bay": [
+          3.6,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          12
+        ],
+        "wall_family": "metal",
+        "wall_colour": [
+          0.89,
+          0.88,
+          0.83
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm white metal; muted earth accents; masonry base"
+      }
+    ],
+    "canada_pacific": [
+      {
+        "id": "canada_pacific-a",
+        "name": "Coastal timber gallery block",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "accent_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm timber-toned cladding; charcoal base; light soffits"
+      },
+      {
+        "id": "canada_pacific-b",
+        "name": "Arts-and-Crafts masonry frame",
+        "grammar": "frame",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.55,
+          0.43,
+          0.34
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Brown brick; pale render panels; dark timber accents"
+      },
+      {
+        "id": "canada_pacific-c",
+        "name": "West Coast screened infill",
+        "grammar": "screen",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "metal",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; dark metal; limited warm slats"
+      }
+    ],
+    "arctic_north_america": [
+      {
+        "id": "arctic_north_america-a",
+        "name": "Painted settlement block",
+        "grammar": "timber",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          5
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted red, blue or ochre siding; pale trim; dark base"
+      },
+      {
+        "id": "arctic_north_america-b",
+        "name": "Insulated modular bar",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          8
+        ],
+        "wall_family": "metal",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light metal panels; dark joints; one muted colour band"
+      },
+      {
+        "id": "arctic_north_america-c",
+        "name": "Northern civic masonry block",
+        "grammar": "solid",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; dark stone-like base; restrained colour accents"
+      }
+    ],
+    "latin_american_local": [
+      {
+        "id": "latin_american_local-a",
+        "name": "Courtyard-language masonry block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.7,
+          0.47,
+          0.35
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm lime-coloured render; terracotta accents; dark frames"
+      },
+      {
+        "id": "latin_american_local-b",
+        "name": "Colonial street rhythm",
+        "grammar": "arcade",
+        "bay": [
+          3.0,
+          4.0
+        ],
+        "groups": [
+          3,
+          4
+        ],
+        "reveal": [
+          0.14,
+          0.3
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Ochre or cream render; stone-coloured base; muted shutters"
+      },
+      {
+        "id": "latin_american_local-c",
+        "name": "Mexican modern frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Exposed-concrete appearance; brick infill; one muted colour plane"
+      }
+    ],
+    "caribbean_creole": [
+      {
+        "id": "caribbean_creole-a",
+        "name": "Creole shaded gallery",
+        "grammar": "gallery",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pastel render or painted boards; pale trim; dark louvres"
+      },
+      {
+        "id": "caribbean_creole-b",
+        "name": "Island Deco block",
+        "grammar": "ribbon",
+        "bay": [
+          3.6,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; sea-grey panels; restrained coloured bands"
+      },
+      {
+        "id": "caribbean_creole-c",
+        "name": "Tropical concrete screen",
+        "grammar": "screen",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; muted coloured infill; bronze or white shade panels"
+      }
+    ],
+    "central_america": [
+      {
+        "id": "central_america-a",
+        "name": "Highland rendered block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm white or ochre render; dark masonry base; timber-toned frames"
+      },
+      {
+        "id": "central_america-b",
+        "name": "Caribbean timber frontage",
+        "grammar": "timber",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted painted boards; pale posts; dark base"
+      },
+      {
+        "id": "central_america-c",
+        "name": "Isthmus tropical frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; grey concrete; warm screen accents"
+      }
+    ],
+    "andean_highlands": [
+      {
+        "id": "andean_highlands-a",
+        "name": "Stone-base highland block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm stone-like base; earth-coloured render; dark timber accents"
+      },
+      {
+        "id": "andean_highlands-b",
+        "name": "Colonial urban rhythm",
+        "grammar": "arcade",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          3,
+          4
+        ],
+        "reveal": [
+          0.14,
+          0.3
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale lime-coloured render; muted stone; dark shutters"
+      },
+      {
+        "id": "andean_highlands-c",
+        "name": "Highland brick infill frame",
+        "grammar": "frame",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Red-brown brick; grey frame bands; muted rendered panels"
+      }
+    ],
+    "brazil_coastal": [
+      {
+        "id": "brazil_coastal-a",
+        "name": "Portuguese-derived urban front",
+        "grammar": "terrace",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.89,
+          0.88,
+          0.83
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm white or pastel render; ceramic-colour accents; dark frames"
+      },
+      {
+        "id": "brazil_coastal-b",
+        "name": "Brazilian shaded modern block",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "accent_colour": [
+          0.7,
+          0.47,
+          0.35
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; cream infill; terracotta or neutral screens"
+      },
+      {
+        "id": "brazil_coastal-c",
+        "name": "Coastal balcony-band block",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; grey slab bands; muted coloured spandrels"
+      }
+    ],
+    "amazon_guianas": [
+      {
+        "id": "amazon_guianas-a",
+        "name": "Guianese veranda block",
+        "grammar": "gallery",
+        "bay": [
+          3.0,
+          4.4
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Painted timber tones; light trim; dark weather base"
+      },
+      {
+        "id": "amazon_guianas-b",
+        "name": "Riverine timber-panel bar",
+        "grammar": "timber",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          5
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "metal",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Natural or painted board tones; dark metal seams; masonry base"
+      },
+      {
+        "id": "amazon_guianas-c",
+        "name": "Lowland ventilated frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light blockwork render; grey concrete; warm shade panels"
+      }
+    ],
+    "southern_cone": [
+      {
+        "id": "southern_cone-a",
+        "name": "Italianate urban block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale stone-coloured render; warm brick base; dark metal"
+      },
+      {
+        "id": "southern_cone-b",
+        "name": "Patio rhythm modern block",
+        "grammar": "ribbon",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; exposed-concrete appearance; muted brick infill"
+      },
+      {
+        "id": "southern_cone-c",
+        "name": "Patagonian clad bar",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "metal",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted painted metal; timber-toned panels; dark base"
+      }
+    ],
+    "chile_pacific": [
+      {
+        "id": "chile_pacific-a",
+        "name": "Port-town colour block",
+        "grammar": "terrace",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted ochre, blue or red cladding; pale trim; dark base"
+      },
+      {
+        "id": "chile_pacific-b",
+        "name": "Chilote shingle-panel block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Weathered timber or muted painted shingles; dark trim; stone-like base"
+      },
+      {
+        "id": "chile_pacific-c",
+        "name": "Pacific concrete infill frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm rendered infill; charcoal frames"
+      }
+    ],
+    "eu_atlantic": [
+      {
+        "id": "eu_atlantic-a",
+        "name": "Brick civic street block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Brown or red brick; pale stone trim; dark frames"
+      },
+      {
+        "id": "eu_atlantic-b",
+        "name": "Stone-panel urban infill",
+        "grammar": "solid",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Grey or buff stone-like panels; warm render; bronze frames"
+      },
+      {
+        "id": "eu_atlantic-c",
+        "name": "Postwar renewal slab",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm precast; muted brick infill; charcoal accents"
+      }
+    ],
+    "eu_mediterranean": [
+      {
+        "id": "eu_mediterranean-a",
+        "name": "Whitewashed shaded block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Chalk or sand render; stone-coloured base; muted shutters"
+      },
+      {
+        "id": "eu_mediterranean-b",
+        "name": "Iberian tiled street rhythm",
+        "grammar": "terrace",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; restrained blue, green or ochre tile-colour panels; dark frames"
+      },
+      {
+        "id": "eu_mediterranean-c",
+        "name": "Mediterranean loggia frame",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light render; pale concrete bands; dark metal screens"
+      }
+    ],
+    "nordic_cold": [
+      {
+        "id": "nordic_cold-a",
+        "name": "Painted timber urban block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted red, ochre or grey boards; pale trim; dark base"
+      },
+      {
+        "id": "nordic_cold-b",
+        "name": "Nordic classical masonry",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm pale render; grey stone-like base; muted metal"
+      },
+      {
+        "id": "nordic_cold-c",
+        "name": "Functionalist insulated slab",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; subdued brick or timber-toned panels; dark frames"
+      }
+    ],
+    "france_regional": [
+      {
+        "id": "france_regional-a",
+        "name": "Stone boulevard block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          4,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm limestone-coloured panels; grey base; dark frames"
+      },
+      {
+        "id": "france_regional-b",
+        "name": "Regional masonry infill",
+        "grammar": "terrace",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Local stone tones or warm render; muted shutters; timber-colour accents"
+      },
+      {
+        "id": "france_regional-c",
+        "name": "French modern residential frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "accent_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; cream infill; muted coloured panels"
+      }
+    ],
+    "low_countries": [
+      {
+        "id": "low_countries-a",
+        "name": "Merchant-bay brick block",
+        "grammar": "terrace",
+        "bay": [
+          2.6,
+          3.6
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm red or brown brick; pale sills; dark frames"
+      },
+      {
+        "id": "low_countries-b",
+        "name": "Flemish masonry court language",
+        "grammar": "masonry",
+        "bay": [
+          3.0,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Buff or red brick; stone-coloured base; bronze frames"
+      },
+      {
+        "id": "low_countries-c",
+        "name": "Contemporary brick grid",
+        "grammar": "frame",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Dark or pale brick; precast lintels; charcoal metal"
+      }
+    ],
+    "central_europe": [
+      {
+        "id": "central_europe-a",
+        "name": "Rendered perimeter rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream or muted ochre render; stone-like base; dark frames"
+      },
+      {
+        "id": "central_europe-b",
+        "name": "Masonry-and-timber infill block",
+        "grammar": "timber",
+        "bay": [
+          3.2,
+          4.4
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render panels; dark timber-toned framing; masonry base"
+      },
+      {
+        "id": "central_europe-c",
+        "name": "Central European panel renewal",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          22
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale precast; muted coloured render; dark metal"
+      }
+    ],
+    "alpine": [
+      {
+        "id": "alpine-a",
+        "name": "Stone-base timber gallery",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm timber tones; grey stone-like base; dark metal"
+      },
+      {
+        "id": "alpine-b",
+        "name": "Valley masonry block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale stone or mineral render; muted shutters; timber accents"
+      },
+      {
+        "id": "alpine-c",
+        "name": "Contemporary Alpine frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm timber infill; dark recessed frames"
+      }
+    ],
+    "italy_regional": [
+      {
+        "id": "italy_regional-a",
+        "name": "Palazzo-proportioned urban block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm stone-coloured base; ochre or cream render; dark shutters"
+      },
+      {
+        "id": "italy_regional-b",
+        "name": "Stone-and-loggia block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale local stone tones; cream render; dark metal"
+      },
+      {
+        "id": "italy_regional-c",
+        "name": "Rationalist infill frame",
+        "grammar": "frame",
+        "bay": [
+          3.5,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.7,
+          0.47,
+          0.35
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; exposed-concrete appearance; muted terracotta panels"
+      }
+    ],
+    "adriatic_balkans": [
+      {
+        "id": "adriatic_balkans-a",
+        "name": "Adriatic stone street block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale stone tones; warm render; green or dark shutters"
+      },
+      {
+        "id": "adriatic_balkans-b",
+        "name": "Timber-masonry gallery block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; dark timber-toned upper bands; stone-like base"
+      },
+      {
+        "id": "adriatic_balkans-c",
+        "name": "Modernist slab with inset groups",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          22
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale precast; muted coloured infill; dark frames"
+      }
+    ],
+    "aegean": [
+      {
+        "id": "aegean-a",
+        "name": "Island masonry block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Local white or sand render; stone-coloured base; muted shutters"
+      },
+      {
+        "id": "aegean-b",
+        "name": "Neoclassical urban rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream or ochre render; pale mineral trim; dark frames"
+      },
+      {
+        "id": "aegean-c",
+        "name": "Polykatoikia banded block",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; cream infill; muted awning-colour panels"
+      }
+    ],
+    "eastern_europe": [
+      {
+        "id": "eastern_europe-a",
+        "name": "Eclectic masonry street block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm render or brick; pale lintels; dark frames"
+      },
+      {
+        "id": "eastern_europe-b",
+        "name": "Baltic timber-panel infill",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted painted boards; warm mineral base; dark trim"
+      },
+      {
+        "id": "eastern_europe-c",
+        "name": "Panel-estate renewal block",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light precast; muted warm or cool infill; charcoal frames"
+      }
+    ],
+    "russia_north": [
+      {
+        "id": "russia_north-a",
+        "name": "Northern timber-panel block",
+        "grammar": "timber",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted painted timber; pale restrained trim; dark base"
+      },
+      {
+        "id": "russia_north-b",
+        "name": "Classical masonry urban block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale stone-coloured render; warm grey base; dark frames"
+      },
+      {
+        "id": "russia_north-c",
+        "name": "Constructivist panel composition",
+        "grammar": "ribbon",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; muted brick infill; charcoal accents"
+      }
+    ],
+    "african_local": [
+      {
+        "id": "african_local-a",
+        "name": "Compound-language shaded block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm earth-coloured render; darker base; muted timber accents"
+      },
+      {
+        "id": "african_local-b",
+        "name": "Afro-Brazilian urban rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream or muted pastel render; pale trim; dark shutters"
+      },
+      {
+        "id": "african_local-c",
+        "name": "Gulf of Guinea tropical frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm rendered infill; neutral screen panels"
+      }
+    ],
+    "maghreb": [
+      {
+        "id": "maghreb-a",
+        "name": "Medina-language urban block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Sand or pale lime-coloured render; stone-like base; dark frames"
+      },
+      {
+        "id": "maghreb-b",
+        "name": "Earthen-and-stone interpretation",
+        "grammar": "masonry",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm ochre render; muted stone tones; dark timber accents"
+      },
+      {
+        "id": "maghreb-c",
+        "name": "Mediterranean screen frame",
+        "grammar": "screen",
+        "bay": [
+          3.5,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; pale concrete; bronze or neutral screens"
+      }
+    ],
+    "sahel": [
+      {
+        "id": "sahel-a",
+        "name": "Earth-tone solid block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm ochre or clay render; darker base; muted frames"
+      },
+      {
+        "id": "sahel-b",
+        "name": "Trading-street shaded rhythm",
+        "grammar": "arcade",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          3,
+          4
+        ],
+        "reveal": [
+          0.14,
+          0.3
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Sand render; stone-coloured plinth; dark timber-toned screens"
+      },
+      {
+        "id": "sahel-c",
+        "name": "Contemporary dry-climate frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; warm infill; neutral shade fins"
+      }
+    ],
+    "nile_valley": [
+      {
+        "id": "nile_valley-a",
+        "name": "Nile masonry shade block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Sand render; warm brick accents; dark recessed frames"
+      },
+      {
+        "id": "nile_valley-b",
+        "name": "Urban brick apartment frame",
+        "grammar": "frame",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick infill; pale concrete bands; muted render"
+      },
+      {
+        "id": "nile_valley-c",
+        "name": "River-city shaded modern slab",
+        "grammar": "gallery",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          4,
+          20
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; grey slab edges; neutral screens"
+      }
+    ],
+    "horn_africa": [
+      {
+        "id": "horn_africa-a",
+        "name": "Highland stone block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm grey stone-like panels; pale render; dark timber accents"
+      },
+      {
+        "id": "horn_africa-b",
+        "name": "Asmara-derived modernist block",
+        "grammar": "ribbon",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; pale grey bands; restrained dark accents"
+      },
+      {
+        "id": "horn_africa-c",
+        "name": "Coastal screened masonry frame",
+        "grammar": "screen",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; warm masonry base; neutral shade panels"
+      }
+    ],
+    "swahili_east_africa": [
+      {
+        "id": "swahili_east_africa-a",
+        "name": "Coastal townhouse rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale lime-coloured render; warm stone-like base; dark timber"
+      },
+      {
+        "id": "swahili_east_africa-b",
+        "name": "Interior veranda block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick or render; timber-toned headers; dark base"
+      },
+      {
+        "id": "swahili_east_africa-c",
+        "name": "East African modern screen",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; pale rendered infill; warm screen panels"
+      }
+    ],
+    "central_africa": [
+      {
+        "id": "central_africa-a",
+        "name": "Timber-panel community block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted timber or painted boards; pale trim; dark weather base"
+      },
+      {
+        "id": "central_africa-b",
+        "name": "Veranda rhythm masonry block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm render; grey masonry base; timber-toned shade accents"
+      },
+      {
+        "id": "central_africa-c",
+        "name": "Forest-city concrete screen",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale blockwork render; concrete-coloured frame; neutral screens"
+      }
+    ],
+    "southern_africa": [
+      {
+        "id": "southern_africa-a",
+        "name": "Cape-derived masonry block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.89,
+          0.88,
+          0.83
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm white render; stone-like base; dark timber accents"
+      },
+      {
+        "id": "southern_africa-b",
+        "name": "Stoep rhythm urban block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick or render; dark posts; pale shade bands"
+      },
+      {
+        "id": "southern_africa-c",
+        "name": "Southern modern infill frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm masonry infill; charcoal metal"
+      }
+    ],
+    "indian_ocean_africa": [
+      {
+        "id": "indian_ocean_africa-a",
+        "name": "Highland brick rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm red brick; pale lintels; dark timber accents"
+      },
+      {
+        "id": "indian_ocean_africa-b",
+        "name": "Creole veranda block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted painted boards or render; pale posts; dark screens"
+      },
+      {
+        "id": "indian_ocean_africa-c",
+        "name": "Island concrete shade grid",
+        "grammar": "screen",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm render; neutral metal shade panels"
+      }
+    ],
+    "arid_warm": [
+      {
+        "id": "arid_warm-a",
+        "name": "Gulf screened masonry block",
+        "grammar": "screen",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale sand render; stone-coloured base; bronze screens"
+      },
+      {
+        "id": "arid_warm-b",
+        "name": "Highland tower-house rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.6,
+          3.6
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm earth or stone tones; pale bands; dark frames"
+      },
+      {
+        "id": "arid_warm-c",
+        "name": "Gulf contemporary shade frame",
+        "grammar": "frame",
+        "bay": [
+          3.8,
+          5.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; dark glazing; muted bronze infill"
+      }
+    ],
+    "levant": [
+      {
+        "id": "levant-a",
+        "name": "Limestone urban block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm limestone-coloured panels; pale render; dark metal"
+      },
+      {
+        "id": "levant-b",
+        "name": "Arcaded-front interpretation",
+        "grammar": "arcade",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          3,
+          4
+        ],
+        "reveal": [
+          0.14,
+          0.3
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale stone tones; warm render; dark timber accents"
+      },
+      {
+        "id": "levant-c",
+        "name": "Shaded apartment frame",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; pale concrete bands; muted shutters"
+      }
+    ],
+    "anatolia_caucasus": [
+      {
+        "id": "anatolia_caucasus-a",
+        "name": "Timber-over-masonry block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; dark timber-toned upper panels; stone-like base"
+      },
+      {
+        "id": "anatolia_caucasus-b",
+        "name": "Caucasian stone gallery",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm stone tones; pale render; muted metal"
+      },
+      {
+        "id": "anatolia_caucasus-c",
+        "name": "Anatolian contemporary block",
+        "grammar": "frame",
+        "bay": [
+          3.5,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light render; concrete-coloured bands; warm brick accents"
+      }
+    ],
+    "iran_plateau": [
+      {
+        "id": "iran_plateau-a",
+        "name": "Plateau brick-reveal block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm buff or red brick; sand render; dark frames"
+      },
+      {
+        "id": "iran_plateau-b",
+        "name": "Caspian timber rain-front",
+        "grammar": "timber",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted timber panels; pale render; dark weather base"
+      },
+      {
+        "id": "iran_plateau-c",
+        "name": "Modern brick shade frame",
+        "grammar": "screen",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm brick infill; bronze shade panels"
+      }
+    ],
+    "mesopotamia": [
+      {
+        "id": "mesopotamia-a",
+        "name": "Brick courtyard-language block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.78,
+          0.7,
+          0.56
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm buff brick; sand render; dark recessed frames"
+      },
+      {
+        "id": "mesopotamia-b",
+        "name": "Screened upper-front block",
+        "grammar": "screen",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick base; dark timber-toned screens; pale infill"
+      },
+      {
+        "id": "mesopotamia-c",
+        "name": "River-plain modern frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; concrete-coloured bands; warm masonry panels"
+      }
+    ],
+    "central_asia_oases": [
+      {
+        "id": "central_asia_oases-a",
+        "name": "Oasis merchant-brick block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.78,
+          0.7,
+          0.56
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.79,
+          0.73,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Buff brick; sand render; dark timber accents"
+      },
+      {
+        "id": "central_asia_oases-b",
+        "name": "Timber-gallery urban front",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; warm timber-toned headers; masonry base"
+      },
+      {
+        "id": "central_asia_oases-c",
+        "name": "Oasis contemporary panel block",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale precast; warm brick infill; muted metal"
+      }
+    ],
+    "central_asia_steppe": [
+      {
+        "id": "central_asia_steppe-a",
+        "name": "Sheltered masonry block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick or pale mineral render; dark base; muted frames"
+      },
+      {
+        "id": "central_asia_steppe-b",
+        "name": "Steppe panel-estate renewal",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.49,
+          0.59,
+          0.63
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale precast; muted earth or blue-grey infill; charcoal joints"
+      },
+      {
+        "id": "central_asia_steppe-c",
+        "name": "Mountain-town modern frame",
+        "grammar": "frame",
+        "bay": [
+          3.5,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm masonry infill; restrained timber accents"
+      }
+    ],
+    "indus_gangetic": [
+      {
+        "id": "indus_gangetic-a",
+        "name": "Haveli-language shaded block",
+        "grammar": "screen",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm render; brick or stone-coloured base; neutral screens"
+      },
+      {
+        "id": "indus_gangetic-b",
+        "name": "Bazaar brick rhythm",
+        "grammar": "terrace",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick; pale lintels; muted timber accents"
+      },
+      {
+        "id": "indus_gangetic-c",
+        "name": "Plains modern shade frame",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm render; muted shade panels"
+      }
+    ],
+    "india_peninsular": [
+      {
+        "id": "india_peninsular-a",
+        "name": "Deccan masonry shade block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.76,
+          0.65,
+          0.45
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm stone-like base; pale or ochre render; dark frames"
+      },
+      {
+        "id": "india_peninsular-b",
+        "name": "Malabar rain-gallery block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm timber-toned headers; pale render; dark base"
+      },
+      {
+        "id": "india_peninsular-c",
+        "name": "Peninsular modern screen grid",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm infill; neutral screen panels"
+      }
+    ],
+    "bengal_delta": [
+      {
+        "id": "bengal_delta-a",
+        "name": "Brick rain-reveal block",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm red brick; pale lintels; dark frames"
+      },
+      {
+        "id": "bengal_delta-b",
+        "name": "Timber-screen urban bar",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.4
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted timber panels; pale render; dark weather base"
+      },
+      {
+        "id": "bengal_delta-c",
+        "name": "Delta modern shaded frame",
+        "grammar": "screen",
+        "bay": [
+          3.5,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; brick infill; neutral shade panels"
+      }
+    ],
+    "himalayan": [
+      {
+        "id": "himalayan-a",
+        "name": "Brick-and-timber urban rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          3.8
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick; dark timber-toned lintels; pale mineral base"
+      },
+      {
+        "id": "himalayan-b",
+        "name": "Highland timber-panel block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; dark timber-toned upper panels; stone-like base"
+      },
+      {
+        "id": "himalayan-c",
+        "name": "Hill-town modern frame",
+        "grammar": "frame",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm brick or render; charcoal frames"
+      }
+    ],
+    "sri_lanka_maldives": [
+      {
+        "id": "sri_lanka_maldives-a",
+        "name": "Courtyard-language veranda block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; warm timber-toned headers; dark base"
+      },
+      {
+        "id": "sri_lanka_maldives-b",
+        "name": "Tropical modern shade frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; pale infill; neutral screens"
+      },
+      {
+        "id": "sri_lanka_maldives-c",
+        "name": "Island masonry urban block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          12
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral render; muted stone-coloured base; dark frames"
+      }
+    ],
+    "jp_temperate": [
+      {
+        "id": "jp_temperate-a",
+        "name": "Machiya-rhythm urban screen",
+        "grammar": "screen",
+        "bay": [
+          2.6,
+          3.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted render; dark timber-toned slats; grey base"
+      },
+      {
+        "id": "jp_temperate-b",
+        "name": "Postwar compact-bay block",
+        "grammar": "panel",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.89,
+          0.88,
+          0.83
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm off-white panels; muted grey infill; dark frames"
+      },
+      {
+        "id": "jp_temperate-c",
+        "name": "Contemporary layered frame",
+        "grammar": "frame",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "metal",
+        "base_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; charcoal metal; limited warm timber"
+      }
+    ],
+    "china_north": [
+      {
+        "id": "china_north-a",
+        "name": "Grey-brick urban rhythm",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Grey or muted buff brick; pale lintels; dark timber accents"
+      },
+      {
+        "id": "china_north-b",
+        "name": "Danwei-era slab reinterpretation",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm brick infill; muted grey frames"
+      },
+      {
+        "id": "china_north-c",
+        "name": "Northern contemporary insulated frame",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral cladding; charcoal panels; muted bronze accents"
+      }
+    ],
+    "china_south": [
+      {
+        "id": "china_south-a",
+        "name": "Jiangnan masonry urban front",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; grey masonry base; dark timber-toned frames"
+      },
+      {
+        "id": "china_south-b",
+        "name": "Qilou street-frame block",
+        "grammar": "arcade",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          3,
+          4
+        ],
+        "reveal": [
+          0.14,
+          0.3
+        ],
+        "suggested_floors": [
+          3,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; pale concrete piers; muted coloured infill"
+      },
+      {
+        "id": "china_south-c",
+        "name": "Coastal high-density shade frame",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; light infill; dark screens"
+      }
+    ],
+    "korea": [
+      {
+        "id": "korea-a",
+        "name": "Timber-accent masonry block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; warm timber-toned panels; dark masonry base"
+      },
+      {
+        "id": "korea-b",
+        "name": "Brick urban infill",
+        "grammar": "masonry",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm red or dark brick; pale sills; charcoal frames"
+      },
+      {
+        "id": "korea-c",
+        "name": "Contemporary apartment frame",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          4,
+          24
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.89,
+          0.88,
+          0.83
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm white panels; pale grey spandrels; muted accent strips"
+      }
+    ],
+    "tibetan_plateau": [
+      {
+        "id": "tibetan_plateau-a",
+        "name": "Highland stone-plane block",
+        "grammar": "solid",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "stone",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm stone-like panels; pale mineral render; dark frames"
+      },
+      {
+        "id": "tibetan_plateau-b",
+        "name": "Timber-trimmed urban rhythm",
+        "grammar": "timber",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; dark timber-toned surrounds; warm masonry base"
+      },
+      {
+        "id": "tibetan_plateau-c",
+        "name": "Contemporary plateau masonry",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          14
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; warm stone-coloured base; charcoal frames"
+      }
+    ],
+    "tropical_humid": [
+      {
+        "id": "tropical_humid-a",
+        "name": "Malay timber-screen block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.4
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm timber tones; pale infill; dark weather base"
+      },
+      {
+        "id": "tropical_humid-b",
+        "name": "Straits street-front rhythm",
+        "grammar": "terrace",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted pastel render; pale trim; dark shutters"
+      },
+      {
+        "id": "tropical_humid-c",
+        "name": "Equatorial modern shade grid",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          22
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.64,
+          0.65,
+          0.62
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; neutral infill; warm or grey screens"
+      }
+    ],
+    "mainland_southeast_asia": [
+      {
+        "id": "mainland_southeast_asia-a",
+        "name": "Timber rain-front bar",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted timber boards; pale render; dark base"
+      },
+      {
+        "id": "mainland_southeast_asia-b",
+        "name": "Trading-port vertical fronts",
+        "grammar": "terrace",
+        "bay": [
+          2.6,
+          3.8
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream or muted pastel render; dark shutters; mineral base"
+      },
+      {
+        "id": "mainland_southeast_asia-c",
+        "name": "Contemporary shaded urban frame",
+        "grammar": "gallery",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm infill; neutral screens"
+      }
+    ],
+    "indonesian_archipelago": [
+      {
+        "id": "indonesian_archipelago-a",
+        "name": "Pavilion-rhythm urban frame",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; warm timber-toned posts; dark base"
+      },
+      {
+        "id": "indonesian_archipelago-b",
+        "name": "Archipelago timber-panel block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm or muted painted boards; pale infill; masonry base"
+      },
+      {
+        "id": "indonesian_archipelago-c",
+        "name": "Kampung masonry modern block",
+        "grammar": "frame",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          16
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "brick",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm brick or render; dark metal"
+      }
+    ],
+    "philippines": [
+      {
+        "id": "philippines-a",
+        "name": "Masonry-base timber-screen block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "accent_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm masonry base; muted timber-toned panels; pale trim"
+      },
+      {
+        "id": "philippines-b",
+        "name": "Town-front Deco block",
+        "grammar": "ribbon",
+        "bay": [
+          3.6,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          3,
+          12
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Cream render; muted pastel bands; charcoal frames"
+      },
+      {
+        "id": "philippines-c",
+        "name": "Contemporary tropical infill",
+        "grammar": "screen",
+        "bay": [
+          3.5,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm rendered panels; neutral screens"
+      }
+    ],
+    "nz_temperate": [
+      {
+        "id": "nz_temperate-a",
+        "name": "Weatherboard urban block",
+        "grammar": "timber",
+        "bay": [
+          3.0,
+          4.4
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted weatherboard colours; pale trim; dark masonry base"
+      },
+      {
+        "id": "nz_temperate-b",
+        "name": "Brick-and-render town block",
+        "grammar": "masonry",
+        "bay": [
+          3.0,
+          4.2
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "accent_colour": [
+          0.24,
+          0.27,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm red or buff brick; cream render; charcoal frames"
+      },
+      {
+        "id": "nz_temperate-c",
+        "name": "New Zealand contemporary infill",
+        "grammar": "frame",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          18
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "metal",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale mineral panels; dark metal; limited warm timber"
+      }
+    ],
+    "au_southeast": [
+      {
+        "id": "au_southeast-a",
+        "name": "Terrace-derived masonry block",
+        "grammar": "terrace",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          3,
+          5
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          9
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.88,
+          0.84,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm brick or cream render; pale trim; dark metal"
+      },
+      {
+        "id": "au_southeast-b",
+        "name": "Brick suburban-scale urban block",
+        "grammar": "masonry",
+        "bay": [
+          3.2,
+          4.4
+        ],
+        "groups": [
+          2,
+          5
+        ],
+        "reveal": [
+          0.12,
+          0.28
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "brick",
+        "wall_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "base_family": "concrete",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Red or buff brick; pale concrete lintels; dark frames"
+      },
+      {
+        "id": "au_southeast-c",
+        "name": "Coastal contemporary shade frame",
+        "grammar": "screen",
+        "bay": [
+          3.6,
+          5.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          3,
+          20
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "wood",
+        "base_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale concrete; warm timber accents; neutral metal screens"
+      }
+    ],
+    "au_tropical_arid": [
+      {
+        "id": "au_tropical_arid-a",
+        "name": "Queenslander-rhythm urban block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          8
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.77,
+          0.75,
+          0.68
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted painted boards; pale posts; dark base"
+      },
+      {
+        "id": "au_tropical_arid-b",
+        "name": "Inland shade-wall block",
+        "grammar": "solid",
+        "bay": [
+          3.0,
+          4.3
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.18,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.43,
+          0.37,
+          0.28
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm pale render; earth-coloured base; bronze frames"
+      },
+      {
+        "id": "au_tropical_arid-c",
+        "name": "Northern modular shade grid",
+        "grammar": "panel",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          2,
+          14
+        ],
+        "wall_family": "metal",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light metal panels; muted colour accents; neutral screens"
+      }
+    ],
+    "pacific_islands": [
+      {
+        "id": "pacific_islands-a",
+        "name": "Timber pavilion-rhythm block",
+        "grammar": "timber",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          6
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.74,
+          0.66,
+          0.54
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Warm timber tones or muted painted boards; pale infill; dark base"
+      },
+      {
+        "id": "pacific_islands-b",
+        "name": "Island bungalow-gallery block",
+        "grammar": "gallery",
+        "bay": [
+          3.2,
+          4.5
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.16,
+          0.35
+        ],
+        "suggested_floors": [
+          2,
+          7
+        ],
+        "wall_family": "render",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.57,
+          0.57,
+          0.52
+        ],
+        "accent_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale render; muted painted posts; dark louvres"
+      },
+      {
+        "id": "pacific_islands-c",
+        "name": "Contemporary island masonry frame",
+        "grammar": "screen",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.15,
+          0.32
+        ],
+        "suggested_floors": [
+          2,
+          14
+        ],
+        "wall_family": "concrete",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "render",
+        "base_colour": [
+          0.66,
+          0.4,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light concrete; warm rendered infill; neutral shade panels"
+      }
+    ],
+    "antarctic_stations": [
+      {
+        "id": "antarctic_stations-a",
+        "name": "Expedition-derived clad bar",
+        "grammar": "timber",
+        "bay": [
+          2.8,
+          4.0
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          4
+        ],
+        "wall_family": "wood",
+        "wall_colour": [
+          0.58,
+          0.46,
+          0.33
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Muted timber or painted boards; dark base; pale trim"
+      },
+      {
+        "id": "antarctic_stations-b",
+        "name": "Insulated station modules",
+        "grammar": "panel",
+        "bay": [
+          3.2,
+          4.6
+        ],
+        "groups": [
+          2,
+          4
+        ],
+        "reveal": [
+          0.1,
+          0.24
+        ],
+        "suggested_floors": [
+          1,
+          8
+        ],
+        "wall_family": "metal",
+        "wall_colour": [
+          0.8,
+          0.81,
+          0.76
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.32,
+          0.33,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Light insulated-panel appearance; dark joints; restrained colour blocks"
+      },
+      {
+        "id": "antarctic_stations-c",
+        "name": "Contemporary research-support frame",
+        "grammar": "frame",
+        "bay": [
+          3.4,
+          4.8
+        ],
+        "groups": [
+          2,
+          3
+        ],
+        "reveal": [
+          0.14,
+          0.32
+        ],
+        "suggested_floors": [
+          2,
+          10
+        ],
+        "wall_family": "metal",
+        "wall_colour": [
+          0.81,
+          0.8,
+          0.73
+        ],
+        "base_family": "stone",
+        "base_colour": [
+          0.28,
+          0.3,
+          0.3
+        ],
+        "accent_colour": [
+          0.33,
+          0.35,
+          0.32
+        ],
+        "trim_colour": [
+          0.84,
+          0.82,
+          0.74
+        ],
+        "palette_text": "Pale metal panels; graphite frames; limited high-contrast accents"
+      }
+    ]
+  }
+}

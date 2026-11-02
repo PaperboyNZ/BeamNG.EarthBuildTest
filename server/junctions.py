@@ -32,7 +32,7 @@ BULB_M = 6.0                    # m a curb extension runs along the street past 
 TAPER_M = 3.0                   # m over which it returns to the parking curb
 CORNER_ANGLES = (15.0, 150.0)   # degrees between two branches for a curb return (an acute one under ACUTE_DEG:
                                 # its sidewalks met in a sharp wedge, the user's report #46, Fells Point 2026-10-17)
-RADIUS_TRIES = (1.0, 0.5, 0.25)  # a corner's radius tried at these shares of it until it fits
+RADIUS_TRIES = (1.0, 0.5, 0.25, 0.1)  # the last bounded attempt is a short chamfer
 ACUTE_DEG = 50.0                # under this the return's radius shrinks so it starts within ACUTE_T_M of the
 ACUTE_T_M = 9.0                 # carriageways' corner (radius / tan(theta / 2) from it), at least ACUTE_R_MIN,
 ACUTE_R_MIN = 0.8               # and the corner gets no curb extension
@@ -82,6 +82,12 @@ def _line_x(p, d, q, e):
     return p + t * d
 
 
+def arc_samples(radius, angle):
+    """Shared by ordinary junctions and multi-piece returns; <=8 mm sagitta."""
+    step = min(math.radians(10.), 2*math.acos(max(-1., 1.-.008/max(radius,.008))))
+    return min(97, max(3, int(math.ceil(abs(angle)/step))+1))
+
+
 def _piece(P, u1, w1, u2, w2, r):
     """The curb from a road along u1 (its left side, half width w1) round to one along u2 (its right side,
     w2), both from P: (points (k, 2), t1, t2, the road edges' meeting point or None): a curb return of radius
@@ -97,7 +103,9 @@ def _piece(P, u1, w1, u2, w2, r):
     a0 = math.atan2(*(T1 - Z)[::-1])
     a1 = math.atan2(*(T2 - Z)[::-1])
     da = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi
-    k = max(3, int(abs(da) * r / 0.75) + 1)
+    # Bound the visible chord error, not just the length of each chord: the old
+    # 0.75 m steps left very small returns with conspicuous triangular corners.
+    k = arc_samples(r, da)
     ang = a0 + da * np.linspace(0.0, 1.0, k)
     arc = np.c_[Z[0] + r * np.cos(ang), Z[1] + r * np.sin(ang)]
     return arc, float((T1 - P) @ u1), float((T2 - P) @ u2), _line_x(P + n1 * w1, u1, P - n2 * w2, u2)
@@ -272,7 +280,10 @@ def _across(roads, bi, bj, cr, X, walk_w, debug=None):
     for C, arc in ((C1, a1), (C2, a2)):
         if C is not None and len(arc) > 1:
             fills.append(np.vstack([np.r_[C, zo]] + [np.r_[q, zo] for q in arc]))
-    return {"arc": curb, "inward": nrm, "outer": outer, "fill": None, "fills": fills, "ramps": []}, ti, tj
+    nrm[0],nrm[-1] = ni,-nj
+    return {"arc": curb, "inward": nrm, "outer": outer,
+            "outer_widths": [wkj]+[wkc]*len(mids)+[wki],
+            "fill": None, "fills": fills, "ramps": []}, ti, tj
 
 
 def _near_node_pairs(pos, radius):
@@ -308,6 +319,8 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
     (fid, side)): the two road edges it joins (side +1 left / -1 right of the geometry), and edge_cuts: their cuts.
     pavement_bounds: (x0, y0, x1, y1) for pavement callers: the junctions provably outside it are skipped (every road
     still groups and tests the others)."""
+    from sidewalk_layout import CarriagewayGuard
+    lane_guard = None if pavement else CarriagewayGuard([(p, sp.width / 2) for _, sp, p, _ in roads])
     nodes = {}
     for ri, (fid, spec, pts, lon) in enumerate(roads):
         for vi, p in enumerate(pts):
@@ -437,6 +450,8 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                 got = _across(roads, branches[i], branches[j], cr, X, walk_w, debug)
                 if got is not None:
                     corner, ci, cj = got
+                    if not lane_guard.clear(np.vstack((corner['arc'], corner['outer']))):
+                        continue
                     corners.append(corner)
                     cuts.setdefault((roads[ri][0], li), []).append((Pi.copy(), ui, ci))
                     cuts.setdefault((roads[rj][0], -lj), []).append((Pj.copy(), uj, cj))
@@ -499,7 +514,8 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                 a0 = math.atan2(*(Ti - Z)[::-1])
                 a1 = math.atan2(*(Tj - Z)[::-1])
                 da = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi      # the short way round
-                k = max(3, int(abs(da) * radius / 0.75) + 1)
+                chamfer = rscale == RADIUS_TRIES[-1] and not pavement
+                k = 2 if chamfer else arc_samples(radius, da)
                 ang = a0 + da * np.linspace(0.0, 1.0, k)
                 arc2 = np.c_[Z[0] + radius * np.cos(ang), Z[1] + radius * np.sin(ang)]
                 pre = ([Pi + ui * ci + ni * wi, Pi + ui * (ti + bi) + ni * di] if pi_ else [])
@@ -519,6 +535,7 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                 mid = len(pre) + k // 2
                 if (nrm[mid] @ (Z - curb2[mid])) < 0:
                     nrm = -nrm
+                nrm[0],nrm[-1] = ni,-nj   # exact tangent joins with the straight runs
                 zo = 0.5 * (zi0 + zj0)
                 zci = _z_along(roads[ri][2], vi, si, ci)
                 zcj = _z_along(roads[rj][2], vj, sj, cj)
@@ -543,7 +560,12 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                     if debug is not None:
                         debug.append(('on carriageway', hit[:8], hit in internal, roads[ri][0][:8], roads[rj][0][:8], round(theta), X.round(1).tolist()))
                     continue
-                corner = {"arc": curb, "inward": nrm, "outer": outer, "fill": fill, "ramps": []}
+                if lane_guard is not None and not lane_guard.clear(np.vstack((curb, outer)),
+                        skip={ri, rj} if pi_ or pj_ else ()):
+                    continue
+                corner = {"arc": curb, "inward": nrm, "outer": outer,
+                          "outer_widths": [wkj,(wki+wkj)/2,wki], "fill": fill, "ramps": [],
+                          "edge_style": 'chamfer' if chamfer else 'curve'}
                 if pavement:
                     corner["road_sides"] = ((roads[ri][0], li), (roads[rj][0], -lj))
                     corner["edge_cuts"] = ((Pi.copy(), ui, ci), (Pj.copy(), uj, cj))

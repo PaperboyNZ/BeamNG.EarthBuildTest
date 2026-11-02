@@ -11,6 +11,64 @@ desktop sizes.
 """
 import os
 import sys
+import threading
+from collections import Counter
+
+
+class Backpressure(RuntimeError):
+    """Retryable admission miss; an existing physical publication stays live."""
+
+
+class WorkAdmission:
+    """Aggregate reservations for the existing worker pools, with no extra queue.
+
+    Bytes are explicit working-set estimates, not measured RSS. Existing process
+    cache budgets still apply. Essential work and missing far coverage each keep
+    reserved capacity; optional work cannot fill either reserve.
+    """
+    def __init__(self,jobs=16,bytes_limit=1<<30,essential_bytes=128<<20,coverage_bytes=64<<20):
+        if type(jobs) is not int or jobs<1 or bytes_limit<1 or min(essential_bytes,coverage_bytes)<0:
+            raise ValueError('invalid aggregate worker budget')
+        if essential_bytes+coverage_bytes>=bytes_limit:raise ValueError('reserves exhaust worker budget')
+        self.max_jobs=jobs;self.max_bytes=int(bytes_limit)
+        self.reserves={'essential':essential_bytes,'coverage':coverage_bytes}
+        self._lock=threading.Lock();self._leases={};self._serial=0;self._bytes=0
+        self._used=Counter();self._owners=Counter();self._stats=Counter()
+
+    @classmethod
+    def for_machine(cls):
+        return cls(jobs=8,bytes_limit=512<<20) if small() else cls()
+
+    def acquire(self,owner,kind='essential',estimate=128<<20):
+        if kind not in ('essential','coverage','optional') or type(estimate) is not int or estimate<1:
+            raise ValueError('invalid worker reservation')
+        if not isinstance(owner,str) or not owner or len(owner)>512:raise ValueError('invalid work owner')
+        with self._lock:
+            held=sum(max(0,reserved-self._used[k]) for k,reserved in self.reserves.items() if k!=kind)
+            if (len(self._leases)>=self.max_jobs or self._bytes+estimate>self.max_bytes-held
+                    or self._owners[owner]>=8):
+                self._stats['denied']+=1;return None
+            self._serial+=1;token=self._serial
+            self._leases[token]=(owner,kind,estimate);self._owners[owner]+=1
+            self._used[kind]+=estimate;self._bytes+=estimate
+            self._stats['admitted']+=1
+            self._stats['peak_jobs']=max(self._stats['peak_jobs'],len(self._leases))
+            self._stats['peak_estimate_bytes']=max(self._stats['peak_estimate_bytes'],self._bytes)
+            return token
+
+    def release(self,token):
+        with self._lock:
+            lease=self._leases.pop(token,None)
+            if lease is None:return False
+            owner,kind,estimate=lease;self._owners[owner]-=1
+            if not self._owners[owner]:del self._owners[owner]
+            self._used[kind]-=estimate;self._bytes-=estimate
+            return True
+
+    def snapshot(self):
+        with self._lock:
+            return dict(self._stats,active_jobs=len(self._leases),admitted_estimate_bytes=self._bytes,
+                        by_kind=dict(self._used),max_jobs=self.max_jobs,max_estimate_bytes=self.max_bytes)
 
 SMALL_GB = 20.0             # below this much RAM: the small profile (a Steam Deck shows ~14.5 GB)
 # per process, small profile (desktop size in the module: dem 512 tiles). The sea floors (seacarve.MEM_CELLS) and the

@@ -30,7 +30,7 @@ M.TILE_CAP = { { 300, 6000 }, { 700, 2400 }, { 1500, 900 }, { 1e9, 400 } }
 -- with a door on every house out to 300 m): the tile distance (m) beyond which a group is not shown
 -- rocks only over the fine ground (farfield.NEAR_RADII: L0 within 400 m): beyond it the coarser tiles round off the
 -- ridges and a rock placed on the real ground floated over the drawn one (Stelvio pass, the user's report 2026-10-17)
-M.GROUP_MAX_M = { shrub = 250, desert_shrub = 250, rock = 400, desert_rock = 400, cliff = 1500, pylon = 1500, gantry = 800, sub_breaker = 400, sub_mast = 1000, sub_support = 300,
+M.GROUP_MAX_M = { site_shrub = 250, site_rock = 400, shrub = 250, desert_shrub = 250, rock = 400, desert_rock = 400, cliff = 1500, pylon = 1500, gantry = 800, sub_breaker = 400, sub_mast = 1000, sub_support = 300,
   sub_transformer = 500, sub_fence = 200, lamplens = 800, lampglow = 6000, rrcross = 300, rrcross_eu = 300, rrflash = 400,
   rrflash_eu = 400, rrgate = 400, rrgate_l = 400, rrgate_eu = 400, rrgate_eu_l = 400, door = 120, hydrant = 200, bin = 200, bench = 200, polelamp = 400,
   stop = 300, giveway = 300, signal = 500, fence = 150, wallsign_logistics = 800, wallsign_rentabox = 800, wallsign_lemon = 800, wallsign_turboburger = 500,
@@ -50,7 +50,7 @@ M.FOREST_NAME = 'bngEarthForest'      -- a prefix: small Forests from a pool ('b
 M.SOLID_M = 200       -- (was 300 + 100: up to ~20k solid trees in a forest, and every terrain block move rebuilt all their
                       -- collision, a ~30 ms physics frame; 200 + 50 is still 5 s ahead at 100 mph, 2026-10-15)
 M.SOLID_HYST_M = 50
-M.NO_COLLIDE = { shrub = true, desert_shrub = true, door = true, lamplens = true, lampglow = true, wallsign_logistics = true, wallsign_rentabox = true,
+M.NO_COLLIDE = { site_shrub = true, shrub = true, desert_shrub = true, door = true, lamplens = true, lampglow = true, wallsign_logistics = true, wallsign_rentabox = true,
   wallsign_lemon = true, wallsign_turboburger = true }
 -- The 100 mph stutter (2026-10-15 probes): a frame that adds or removes Forest items costs the engine's tick ~0.5 us
 -- for every item in the level of each SHAPE touched (whatever its item type or Forest), so a frame making 300 items of
@@ -107,6 +107,10 @@ M.CATALOG = {
     { ECA .. 'trees/trees_douglasfir/tree_douglasfir_large_b', 21.4 }, { ECA .. 'trees/trees_douglasfir/tree_douglasfir_large_d', 21.7 },
     { IT .. 'trees/trees_italy/scots_pine', 18.9 },
   },
+  -- Stock ECA shapes, selected singly so their measured conservative bounds
+  -- can safely fit small planting beds (CDAE shape bounds, origin-centred).
+  site_shrub = { { ECA .. 'trees/ECA_coast_bush/generibush_small', 2.08571 } },
+  site_rock = { { ECA .. 'rocks/eca_rock_small', 0.63454 } },
   shrub = {
     { ECA .. 'trees/ECA_coast_bush/generibush', 1.8 }, { ECA .. 'trees/trees_aspen/tree_aspen_bush_a', 2.2 },
     { ECA .. 'trees/trees_douglasfir/tree_douglasfir_bush_a', 2.7 }, { ECA .. 'trees/trees_oak/tree_oak_bush_c', 3.1 },
@@ -487,7 +491,8 @@ function M.pick(group, h, rank)
     cands = { best }
   end
   local v = cands[math.floor(rank * 7919) % #cands + 1]
-  return v[1], math.max(0.3, math.min(2.5, h / v[2]))
+  local scale=math.max(0.3, math.min(2.5, h / v[2]))
+  return v[1], scale, v[2]*scale
 end
 
 local GROUPS = { 'deciduous', 'conifer', 'shrub', 'rock' }
@@ -555,12 +560,278 @@ end
 -- The shape (the tile's variant) and scale of a tile's row i (cached: M.pick makes tables).
 local function shapeOf(t, i)
   local s = t.shapes[i]
-  if s then return s, t.scales[i] end
-  local f, b, sc = t.f, (i - 1) * t.s, nil
-  s, sc = M.pick((t.groups or GROUPS)[f[b + F_GROUP] + 1] or 'deciduous', f[b + F_HEIGHT], f[b + F_RANK])
+  if s then return s, t.scales[i], t.renderedHeights[i] end
+  local f, b, sc, h = t.f, (i - 1) * t.s, nil, nil
+  s, sc, h = M.pick((t.groups or GROUPS)[f[b + F_GROUP] + 1] or 'deciduous', f[b + F_HEIGHT], f[b + F_RANK])
   s = spelled(s, t.variant)
-  t.shapes[i], t.scales[i] = s, sc
-  return s, sc
+  t.shapes[i], t.scales[i], t.renderedHeights[i] = s, sc, h
+  return s, sc, h
+end
+
+-- Generated hardscape is authoritative even when cached vegetation arrives first.
+-- Natural groups use hardscape masks; roadside assemblies use access masks. Masks
+-- never infer a parcel from a
+-- collider box, and source holes (grass/gardens) remain plantable.
+M.SURFACE_MAX_POLYGONS, M.SURFACE_MAX_VERTICES = 8192, 131072
+M.SURFACE_MAX_REFS, M.SURFACE_QUERY_VERTICES = 131072, 8192
+M.SURFACE_CELL, M.SURFACE_MAX_RADIUS = 64, 128
+-- Conservative engineering envelopes for the stock group silhouettes, not
+-- surveyed per-model bounds. max(server footprint, factor*rendered height+pad).
+M.SURFACE_ASSET_BOUNDS={deciduous={.5,1},conifer={.35,.5},shrub={.8,.3},rock={2.5,.5},
+  pine_west={.4,1},oak_west={.6,1},palm={.35,1},juniper={.75,.5},
+  desert_shrub={1.,.3},desert_rock={2.5,.5},tropical={.55,1}}
+local surfaceOwners, surfaceGrid, surfaceTiles = {}, {}, {}
+local naturalGroups = { site_shrub=true,site_rock=true,deciduous=true,conifer=true,shrub=true,rock=true,pine_west=true,oak_west=true,
+  palm=true,juniper=true,desert_shrub=true,desert_rock=true,tropical=true }
+-- Decoration participates only in precise access masks, not the whole paved
+-- sidewalk. Reuse the streamed-owner index so a late neighbouring driveway
+-- invalidates existing furniture and clearing/unloading restores it correctly.
+local furnitureRadii={bin=.45,hydrant=.3,bench=1.4,streetlight=.3,pole=.3,polelamp=.3,
+  lamplens=.3,lampglow=.3,stop=.65,giveway=.65,signal=.7}
+for group in pairs(furnitureRadii) do naturalGroups[group]=true end
+local hardKinds = { pavement=true,driveway=true,parking=true,footpath=true,road=true,fuel=true,hardscape=true,access=true }
+local softKinds = { grass=true,garden=true,lawn=true,planting=true }
+local function hasNatural(groups)
+  if type(groups)~='table' or #groups==0 then return true end
+  for _,group in ipairs(groups) do if naturalGroups[group] then return true end end
+  return false
+end
+local function finite(v) return type(v)=='number' and v==v and math.abs(v)<1e8 end
+local function array(value,limit)
+  if type(value)~='table' or #value>limit then return false end
+  local count=0
+  for key in pairs(value) do
+    count=count+1
+    if count>limit or type(key)~='number' or key%1~=0 or key<1 or key>#value then return false end
+  end
+  return count==#value
+end
+local function cellKey(x,y) return x..'_'..y end
+local function cells(box,fn)
+  for x=math.floor(box[1]/M.SURFACE_CELL),math.floor(box[3]/M.SURFACE_CELL) do
+    for y=math.floor(box[2]/M.SURFACE_CELL),math.floor(box[4]/M.SURFACE_CELL) do fn(cellKey(x,y)) end
+  end
+end
+local function validBox(box)
+  return type(box)=='table' and #box==4 and finite(box[1]) and finite(box[2]) and finite(box[3])
+    and finite(box[4]) and box[1]<=box[3] and box[2]<=box[4]
+end
+local function cellCount(b)
+  return (math.floor(b[3]/M.SURFACE_CELL)-math.floor(b[1]/M.SURFACE_CELL)+1)
+    *(math.floor(b[4]/M.SURFACE_CELL)-math.floor(b[2]/M.SURFACE_CELL)+1)
+end
+local function unindexNatural(t)
+  for _,key in ipairs(t.surfaceCells or {}) do
+    local c=surfaceTiles[key]
+    if c then c[t]=nil; if not next(c) then surfaceTiles[key]=nil end end
+  end
+  t.surfaceCells=nil
+end
+local function indexNatural(t)
+  unindexNatural(t)
+  if not t.natural then return end
+  local h=(t.half or 128)+M.SURFACE_MAX_RADIUS
+  t.surfaceCells={}
+  cells({t.cx-h,t.cy-h,t.cx+h,t.cy+h},function(key)
+    local c=surfaceTiles[key] or {}; surfaceTiles[key]=c; c[t]=true
+    t.surfaceCells[#t.surfaceCells+1]=key
+  end)
+end
+local function invalidateSurfaces(box)
+  if not validBox(box) then return end
+  cells(box,function(key)
+    for t in pairs(surfaceTiles[key] or {}) do t.pending,t.scan=true,nil end
+  end)
+  dirty=true
+end
+local function segmentDistance2(x,y,a,b)
+  local dx,dy=b[1]-a[1],b[2]-a[2]
+  local u=math.max(0,math.min(1,((x-a[1])*dx+(y-a[2])*dy)/math.max(dx*dx+dy*dy,1e-20)))
+  return (x-a[1]-u*dx)^2+(y-a[2]-u*dy)^2
+end
+local function ringTest(ring,x,y)
+  local inside,best=false,math.huge
+  for i,a in ipairs(ring) do
+    local b=ring[i%#ring+1]
+    best=math.min(best,segmentDistance2(x,y,a,b))
+    if (a[2]>y)~=(b[2]>y) and x<(b[1]-a[1])*(y-a[2])/(b[2]-a[2])+a[1] then inside=not inside end
+  end
+  return inside,best
+end
+local function circleOnSurface(record,x,y,r)
+  r=r+(record.pad or 0)
+  local inside,d=ringTest(record.rings[1],x,y)
+  if not inside and d>r*r then return false end
+  for i=2,#record.rings do
+    local hole,edge=ringTest(record.rings[i],x,y)
+    if hole and edge>r*r then return false end -- the whole object fits in a soft hole
+  end
+  return true
+end
+local function applySurface(pl,x,y,z)
+  if not pl then return x,y,z end
+  if pl.c then return geotile.apply(pl,x,y,z) end
+  return pl:apply(x,y,z)
+end
+local function compileSurfaces(payload,pl)
+  if type(payload)~='table' or payload.v~=1 or not array(payload.polygons,M.SURFACE_MAX_POLYGONS) then return nil end
+  local records,total={},0
+  for _,p in ipairs(payload.polygons) do
+    if type(p)~='table' then return nil end
+    if not softKinds[p.kind] then
+      if not hardKinds[p.kind] or not finite(p.min_z) or not finite(p.max_z) or p.min_z>p.max_z
+          or not array(p.rings,128) or #p.rings<1 then return nil end
+      if p.unknown_height~=nil and type(p.unknown_height)~='boolean' then return nil end
+      local record={rings={},min_z=math.huge,max_z=-math.huge,box={math.huge,math.huge,-math.huge,-math.huge},
+        vertices=0,pad=0,kind=p.kind,unknown_height=p.unknown_height}
+      for _,ring in ipairs(p.rings) do
+        if not array(ring,M.SURFACE_MAX_VERTICES-total) or #ring<3 then return nil end
+        total=total+#ring
+        if total>M.SURFACE_MAX_VERTICES then return nil end
+        local mapped,area={},0
+        for i,point in ipairs(ring) do
+          if not array(point,2) or #point~=2 or not finite(point[1]) or not finite(point[2]) then return nil end
+          local x,y=applySurface(pl,point[1],point[2],p.unknown_height and 0 or (p.min_z+p.max_z)/2)
+          if not finite(x) or not finite(y) then return nil end
+          mapped[i]={x,y}
+          for _,z in ipairs(p.unknown_height and {0} or {p.min_z,p.max_z}) do
+            local a,b,c=applySurface(pl,point[1],point[2],z)
+            if not finite(a) or not finite(b) or not finite(c) then return nil end
+            record.pad=math.max(record.pad,math.sqrt((a-x)^2+(b-y)^2))
+            record.min_z,record.max_z=math.min(record.min_z,c),math.max(record.max_z,c)
+          end
+          record.box[1],record.box[2]=math.min(record.box[1],x),math.min(record.box[2],y)
+          record.box[3],record.box[4]=math.max(record.box[3],x),math.max(record.box[4],y)
+        end
+        for i,a in ipairs(mapped) do local b=mapped[i%#mapped+1]; area=area+a[1]*b[2]-a[2]*b[1] end
+        if math.abs(area)<1e-8 then return nil end
+        record.rings[#record.rings+1]=mapped
+        record.vertices=record.vertices+#mapped
+      end
+      local b,pad=record.box,record.pad
+      record.box={b[1]-pad,b[2]-pad,b[3]+pad,b[4]+pad}
+      if record.unknown_height then record.min_z,record.max_z=-math.huge,math.huge end
+      records[#records+1]=record
+    end
+  end
+  return records
+end
+function M.clearSurfaceExclusions(owner)
+  local old=surfaceOwners[owner]
+  if not old then return end
+  for _,record in ipairs(old.records) do
+    for _,key in ipairs(record.cells or {}) do
+      local c=surfaceGrid[key]
+      if c then c[record]=nil; if not next(c) then surfaceGrid[key]=nil end end
+    end
+    invalidateSurfaces(record.box)
+  end
+  surfaceOwners[owner]=nil
+end
+function M.setSurfaceExclusions(owner,payload,pl,fallbackBox)
+  if type(owner)~='string' then return false end
+  if payload==nil then M.clearSurfaceExclusions(owner); return true end
+  local ok,records=pcall(compileSurfaces,payload,pl)
+  if not ok then records=nil end
+  local refs=0
+  for _,r in ipairs(records or {}) do
+    local b=r.box
+    refs=refs+cellCount(b)
+  end
+  local failed=not records or refs>M.SURFACE_MAX_REFS
+  if failed then
+    -- The owning road tile supplies its bounds even when its optional envelope
+    -- is corrupt. Fail closed locally, not by silently allowing pavement plants.
+    if not validBox(fallbackBox) or cellCount(fallbackBox)>M.SURFACE_MAX_REFS then return false end
+    local b=fallbackBox
+    records={{rings={{{b[1],b[2]},{b[3],b[2]},{b[3],b[4]},{b[1],b[4]}}},box={b[1],b[2],b[3],b[4]},
+      min_z=-math.huge,max_z=math.huge,vertices=4,failed=true,unknown_height=true,kind='hardscape'}}
+    M.surfaceFailures=(M.surfaceFailures or 0)+1
+  end
+  M.clearSurfaceExclusions(owner)
+  local entry={records=records,box=nil,failed=failed}
+  surfaceOwners[owner]=entry
+  for _,record in ipairs(records) do
+    local b=record.box
+    if not entry.box then entry.box={b[1],b[2],b[3],b[4]} else
+      local c=entry.box
+      c[1],c[2],c[3],c[4]=math.min(c[1],b[1]),math.min(c[2],b[2]),math.max(c[3],b[3]),math.max(c[4],b[4])
+    end
+    record.cells={}
+    cells(b,function(key)
+      local c=surfaceGrid[key] or {}; surfaceGrid[key]=c; c[record]=true
+      record.cells[#record.cells+1]=key
+    end)
+    invalidateSurfaces(b)
+  end
+  return not failed
+end
+function M.transformSurfaceExclusions(owner,xf)
+  local entry=surfaceOwners[owner]
+  if not entry then return end
+  local b=entry.box
+  if not b then return end
+  local box={math.huge,math.huge,-math.huge,-math.huge}
+  for _,p in ipairs({{b[1],b[2]},{b[3],b[2]},{b[3],b[4]},{b[1],b[4]}}) do
+    local x,y=xf:apply(p[1],p[2],0)
+    box[1],box[2],box[3],box[4]=math.min(box[1],x),math.min(box[2],y),math.max(box[3],x),math.max(box[4],y)
+  end
+  if entry.failed then return M.setSurfaceExclusions(owner,{v=0},nil,box) end
+  local p={v=1,polygons={}}
+  for _,r in ipairs(entry.records) do p.polygons[#p.polygons+1]={rings=r.rings,
+    min_z=r.unknown_height and -1e6 or r.min_z,max_z=r.unknown_height and 1e6 or r.max_z,
+    unknown_height=r.unknown_height,kind=r.kind} end
+  M.setSurfaceExclusions(owner,p,xf,box)
+end
+function M.surfaceRadius(group,height,scale,renderedHeight)
+  if not naturalGroups[group] then return 0 end
+  if not finite(height) or not finite(scale or 1) or height<0 then return math.huge end
+  -- The renderer already sizes assets from height; row scale is otherwise unused.
+  -- Never let a subunit row scale shrink the actual rendered object's envelope.
+  scale=math.max(1,math.abs(scale or 1))
+  if furnitureRadii[group] then return furnitureRadii[group]*math.max(1,math.abs(scale or 1))+.15 end
+  height=math.max(height,renderedHeight or height)
+  -- Conservative origin-centred XY radii of these exact stock shapes divided
+  -- by their CDAE bounds height. Account for M.pick's minimum 0.3 scale even
+  -- when no actual rendered height was supplied by the caller.
+  if group=='site_shrub' then return 2.276/2.08571*math.max(height,2.08571*.3)*scale+.25 end
+  if group=='site_rock' then return 1.202/.63454*math.max(height,.63454*.3)*scale+.25 end
+  local radius=(.12*height+1)
+  if group=='rock' or group=='desert_rock' then radius=.6*height
+  elseif group=='shrub' or group=='desert_shrub' then radius=math.max(radius,.6*height) end
+  local bound=M.SURFACE_ASSET_BOUNDS[group]
+  return math.max(radius,bound[1]*height+bound[2])*scale+.25
+end
+function M.surfaceBlocked(group,x,y,z,height,scale,renderedHeight)
+  if not naturalGroups[group] or not next(surfaceGrid) then return false end
+  local radius=M.surfaceRadius(group,height,scale,renderedHeight)
+  if radius>M.SURFACE_MAX_RADIUS or not finite(x) or not finite(y) or not finite(z) then return true end
+  local assetHeight=math.max(height,renderedHeight or height)*math.max(1,math.abs(scale or 1))
+  local zmin,zmax=z,z+assetHeight
+  -- Compact models have geometry below their origin. Garden placement may
+  -- raise that origin to seat the shape, so test the full measured Z extent.
+  if group=='site_shrub' then
+    assetHeight=math.max(assetHeight,2.08571*.3)
+    zmin,zmax=z-.679/2.08571*assetHeight,z+1.407/2.08571*assetHeight
+  elseif group=='site_rock' then
+    assetHeight=math.max(assetHeight,.63454*.3)
+    zmin,zmax=z-.3543/.63454*assetHeight,z+.2803/.63454*assetHeight
+  end
+  local seen,vertices={},0
+  for cx=math.floor((x-radius)/M.SURFACE_CELL),math.floor((x+radius)/M.SURFACE_CELL) do
+    for cy=math.floor((y-radius)/M.SURFACE_CELL),math.floor((y+radius)/M.SURFACE_CELL) do
+      for record in pairs(surfaceGrid[cellKey(cx,cy)] or {}) do
+        if not seen[record] and (not furnitureRadii[group] or (record.kind=='access' and not record.unknown_height)) then
+          seen[record]=true; vertices=vertices+record.vertices
+          if vertices>M.SURFACE_QUERY_VERTICES then M.surfaceQueryOverflow=(M.surfaceQueryOverflow or 0)+1; return true end
+          if (not furnitureRadii[group] or (record.kind=='access' and not record.unknown_height))
+              and zmax>=record.min_z and zmin<=record.max_z
+              and circleOnSurface(record,x,y,radius) then return true end
+        end
+      end
+    end
+  end
+  return false
 end
 
 -- group: a sign's group (vienna_convention_speed_signs.lua) also makes a second item at the same spot and scale, its
@@ -640,12 +911,13 @@ end
 local function addTile(anchorId, tileKey, flat, stride, groups, geo)
   local key = geo and ('g:' .. tostring(tileKey)) or (anchorId .. ':' .. tostring(tileKey))
   local old = tiles[key]
+  if old then unindexNatural(old) end
   local tx, ty = tostring(tileKey):match('(%-?%d+)_(%-?%d+)$')
   -- (the shape cache is the items': every message brings items of its own)
   local t = { anchor = anchorId, f = flat, s = stride, n = math.floor(#flat / stride),
-    groups = type(groups) == 'table' and groups or nil,
+    groups = type(groups) == 'table' and #groups>0 and groups or nil, natural=hasNatural(groups),
     made = old and old.made or {}, solid = old and old.solid or {}, near = old and old.near,
-    shapes = {}, scales = {},
+    shapes = {}, scales = {}, renderedHeights = {},
     madeShape = old and old.madeShape or {}, shown = old and old.shown or 0, forestId = old and old.forestId or nil,
     variant = M.tileVariant(key), cx = (tonumber(tx) or 0) * 256 + 128, cy = (tonumber(ty) or 0) * 256 + 128, drop = false }
   if geo then
@@ -657,7 +929,62 @@ local function addTile(anchorId, tileKey, flat, stride, groups, geo)
     M.placeGeo(t)
   end
   tiles[key] = t
+  indexNatural(t)
   dirty = true
+  return t
+end
+
+-- Optional per-row assembly metadata is kept outside the numeric forest stride.
+-- All offsets were fitted against buildings, roads and terrain by the server.
+local function roadsideRows(t,rows)
+  t.roadside={};t.roadsideChoices={};t.reposition={}
+  for i,row in ipairs(rows) do
+    local m=row[9]
+    if type(m)=='table' and type(m.root)=='table' and #m.root==3
+      and finite(m.root[1]) and finite(m.root[2]) and finite(m.root[3])
+      and furnitureRadii[m.group] and finite(m.height) and finite(m.scale)
+      and type(m.choices)=='table' and #m.choices<=8 then
+      local choices={}
+      for _,v in ipairs(m.choices) do
+        if type(v)=='table' and #v==3 and finite(v[1]) and finite(v[2]) and finite(v[3])
+          and math.abs(v[1])<=32 and math.abs(v[2])<=32 and math.abs(v[3])<=2 then choices[#choices+1]=v end
+      end
+      if #choices>0 then t.roadside[i]={root=m.root,group=m.group,height=m.height,scale=m.scale,wired=m.wired==true,
+        choices=choices,base={row[2],row[3],row[4]}} end
+    end
+  end
+end
+
+local function roadsideChoice(t,i)
+  local m=t.roadside and t.roadside[i]
+  if not m then return nil end
+  local key=m.group..':'..table.concat(m.root,':')
+  local cached=t.roadsideResolved and t.roadsideResolved[key]
+  local selected=false
+  for _,v in ipairs(cached and {cached} or m.choices) do
+    local x,y,z=m.root[1]+v[1],m.root[2]+v[2],m.root[3]+v[3]
+    local radius=M.surfaceRadius(m.group,m.height,m.scale)
+    local occupied=false
+    if not cached then for other,p in pairs(t.roadsideOccupied or {}) do
+      if other~=key and math.abs(z-p[3])<3 and (x-p[1])^2+(y-p[2])^2<(radius+p[4])^2 then occupied=true;break end
+    end end
+    local localX,localY,localZ=x,y,z
+    if t.geo then x,y,z=geotile.apply(t.pl,x,y,z)
+    elseif t.surfaceXf then x,y,z=t.surfaceXf:apply(x,y,z) end
+    if not occupied and not M.surfaceBlocked(m.group,x,y,z,m.height,m.scale) then
+      selected=v
+      t.roadsideResolved[key]=v;t.roadsideOccupied[key]={localX,localY,localZ,radius}
+      break
+    end
+  end
+  if selected then
+    local b=(i-1)*t.s
+    local x,y,z=m.base[1]+selected[1],m.base[2]+selected[2],m.base[3]+selected[3]
+    if t.f[b+F_X]~=x or t.f[b+F_Y]~=y or t.f[b+F_Z]~=z then
+      t.f[b+F_X],t.f[b+F_Y],t.f[b+F_Z]=x,y,z;t.reposition[i]=true
+    end
+  end
+  return not selected
 end
 
 -- Pure-ish: a geotile's centre and half size in the current placement (t.pl), for the distances.
@@ -671,6 +998,7 @@ function M.placeGeo(t)
     for _, c in ipairs(q) do hx = math.max(hx, math.abs(c[1] - cx), math.abs(c[2] - cy)) end
     t.half = hx
   end
+  indexNatural(t)
 end
 
 -- A geotile's placement into anchor a.
@@ -706,6 +1034,8 @@ function M.onTile(msg, currentAnchor, anchorObj)
     M.errors = M.errors + 1
     return
   end
+  local naturalTile=tiles[(geo and 'g' or msg.anchorId)..':'..tostring(msg.key)]
+  naturalTile.natural=true
   if geo then
     local t = tiles['g:' .. tostring(msg.key)]
     t.key, t.anchorObj = msg.key, anchorObj
@@ -720,26 +1050,31 @@ function M.onTile(msg, currentAnchor, anchorObj)
       data = { audio = out, biome = data.biome, geo = { cx = t.cx, cy = t.cy } }
     end
   end
+  indexNatural(naturalTile)
   return data
 end
 
 -- Rows of a tile ({ { group, x, y, z, yaw, scale, height, rank }, ... }): an older server's vegetation tile, a road
 -- tile's street furniture (roads.lua, key "p<tx>_<ty>").
-function M.onRows(anchorId, tileKey, rows, groups, stride)
+function M.onRows(anchorId, tileKey, rows, groups, stride, lightOwner)
   stride = math.floor(tonumber(stride) or M.STRIDE)
   if stride < M.STRIDE then stride = M.STRIDE end
-  addTile(anchorId, tileKey, M.flatten(rows, stride), stride, groups)
+  local t=addTile(anchorId, tileKey, M.flatten(rows, stride), stride, groups)
+  roadsideRows(t,rows)
+  t.lightOwner=lightOwner
 end
 
 -- Rows of a road geotile (roads.lua: its street furniture 'p<key>', guard rails 'g<key>'), in the tile's frame
 -- (frame: its anchor object, pivot), placed into anchor a as the vegetation's geotiles are (and with them at a rebase:
 -- M.transform). Dropped with M.dropKey('g:' .. tileKey).
-function M.onGeoRows(tileKey, gkey, rows, groups, stride, frame, pivot, a)
+function M.onGeoRows(tileKey, gkey, rows, groups, stride, frame, pivot, a, lightOwner)
   if not frame or not a then return end
   stride = math.floor(tonumber(stride) or M.STRIDE)
   if stride < M.STRIDE then stride = M.STRIDE end
   local geo = { frame = frame, pivot = pivot or 0, pl = geoPlacement(frame, a, pivot or 0) }
-  addTile(nil, tileKey, M.flatten(rows, stride), stride, groups, geo)
+  local added=addTile(nil, tileKey, M.flatten(rows, stride), stride, groups, geo)
+  roadsideRows(added,rows)
+  added.lightOwner=lightOwner
   local t = tiles['g:' .. tostring(tileKey)]
   t.key, t.anchorObj = gkey, a
   M.placeGeo(t)
@@ -831,6 +1166,18 @@ function M.transform(xf, geodesy, newAnchor)
       local f = t.forestId and scenetree.findObjectById(t.forestId)
       if f then f:setPosRot(ox, oy, oz, x, y, z, w) end
       t.cx, t.cy = xf:apply(t.cx, t.cy, 0)
+      if t.natural then
+        local old=t.surfaceXf
+        if old then
+          local r={}
+          for i=0,2 do for j=0,2 do
+            r[i*3+j+1]=xf.r[i*3+1]*old.r[j+1]+xf.r[i*3+2]*old.r[j+4]+xf.r[i*3+3]*old.r[j+7]
+          end end
+          local x,y,z=xf:apply(old.t[1],old.t[2],old.t[3])
+          t.surfaceXf=geodesy.transformOf(r,{x,y,z})
+        else t.surfaceXf=xf end
+        indexNatural(t)
+      end
       t.ghost = true
       t.pending = false
       any = true
@@ -957,6 +1304,15 @@ function M.update(anchorId, player, view, frameMs)
     clock = stopwatch.new() } or nil
   local budget = M.PER_FRAME * M.EVERY_N
   local limit, elapsed = frameMs or M.FRAME_MS, M.clock()
+  local nearMade, nearRemoved = false, false
+  local rowsScanned = 0
+  local function finish()
+    M.lastRows = rowsScanned
+    if nearMade or nearRemoved then
+      local ok, roads = pcall(require, 'beamngEarth/roads')
+      if ok and roads.requestCollision then roads.requestCollision(nearRemoved) end
+    end
+  end
   newForests = 0
   M.lastShapeItems = touchedItems        -- the previous frame's (diagnostics)
   touched, touchedItems = {}, 0
@@ -967,10 +1323,11 @@ function M.update(anchorId, player, view, frameMs)
       local fd = f and f:getData()
       local left = false
       for i, it in pairs(t.made) do
-        if budget <= 0 or elapsed() > limit then dirty = true; return end
+        if budget <= 0 or elapsed() > limit then dirty = true; finish(); return end
         local sh = t.madeShape[i]
         if not sh or allow(sh) then
           if fd then removeItem(fd, it, sh) end
+          if t.solid[i] then nearRemoved = true end
           t.made[i], t.solid[i], t.madeShape[i] = nil, nil, nil
           budget = budget - 1
         else left = true end
@@ -984,11 +1341,12 @@ function M.update(anchorId, player, view, frameMs)
         dirty = true
       elseif not left then
         releaseForest(t)
+        unindexNatural(t)
         tiles[key] = nil
       else dirty = true end
     end
   end
-  if not player then return end
+  if not player then finish(); return end
   -- nearest tiles first (to the camera when it is away: view); [3] the distance to the car (the colliding items)
   local order = {}
   local function boxDist(p, t)
@@ -998,27 +1356,18 @@ function M.update(anchorId, player, view, frameMs)
     return math.sqrt(dx * dx + dy * dy)
   end
   for key, t in pairs(tiles) do
-    if (not t.geo and t.anchor ~= anchorId) or t.drop or t.flush then goto continue end     -- still being emptied
+    if (not t.geo and t.anchor ~= anchorId and (not t.ghost or not t.pending)) or t.drop or t.flush then goto continue end
     local dCar = boxDist(player, t)
     order[#order + 1] = { key, view and math.min(boxDist(view, t), dCar) or dCar, dCar }
     ::continue::
   end
   table.sort(order, function(a, b) return a[2] < b[2] end)
-  local nearMade = false
-  local rowsScanned = 0
   -- solid round other players' cars too (collisionfoci.lua: the foci with trees; traffic has none)
   local function nearFocus(t)
     for _, f in ipairs(foci) do
       if f.trees and boxDist(f, t) <= M.SOLID_M + (t.near and M.SOLID_HYST_M or 0) then return true end
     end
     return false
-  end
-  local function finish()
-    M.lastRows = rowsScanned                -- (diagnostics)
-    if nearMade then
-      local ok, roads = pcall(require, 'beamngEarth/roads')
-      if ok and roads.requestCollision then roads.requestCollision() end
-    end
   end
   -- a pass over a tile's rows stopped (its frame's time or items, or no Forest yet): the next pass for the same targets
   -- goes on from row i, or from the first row it left for another frame (skipped: its shapes were full), not from
@@ -1055,6 +1404,7 @@ function M.update(anchorId, player, view, frameMs)
       t.pending = false
       local scan = t.scan
       local from = scan and scan.want == want and scan.band == band and scan.near == near and scan.from or 1
+      if from==1 then t.roadsideResolved={};t.roadsideOccupied={} end
       t.scan = nil
       local f, s, names = t.f, t.s, t.groups or GROUPS
       rowsScanned = rowsScanned + math.max(0, t.n - from + 1)
@@ -1066,6 +1416,7 @@ function M.update(anchorId, player, view, frameMs)
         local b = (i - 1) * s
         local r = f[b + F_RANK]
         local g = names[f[b + F_GROUP] + 1]
+        if t.ghost then r=t.made[i] and 0 or 2 end -- legacy ghosts can be cleared, never repopulated
         local cap = g and M.GROUP_MAX_M[g]
         local isGuardrail = M.isBarrier(g)
         if isGuardrail then
@@ -1090,15 +1441,31 @@ function M.update(anchorId, player, view, frameMs)
         end
         -- an item something else stands in for (navgraph.lua's switchable signal heads)
         if g and M.suppress and M.suppress(g, f[b + F_X], f[b + F_Y]) then r = 2 end
+        local roadsideBlocked=roadsideChoice(t,i)
+        if t.roadside and t.roadside[i] then
+          t.roadsideChoices[i]=not roadsideBlocked
+        end
+        if roadsideBlocked then r=2 end
+        if roadsideBlocked==nil and t.natural and naturalGroups[g] and (r<want or t.made[i]) then
+          local x,y,z=f[b+F_X],f[b+F_Y],f[b+F_Z]
+          if t.geo then x,y,z=geotile.apply(t.pl,x,y,z)
+          elseif t.surfaceXf then x,y,z=t.surfaceXf:apply(x,y,z) end
+          local _,_,actualHeight=shapeOf(t,i)
+          if M.surfaceBlocked(g,x,y,z,f[b+F_HEIGHT],f[b+F_SCALE],actualHeight) then r=2 end
+        end
         local solid = near and not M.NO_COLLIDE[g or '']
-        if r < want and (not t.made[i] or (t.solid[i] == true) ~= solid) then
+        if not t.ghost and r < want and (not t.made[i] or (t.reposition and t.reposition[i]) or (t.solid[i] == true) ~= solid) then
           local sh, sc = shapeOf(t, i)
           if budget <= 0 then stop(t, i, skipped, want, band, near); return end
           if allow(sh) then
             local d = data()
             if not d then stop(t, i, skipped, want, band, near); return end      -- (a new Forest: next frame)
-            if t.made[i] then removeItem(d, t.made[i], t.madeShape[i]); budget = budget - 1 end  -- solid <-> not
+            if t.made[i] then
+              if t.solid[i] then nearRemoved = true end
+              removeItem(d, t.made[i], t.madeShape[i]); budget = budget - 1
+            end
             t.made[i] = makeItem(d, t, i, sh, sc, solid, g, t.variant)
+            if t.reposition then t.reposition[i]=nil end
             t.solid[i] = (t.made[i] and solid) or nil      -- true or nil
             t.madeShape[i] = t.made[i] and sh or nil
             if solid then nearMade = true end
@@ -1111,11 +1478,29 @@ function M.update(anchorId, player, view, frameMs)
             local d = data()
             if not d then stop(t, i, skipped, want, band, near); return end
             removeItem(d, t.made[i], t.madeShape[i])
+            if t.solid[i] then nearRemoved=true end
             t.made[i], t.solid[i], t.madeShape[i] = nil, nil, nil
             budget = budget - 1
             if elapsed() > limit then stop(t, i + 1, skipped, want, band, near); return end
           else skipped = skipped or i end
         end
+      end
+      if t.lightOwner and t.roadside and next(t.roadside) then
+        local lenses={};local blockedWire=false
+        for i=1,t.n do
+          local b=(i-1)*t.s
+          if t.roadside[i] and t.roadside[i].wired and t.roadsideChoices[i]==false then blockedWire=true end
+          if names[f[b+F_GROUP]+1]=='lamplens' and t.roadsideChoices[i]~=false then
+            local x,y,z=f[b+F_X],f[b+F_Y],f[b+F_Z]
+            local yaw=f[b+F_YAW]
+            if t.geo then x,y,z=geotile.apply(t.pl,x,y,z);yaw=yaw+geotile.yawOf(t.pl)
+            elseif t.surfaceXf then x,y,z=t.surfaceXf:apply(x,y,z) end
+            lenses[#lenses+1]={0,x,y,z,yaw}
+          end
+        end
+        require('beamngEarth/nightlights').onRows(t.lightOwner,lenses,{'lamplens'})
+        local roads=require('beamngEarth/roads')
+        if roads.setRoadsideWireBlocked then roads.setRoadsideWireBlocked(t.lightOwner,blockedWire) end
       end
       t.shown = want
       t.band = band
@@ -1133,19 +1518,31 @@ end
 
 -- Disconnect, a new server session, mod unload: every item removed.
 function M.clear()
+  local removedSolid=false
   for _, t in pairs(tiles) do
     local f = t.forestId and scenetree.findObjectById(t.forestId)
     local fd = f and f:getData()
-    for i, it in pairs(t.made) do if fd then removeItem(fd, it, t.madeShape[i]) end end
+    for i, it in pairs(t.made) do
+      if t.solid[i] then removedSolid=true end
+      if fd then removeItem(fd, it, t.madeShape[i]) end
+    end
     releaseForest(t)
   end
   tiles, frameN, dirty, lastPass = {}, 0, true, nil
+  -- Road owners can survive a server disconnect while their meshes remain.
+  -- Their masks survive too; only the removed vegetation tile index is cleared.
+  surfaceTiles={}
+  if removedSolid then
+    local ok,roads=pcall(require,'beamngEarth/roads')
+    if ok and roads.requestCollision then roads.requestCollision(true) end
+  end
 end
 
 -- Level end: the level deletes its objects itself.
 function M.reset()
   tiles, types, ready, pool, forestCount, pop = {}, {}, false, {}, 0, {}
   dirty, lastPass = true, nil
+  surfaceOwners,surfaceGrid,surfaceTiles={},{},{}
 end
 
 function M.status()

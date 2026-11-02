@@ -1,0 +1,354 @@
+{
+  "schema": 1,
+  "source": "nz_christchurch_zones",
+  "region": "nz_temperate",
+  "codes": {
+    "RS": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "RSDT": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "RNN": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "RBP": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "RSS": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "RH": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "RLL": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "rural_residential"
+    },
+    "RMD": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "medium_density_residential"
+    },
+    "MRZ": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "medium_density_residential"
+    },
+    "HRZ": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "high_density_residential"
+    },
+    "RVA": {
+      "uses": [
+        "residential",
+        "commercial"
+      ],
+      "environment": "residential_unspecified"
+    },
+    "CCZ": {
+      "uses": [
+        "mixed",
+        "commercial",
+        "residential"
+      ],
+      "environment": "city_centre"
+    },
+    "TCZ": {
+      "uses": [
+        "mixed",
+        "commercial",
+        "residential"
+      ],
+      "environment": "town_centre"
+    },
+    "CCMUZ": {
+      "uses": [
+        "mixed",
+        "commercial",
+        "residential"
+      ],
+      "environment": "mixed_use"
+    },
+    "CCMU(SF)": {
+      "uses": [
+        "mixed",
+        "commercial",
+        "residential"
+      ],
+      "environment": "mixed_use"
+    },
+    "MUZ": {
+      "uses": [
+        "mixed",
+        "commercial",
+        "residential"
+      ],
+      "environment": "mixed_use"
+    },
+    "NCZ": {
+      "uses": [
+        "commercial"
+      ],
+      "environment": "commercial_frontage"
+    },
+    "LCZ": {
+      "uses": [
+        "commercial"
+      ],
+      "environment": "commercial_frontage"
+    },
+    "CBP": {
+      "uses": [
+        "commercial"
+      ],
+      "environment": "commercial_frontage"
+    },
+    "LFRZ": {
+      "uses": [
+        "commercial"
+      ],
+      "environment": "large_format_retail"
+    },
+    "CO": {
+      "uses": [
+        "commercial"
+      ],
+      "environment": "commercial_unspecified"
+    },
+    "IP": {
+      "uses": [
+        "industrial"
+      ],
+      "environment": "light_industry"
+    },
+    "IG": {
+      "uses": [
+        "industrial"
+      ],
+      "environment": "light_industry"
+    },
+    "IH": {
+      "uses": [
+        "industrial"
+      ],
+      "environment": "heavy_industry"
+    },
+    "RuT": {
+      "uses": [
+        "agricultural",
+        "residential"
+      ],
+      "environment": "rural"
+    },
+    "RuBP": {
+      "uses": [
+        "agricultural",
+        "residential"
+      ],
+      "environment": "rural"
+    },
+    "RuW": {
+      "uses": [
+        "agricultural",
+        "residential"
+      ],
+      "environment": "rural"
+    },
+    "RuPH": {
+      "uses": [
+        "agricultural",
+        "residential"
+      ],
+      "environment": "rural"
+    },
+    "RuUF": {
+      "uses": [
+        "agricultural",
+        "residential"
+      ],
+      "environment": "rural"
+    },
+    "SPS": {
+      "uses": [
+        "civic"
+      ],
+      "environment": "education"
+    },
+    "SPT": {
+      "uses": [
+        "civic"
+      ],
+      "environment": "education"
+    },
+    "SPH": {
+      "uses": [
+        "civic"
+      ],
+      "environment": "health"
+    },
+    "T": {
+      "uses": [
+        "transport"
+      ],
+      "environment": "transport"
+    },
+    "SPA": {
+      "uses": [
+        "transport"
+      ],
+      "environment": "transport"
+    },
+    "SPLP": {
+      "uses": [
+        "transport"
+      ],
+      "environment": "transport"
+    },
+    "OC": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "OMF": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "OCP": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "OWM": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "ON": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "OMI": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "ARP": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "PA": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPRa": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPR": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPC": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPST": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPW": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPLR": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPB": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPOA": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "SPN": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "RuQ": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "RuQ or OCP(T)": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    },
+    "OCP or RuQ(T)": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "special_purpose"
+    }
+  },
+  "source_url": "https://gis.ccc.govt.nz/server/rest/services/OpenData/DistrictPlan/FeatureServer/78"
+}

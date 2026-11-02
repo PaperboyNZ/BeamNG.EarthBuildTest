@@ -43,7 +43,7 @@ local gov = {}
 function gov:try() return true end
 function gov:charge() end
 function gov:chargeMotion() end
-local function run(aid, a) for _ = 1, 6 do roads.update(gov, aid, car, nil, a) end end
+local function run(aid, a) for _ = 1, 12 do roads.update(gov, aid, car, nil, a) end end
 
 local LAT, LON = 39.2834, -76.5934
 local gx, gy = geotile.tileOf(LAT, LON)
@@ -196,5 +196,65 @@ T.check(roads.status().geoStats.kept == 1, 'counted as kept')
 roads.onDrop({ anchorId = 1, key = key })
 run(1, B)
 T.check(#objsWith('rg_') == 0 and #objsWith('rs_') == 0, 'dropped: every part and skin gone')
+
+-- V2 lists every chunk, including visual/collision chunks beyond the legacy four.
+local dense = { chunks = {}, h = 'dense', frame = {clat, clon},
+  buildingChunks = { v = roads.BUILDING_CHUNKS, visual = {}, collision = {'bldcol', 'bldcol2'} } }
+for i = 1, 6 do
+  local what = i == 1 and 'bld' or 'bld' .. i
+  dense.buildingChunks.visual[i] = what
+  dense[what] = {shape = '/s/dense_' .. what .. '.cdae', pos = {-118,-118,0}, pivot = 10, relief = 20}
+end
+for _, what in ipairs(dense.buildingChunks.collision) do
+  dense[what] = {shape = '/s/dense_' .. what .. '.cdae', pos = {-118,-118,0}, pivot = 10, relief = 20}
+end
+T.check(roads.onTile({anchorId = 1, key = key, data = dense, h = 'dense'}, 1, B), 'complete chunk list accepted')
+local budget = 3
+function gov:try() budget = budget - 1; return budget >= 0 end
+roads.update(gov, 1, car, nil, B)
+T.check(not roads.nearShowsBuildings(key), 'far buildings stay while any near visual chunk is missing')
+function gov:try() return true end
+run(1, B)
+T.check(#objsWith('dense_') == 8, 'all six visual and two collision chunks loaded')
+T.check(roads.nearShowsBuildings(key), 'near building set complete only after the last chunk loads')
+T.check(objsWith('dense_bldcol2')[1].fields.collisionType == 'Collision Mesh', 'second collision chunk stays physics-only')
+local denseMade = S.calls['createObject_TSStatic'] or 0
+roads.replace(A, 2)
+run(2, A)
+T.check((S.calls['createObject_TSStatic'] or 0) == denseMade and #objsWith('dense_bld6') == 1,
+  'all chunks survive a rebase without reconstruction')
+T.check(roads.onExact({anchorId = 2, key = key, parts = {bld6 = '/s/dense_exact6.cdae'}}, 2),
+  'late chunk accepts its exact placement variant')
+run(2, A)
+T.check(#objsWith('dense_exact6') == 1 and #objsWith('dense_bld6') == 0, 'late chunk exact variant replaces its base')
+local malformed = {buildingChunks = {v = roads.BUILDING_CHUNKS, visual = {'bld7'}, collision = {}}}
+T.check(not roads.onTile({anchorId = 2, key = key, data = malformed, h = 'bad'}, 2, A), 'incomplete manifest rejected')
+T.check(#objsWith('dense_') == 8, 'rejected replacement keeps the existing complete building set')
+roads.onDrop({anchorId = 2, key = key})
+run(2, A)
+T.check(#objsWith('dense_') == 0, 'dropping a tile releases every chunk and exact variant')
+
+-- Equal hashes cannot reuse files removed by a server restart. Replacement must
+-- still go through the physical handover and import the new session's meshes.
+roads.clear();roads.reset();roads.setGeo(true);roads.setSession('restart')
+roads.RELOAD_EVERY_S,roads.RELOAD_DELETES_S,roads.URGENT_GAP_S=0,0,0
+car.x,car.y=B:geodeticToWorld(clat,clon,0)
+local function restartBody(folder)
+  return {h='restart',physicalHash='unchanged-physics',frame={clat,clon},
+    deck={shape='/'..folder..'/restart_deck.cdae',pos={0,0,0}},
+    colliders={deck={{1000,1000,0,1010,1010,2}}}}
+end
+T.check(roads.onTile({anchorId=2,key=key,h='restart',data=restartBody('old')},2,B),'restart fixture accepted')
+run(2,B)
+T.check(#objsWith('/old/restart_deck')==1,'old-session physical mesh imported')
+local exists=FS.fileExists
+FS.fileExists=function(self,path) return path~='/old/restart_deck.cdae' and exists(self,path) end
+roads.onTile({anchorId=2,key=key,h='restart',data=restartBody('new')},2,B)
+run(2,B)
+roads.collisionRebuilt();run(2,B)
+T.check(#objsWith('/new/restart_deck')==1 and #objsWith('/old/restart_deck')==0,
+  'same physical and content hashes rebuild missing old-session files')
+FS.fileExists=exists
+roads.clear()
 
 T.done('test_roadgeo')

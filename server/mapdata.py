@@ -589,6 +589,8 @@ class MapData:
         """CellData of one cell with the given layers (fetched / built / cached as needed)."""
         key = _key(key)
         lat_c, lon_c = key.center()
+        import inputwatch
+        if inputwatch.ACTIVE.get() is not None:inputwatch.paths(self.path(key,layer) for layer in layers)
         frame = geodesy.EnuFrame(lat_c, lon_c, 0.0)
         cd = CellData(key, key.bounds(), (lat_c, lon_c), frame, self.versions())
         provs = {}

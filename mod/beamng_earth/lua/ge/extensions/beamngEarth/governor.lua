@@ -102,6 +102,7 @@ function M.new(opts)
     tokens = 0,         -- token bucket, ms
     est = est,          -- per kind cost estimate, ms
     used = {},          -- kinds asked for at least once (they define maxUnit)
+    predicted = {},     -- current/previous-frame per-unit hints, in this same bucket
     hist = {}, histN = 0, -- ring of recent non-heavy frame times
     base = nil,
     frame = 0,
@@ -136,6 +137,9 @@ function Gov:targetNow() return self.loading and M.LOADING_TARGET_MS or self.tar
 function Gov:maxUnit()
   local m = 0
   for k in pairs(self.used) do m = max(m, self.est[k] or 0) end
+  for _,p in pairs(self.predicted) do
+    if p.frame>=self.frame-1 then m=max(m,p.ms) end
+  end
   return m
 end
 
@@ -198,10 +202,17 @@ function Gov:beginFrame(hasWork, wallMs)
 end
 
 -- May a unit of this kind run now? (The caller then runs it and calls charge with its cost.)
-function Gov:try(kind)
+function Gov:try(kind, predictedMs)
   self.used[kind] = true
+  -- Optional chunk features refine this unit's estimate without creating a
+  -- second budget. Remember it through the next beginFrame so expensive units
+  -- can accumulate enough tokens; an idle hint expires after one frame.
+  if type(predictedMs)=='number' and predictedMs==predictedMs and predictedMs>0 and predictedMs<=10000 then
+    local previous=self.predicted[kind]
+    self.predicted[kind]={ms=max(predictedMs,previous and previous.frame==self.frame and previous.ms or 0),frame=self.frame}
+  else predictedMs=nil end
   if self.blocked or self.heavyFrame == self.frame then return false end
-  local e = self.est[kind] or 1
+  local e = predictedMs or self.est[kind] or 1
   if self.tokens < e then return false end
   if self.frameSpent + e > self.b + self:maxUnit() then return false end
   return true
@@ -209,6 +220,7 @@ end
 
 -- Charge a unit that ran (ms = its measured cost).
 function Gov:charge(kind, ms)
+  self.predicted[kind]=nil
   ms = max(0, ms or 0)
   if ms >= 1 then self.frameLog[#self.frameLog + 1] = kind .. ':' .. math.floor(ms + 0.5) end
   self.tokens = self.tokens - ms

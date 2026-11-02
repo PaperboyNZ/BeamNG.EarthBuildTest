@@ -32,6 +32,8 @@ M.MATERIAL_FILES = { '/levels/west_coast_usa/art/road/main.materials.json',
   '/levels/driver_training/art/road/main.materials.json',          -- m_metal_grid_drain (storm drains)
   '/levels/gridmap_v2/art/shapes/grid/main.materials.json',        -- m_gm_concrete_plain (concrete streets)
   '/levels/beamng_earth/art/shapes/beamngEarth/buildings.materials.json',  -- buildings (server/buildings.py)
+  '/levels/beamng_earth/art/shapes/beamngEarth/building_details.materials.json',
+  '/levels/beamng_earth/art/shapes/beamngEarth/sidewalk.materials.json', -- metric slab paving
   -- highway signs (server/signstream.py: exit and overhead panels, mile markers, merge warnings)
   '/levels/beamng_earth/art/shapes/beamngEarth/roadside/exit.materials.json',
   '/levels/beamng_earth/art/shapes/beamngEarth/roadside/merge.materials.json' }
@@ -90,17 +92,72 @@ M.SWAP_QUIET_MS = 150
 M.RELOAD_ROOM_MS = 8.0
 M.RELOAD_WAIT_FRAMES = 3
 local reloadWaits = 0
+-- A generous/loading governor allowance must not bunch several synchronous
+-- TSStatic imports into one frame. Near, far and collision meshes share this cap.
+M.MAX_IMPORTS_PER_FRAME = 1
+M.MAX_PHYSICAL_STAGES = 2 -- admission extends the same queues; native memory calibration remains pending
+local importsThisFrame, deferImports = 0, false
+local buildingProgress
+local physicalHandover
+local occupancy = require('beamngEarth/occupancy')
+local actorPositions, inUpdate = nil, false
+local progressFrame = 0
+-- A bounded share of eligible import frames supplies missing distant coverage.
+-- Urgent collision and collision rebuilds always retain priority.
+M.FAR_IMPORT_EVERY = 4
+M.BUILDING_PROGRESS = 1
+local sectorManifest = require('beamngEarth/sector_manifest')
+M.SECTOR_MANIFEST = 1
+local sectorManifestRequired = false
+function M.setSectorManifest(version) sectorManifestRequired = version == M.SECTOR_MANIFEST end
 
 local newColliders = {}    -- { id, walkQ entry } of the colliders made since the last reloadCollision
 local parked = {}          -- walkQ entries of colliders whose tile is not near enough yet
 local sinceCollideCheck = stopwatch.new()
 local held = {}            -- walkQ entries of colliding meshes held while the player is in their boxes
 local noteNewColliders, playerIn, releaseHeld
+M.BUILDING_CHUNKS = 1
+local function buildingVisual(what)
+  return what == 'bld' or type(what) == 'string' and what:match('^bld%d+$') ~= nil
+end
+local function buildingCollision(what)
+  return what == 'bldcol' or type(what) == 'string' and what:match('^bldcol%d+$') ~= nil
+end
+local function validBuildingChunks(data)
+  local chunks = data.buildingChunks
+  if chunks == nil then return true end
+  if type(chunks) ~= 'table' or chunks.v ~= M.BUILDING_CHUNKS
+    or type(chunks.visual) ~= 'table' or type(chunks.collision) ~= 'table' then return false end
+  local seen = {}
+  for _, group in ipairs({ 'visual', 'collision' }) do
+    for _, what in ipairs(chunks[group]) do
+      local valid = group == 'visual' and buildingVisual(what) or group == 'collision' and buildingCollision(what)
+      if not valid or seen[what] or type(data[what]) ~= 'table' or type(data[what].shape) ~= 'string'
+        or type(data[what].pos) ~= 'table' then return false end
+      seen[what] = true
+    end
+  end
+  return true
+end
+local function meshWhats(base, data)
+  local out, seen = {}, {}
+  for _, what in ipairs(base) do out[#out + 1] = what; seen[what] = true end
+  local chunks = data and data.buildingChunks
+  if chunks then
+    for _, group in ipairs({ 'visual', 'collision' }) do
+      for _, what in ipairs(chunks[group]) do
+        if not seen[what] then out[#out + 1] = what; seen[what] = true end
+      end
+    end
+  end
+  return out
+end
 local tiles = {}            -- key "a:tx_ty" -> { anchor, objs = { DecalRoad ids }, queued = n, walk = TSStatic id,
                             --   road = TSStatic id }
 local walkQ = {}            -- { key, walk = {shape, pos}, what = 'walk' | 'road' } FIFO
 local createQ = {}          -- { key, chunk } FIFO
 local deleteQ = {}          -- object ids
+local retiringSurfaceOwners = {} -- road tile key -> pooled slots still referenced by retiring geometry
 local loadedMaterials = false
 local anchorId = nil
 local far = {}              -- far buildings (server buildings.far_tile): key "a:tx_ty" -> { anchor, id, shape, pos, hidden }
@@ -110,6 +167,7 @@ local lastError = nil
 local sinceChange = stopwatch.new()  -- ms since a tile arrived / went or a road was made / deleted
 local sinceReload = stopwatch.new()
 local collisionDirty = false
+local propCollisionDirty = false -- removed/moved Forest colliders cannot wait six seconds
 local lastReloadAt = -math.huge   -- now() of the last be:reloadCollision (ours or another's): M.ahead
 local reloads = 0                 -- be:reloadCollision runs so far (ours or another's): M.reloads
 local sinceUrgent = math.huge     -- frames since the last urgent walk import (M.urgentWalk)
@@ -189,36 +247,58 @@ local function tileKey(aid, k) return tostring(aid) .. ':' .. tostring(k) end
 -- later tiles once we report [slot, serial] gone (core.lua pose.slotsGone). A slot goes when its tile is dropped AND
 -- its last object is deleted (a collider deleted and made again while the tile lives keeps it).
 local session = nil        -- the server session the slots belong to (setSession)
-local objSlot = {}         -- object id -> slot number of the pooled file it loaded
-local slotLive = {}        -- slot number -> objects alive with it
-local slotDropped = {}     -- slot number -> { serial, session } of a dropped tile's slot, reported at its last delete
+local objSlot = {}         -- object id -> session-qualified pooled file key
+local slotLive = {}        -- session-qualified key -> objects alive with it
+local slotDropped = {}     -- key -> { slot number, serial, session }, reported after object/engine retirement
+local slotRefs = {}        -- key -> {slot, serial, session, count}: metadata owners independent of scene instances
+local objectSessions = {}  -- unpooled and pooled instances keep their source folder alive too
 local slotsGone = {}       -- { n, serial, session } to report
+local engineDebt = require('beamngEarth/engine_debt').new()
 local function slotOf(path) return tonumber(type(path) == 'string' and path:match('/slot_(%d+)%.cdae$') or nil) end
+local function slotKey(n,sess) return tostring(sess)..':'..tostring(n) end
 
 function M.setSession(s) session = s end
 
 -- An object with a pooled shape was made / is deleted.
 local function slotMade(id, path)
+  local folder=type(path)=='string' and path:match('^/temp/beamngEarth/([^/]+)/')
+  if folder then objectSessions[id]=folder end
   local n = slotOf(path)
   if not n then return end
-  objSlot[id] = n
-  slotLive[n] = (slotLive[n] or 0) + 1
+  local sess=path:match('/temp/beamngEarth/([^/]+)/slot_%d+%.cdae$') or session
+  local key=slotKey(n,sess)
+  objSlot[id] = key
+  slotLive[key] = (slotLive[key] or 0) + 1
 end
-local function slotObjGone(id)
-  local n = objSlot[id]
-  if not n then return end
+local function slotObjGone(id, collided)
+  local folder=objectSessions[id];objectSessions[id]=nil
+  local key = objSlot[id]
+  if not key then
+    if collided and folder then engineDebt:deleted('folder:'..folder) end
+    return
+  end
+  if collided then engineDebt:deleted(key) end
   objSlot[id] = nil
-  slotLive[n] = (slotLive[n] or 1) - 1
-  if slotLive[n] <= 0 then
-    slotLive[n] = nil
-    local d = slotDropped[n]
-    if d then slotDropped[n] = nil; slotsGone[#slotsGone + 1] = { n, d[1], d[2] } end
+  slotLive[key] = (slotLive[key] or 1) - 1
+  if slotLive[key] <= 0 then
+    slotLive[key] = nil
+    local d = slotDropped[key]
+    if d and not engineDebt:held(key) then slotDropped[key] = nil; slotsGone[#slotsGone + 1] = d end
   end
 end
 -- A tile's slot { n, serial, session } is let go: at once if no object has it, else at its last delete.
 local function slotDrop(sl)
   if not sl then return end
-  if (slotLive[sl[1]] or 0) > 0 then slotDropped[sl[1]] = { sl[2], sl[3] }
+  local key=slotKey(sl[1],sl[3])
+  if sl._released then return end
+  sl._released=true
+  local ref=slotRefs[key]
+  if sl._refKey and ref then
+    ref.count=ref.count-1
+    if ref.count<=0 then slotRefs[key]=nil;ref=nil end
+  end
+  if ref then return end
+  if (slotLive[key] or 0) > 0 or engineDebt:held(key) then slotDropped[key] = { sl[1], sl[2], sl[3] }
   else slotsGone[#slotsGone + 1] = { sl[1], sl[2], sl[3] } end
 end
 -- Is any mesh file a tile's parts (and exact variants) are made from gone? A server restart sends the same content
@@ -241,8 +321,46 @@ local function msgSlot(msg, what)
   local e = type(msg.slots) == 'table' and msg.slots[what]
   if type(e) ~= 'table' then return nil end
   local n, serial = slotOf(e[1]), tonumber(e[2])
-  if not n or not serial then return nil end
-  return { n, serial, session, path = e[1] }
+  if not n or not serial or serial~=serial or serial<0 or serial>=2^53 or serial%1~=0 then return nil end
+  local folder=e[1]:match('^/temp/beamngEarth/([^/]+)/') or session
+  local sl={ n, serial, folder, path = e[1] }
+  local key=slotKey(n,folder)
+  local ref=slotRefs[key]
+  if not ref then ref={n,serial,folder,count=0};slotRefs[key]=ref end
+  ref.count=ref.count+1;sl._refKey=key;slotDropped[key]=nil
+  return sl
+end
+
+local function releaseSlots(slots)
+  for _,sl in ipairs(slots or {}) do slotDrop(sl) end
+end
+local function messageSlots(msg)
+  local out={}
+  local n=0;for _ in pairs(msg.slots or {}) do n=n+1;if n>8192 then error('oversized pooled shape inventory') end end
+  for w in pairs(msg.slots or {}) do local sl=msgSlot(msg,w);if sl then out[#out+1]=sl end end
+  return out
+end
+function M._admit(fn,msg,...)
+  local claimed,refs=pcall(messageSlots,msg)
+  if not claimed then lastError=tostring(refs);return false end
+  local ok,result=pcall(fn,msg,...)
+  releaseSlots(refs)
+  if not ok then lastError=tostring(result);return false end
+  return result
+end
+local function releasePending(t,replacement)
+  local p=t.pendingGeo
+  if not p then return end
+  releaseSlots(p.slots,replacement);releaseSlots(p.skinSlots,replacement);releaseSlots(p.exactSlots,replacement)
+  t.pendingGeo=nil
+end
+function M._holdReplacement(t,msg,data,currentAnchor)
+  releasePending(t,msg)
+  local pending={msg={},anchor=currentAnchor,slots=messageSlots(msg),sourceSession=session}
+  for w,v in pairs(msg) do pending.msg[w]=v end
+  pending.msg.data=data
+  t.pendingGeo=pending;t.retireRequested=nil
+  return true
 end
 
 -- The [slot, serial] pairs gone since the last call, for server session `sess`.
@@ -258,17 +376,42 @@ end
 -- objects are not deleted yet.
 function M.slotsHeld(sess)
   local out = {}
-  for _, t in pairs(tiles) do
-    for _, sl in pairs(t.slots or {}) do if sl[3] == sess then out[#out + 1] = { sl[1], sl[2] } end end
-  end
-  for _, f in pairs(far) do
-    if f.slot and f.slot[3] == sess then out[#out + 1] = { f.slot[1], f.slot[2] } end
-    for _, p in pairs(f.parts or {}) do
-      if p.slot and p.slot[3] == sess then out[#out + 1] = { p.slot[1], p.slot[2] } end
-    end
-  end
-  for n, d in pairs(slotDropped) do if d[2] == sess then out[#out + 1] = { n, d[1] } end end
+  for _,ref in pairs(slotRefs) do if ref[3]==sess then out[#out+1]={ref[1],ref[2]} end end
+  for _, d in pairs(slotDropped) do if d[3] == sess then out[#out + 1] = { d[1], d[2] } end end
   return out
+end
+
+-- Source folders also contain unpooled base/exact files and parked resources.
+-- They remain claimed until metadata, instances AND asynchronous physics let go.
+function M._fileSessions(t)
+  local out={}
+  local function add(path)
+    local s=type(path)=='string' and path:match('^/temp/beamngEarth/([^/]+)/')
+    if s then out[s]=true end
+  end
+  add(t.shape)
+  for _,p in pairs(t.parts or {}) do add(p.shape) end
+  for _,path in pairs(t.exactShape or {}) do add(path) end
+  for _,p in pairs(t.skin or {}) do if type(p)=='table' then add(p.shape) end end
+  t.fileSessions=out
+end
+function M.heldSessions()
+  local held={}
+  for _,s in ipairs(M._shapeSessions()) do held[s]=true end
+  for _,ref in pairs(slotRefs) do if ref[3] then held[ref[3]]=true end end
+  for _,ref in pairs(slotDropped) do if ref[3] then held[ref[3]]=true end end
+  for _,s in pairs(objectSessions) do held[s]=true end
+  for key in pairs(engineDebt.pending) do local s=type(key)=='string' and key:match('^folder:(.+)$');if s then held[s]=true end end
+  for _,t in pairs(tiles) do
+    for s in pairs(t.fileSessions or {}) do held[s]=true end
+    if t.pendingGeo and t.pendingGeo.sourceSession then held[t.pendingGeo.sourceSession]=true end
+    for s in pairs(t.pendingPatch and t.pendingPatch.fileSessions or {}) do held[s]=true end
+  end
+  for _,f in pairs(far) do
+    for s in pairs(f.fileSessions or {}) do held[s]=true end
+    for s in pairs(f.previous and f.previous.fileSessions or {}) do held[s]=true end
+  end
+  local out={};for s in pairs(held) do out[#out+1]=s end;table.sort(out);return out
 end
 
 local function now() return os.clock() * 1000 end
@@ -287,9 +430,51 @@ local function noteUnit(kind, ms, shape)
   if ms > u.max then u.max = ms end
 end
 
-local function dropTile(key)
+local function releaseSurfaceOwners()
+  if #deleteQ>0 then return end
+  local trees=require('beamngEarth/trees')
+  for key,slots in pairs(retiringSurfaceOwners) do
+    local held=false
+    for n in pairs(slots) do if (slotLive[n] or 0)>0 or engineDebt:held(n) then held=true; break end end
+    if tiles[key] or not held then
+      if not tiles[key] and trees.clearSurfaceExclusions then trees.clearSurfaceExclusions('road:'..key) end
+      retiringSurfaceOwners[key]=nil
+    end
+  end
+end
+
+local buildingFade = require('beamngEarth/buildingfade').new()
+local function hideBuilding(id, hidden) buildingFade:hide(id,hidden) end
+
+local function ownBuildingsReady(t)
+  if not t then return false end
+  for what in pairs(t.parts or {}) do if buildingVisual(what) and not t[what] then return false end end
+  return true
+end
+
+local function dropBuildingFallback(t)
+  local f=t.buildingFallback
+  if not f then return end
+  for what in pairs(f.parts) do
+    if f[what] then hideBuilding(f[what],true);deleteQ[#deleteQ+1]=f[what] end
+  end
+  for _,sl in pairs(f.slots) do slotDrop(sl) end
+  t.buildingFallback=nil
+end
+
+local function dropTile(key, keepProgress, force)
   local t = tiles[key]
   if not t then return end
+  if not force and physicalHandover and not physicalHandover:drop(key) then t.retireRequested=true;return false end
+  if not force and M.occupied and M.occupied(t) then
+    releasePending(t);M._releasePatch(t);t.retireRequested=true;return false
+  end
+  releasePending(t);M._releasePatch(t)
+  if buildingProgress and not keepProgress then buildingProgress:drop((key:gsub('^g:', ''))) end
+  dropBuildingFallback(t)
+  local surfaceSlots={}
+  for _,sl in pairs(t.slots or {}) do surfaceSlots[slotKey(sl[1],sl[3])]=true end
+  retiringSurfaceOwners[key]=surfaceSlots
   for _, sl in pairs(t.slots or {}) do slotDrop(sl) end
   for w, v in pairs(t.oldSkin or {}) do       -- (a geotile's previous skin and replaced parts: road geotiles below)
     if type(w) == 'string' and w:sub(1, 2) == 's:' then slotDrop(v) else deleteQ[#deleteQ + 1] = v end
@@ -301,7 +486,12 @@ local function dropTile(key)
   if t.walk then deleteQ[#deleteQ + 1] = t.walk end
   if t.road then deleteQ[#deleteQ + 1] = t.road end
   if t.deck then deleteQ[#deleteQ + 1] = t.deck end
-  for _, w in ipairs({ 'bld', 'bld2', 'bld3', 'bld4', 'bldcol', 'walkcol', 'tunnel', 'rail', 'railcol' }) do if t[w] then deleteQ[#deleteQ + 1] = t[w] end end
+  for _, w in ipairs(meshWhats({ 'bld', 'bld2', 'bld3', 'bld4', 'bldcol', 'walkcol', 'tunnel', 'rail', 'railcol' }, t.data)) do
+    if t[w] then
+      if buildingVisual(w) then hideBuilding(t[w],true) end
+      deleteQ[#deleteQ + 1] = t[w]
+    end
+  end
   if t.wire then deleteQ[#deleteQ + 1] = t.wire end
   for _, w in ipairs(M.SIGN_WHATS) do if t[w] then deleteQ[#deleteQ + 1] = t[w] end end
   -- and its meshes not made yet (from KyzoFox's 1.5.4, PR #64): a tile sent again under the same key left its old
@@ -315,6 +505,7 @@ local function dropTile(key)
   end
   parked, walkQ, held, createQ = purge(parked), purge(walkQ), purge(held), purge(createQ)
   if t.props then require('beamngEarth/trees').dropKey((key:gsub(':', ':p', 1))) end
+  if t.doorProps then require('beamngEarth/trees').dropKey('g:pd'..t.gkey) end
   if t.guardrails then require('beamngEarth/trees').dropKey((key:gsub(':', ':g', 1))) end
   if t.props then require('beamngEarth/nightlights').dropKey(key) end
   if t.park then require('beamngEarth/parking').dropKey(key) end
@@ -322,6 +513,9 @@ local function dropTile(key)
   if t.sound then require('beamngEarth/ambience').dropSpaces(key) end
   if t.wells then require('beamngEarth/pumpjacks').dropKey(key) end
   tiles[key] = nil
+  if M.refreshBuildingCoverage and t.geo then M.refreshBuildingCoverage(t.gkey) end
+  releaseSurfaceOwners()
+  return true
 end
 
 -- A far tile's street lamps (server buildings.far_lamps: { {x, y, z}, ... }, the far and skyline tiles' streets past
@@ -446,7 +640,7 @@ local function updateCollideRange()
     parked = keep
   end
   for key, t in pairs(tiles) do
-    if t.cq and not M.collideNear(t, M.UNCOLLIDE_M) then
+    if not t.staged and t.cq and not M.collideNear(t, M.UNCOLLIDE_M) and not M.occupied(t) then
       for what, q in pairs(t.cq) do
         if t[what] then deleteQ[#deleteQ + 1] = t[what]; t[what] = nil end
         if not t.ghost then parked[#parked + 1] = q end   -- a ghost's queue entries are the old frame's
@@ -462,16 +656,33 @@ local function isCollider(o)
   return c == 'TSStatic' and o:getField('collisionType', 0) ~= 'None'
 end
 
+function M.setRoadsideWireBlocked(key,blocked)
+  local t=tiles[key]
+  if not t then return end
+  t.roadsideWireBlocked=blocked
+  local o=t.wire and scenetree.findObjectById(t.wire)
+  if o then o:setHidden(blocked) end
+end
+
 -- collide: true ('Visible Mesh Final'), a collision type name, or false / nil (render only)
 local function createWalk(walk, collide)
+  if FS and FS.fileExists and not FS:fileExists(walk.shape) then error('missing shape '..tostring(walk.shape)) end
+  if walk.staged then collide=false end
   local o = createObject('TSStatic')
   o:setField('shapeName', 0, walk.shape)
   -- 'Visible Mesh Final' (the engine's own suggestion: 'Performance: Mesh is using visible collision ... switch the
   -- mesh to Visible Mesh Final'); the same collision (in-game rays, 2026-10-17)
   o:setField('collisionType', 0, type(collide) == 'string' and collide or (collide and 'Visible Mesh Final' or 'None'))
   o:setField('decalType', 0, 'None')
-  o:setField('dynamic', 0, 'true')    -- no redraw of the cached sun shadow map for each tile (farfield.lua spawn)
+  -- Completed building shapes contain native LODs. Their old dynamic=true path
+  -- bypassed the static shape manager (and its instanced LOD crossfade).
+  -- Terrain/road crossovers and provisional shells retain the dynamic path.
+  o:setField('dynamic', 0, walk.nativeLod and not collide and 'false' or 'true')
   o.canSave = false
+  if walk.buildingFade and buildingFade.enabled then
+    o:setField('useInstanceRenderData',0,'true')
+    o:setHidden(true)
+  elseif walk.staged then o:setHidden(true) end
   o:setPosition(vec3(walk.pos[1], walk.pos[2], walk.pos[3]))
   o:registerObject('')
   if walk.rot then        -- (a geotile's part: placed from its tile's frame, M.geoWalk)
@@ -479,7 +690,54 @@ local function createWalk(walk, collide)
     o:setPosRot(walk.pos[1], walk.pos[2], walk.pos[3], r[1], r[2], r[3], r[4])
   end
   group():addObject(o)
+  if walk.buildingFade then
+    buildingFade:register(o:getID())
+    hideBuilding(o:getID(),walk.staged or false)
+  end
   return o:getID()
+end
+
+function M._collisionKind(what,q)
+  if q.renderOnly or what=='road' or what=='wire' then return false end
+  if buildingCollision(what) or what=='walkcol' or what=='railcol' then return 'Collision Mesh' end
+  return 'Visible Mesh Final'
+end
+buildingProgress = require('beamngEarth/buildingprogress').new({
+  create = function(w) loadMaterials(); w.buildingFade=true; return createWalk(w, false) end,
+  hide = hideBuilding,
+  delete = function(id) deleteQ[#deleteQ+1]=id end,
+  made = slotMade, release = slotDrop, slot = msgSlot,
+  reconcile = function(key) M.refreshBuildingCoverage(key) end,
+  blocked = function(key)
+    local t=tiles['g:'..key]
+    local e=buildingProgress.entries[key]
+    return M.skyBlocksBuildings(key) or (t and
+      ((t.buildingFallback and not ownBuildingsReady(t)) or (e and e.attached~=t and ownBuildingsReady(t))))
+  end,
+  hideFar = function(key)
+    local f=far['F:'..key]
+    if f and f.previous then f=f.previous end
+    if f then for _,p in pairs(f.parts or {}) do
+      local o=p.id and scenetree.findObjectById(p.id)
+      if o then hideBuilding(p.id,true);p.hidden=true end
+    end end
+  end,
+  farVisible = function(key)
+    local f=far['F:'..key]
+    if f and f.previous then f=f.previous end
+    if f then for _,p in pairs(f.parts or {}) do if p.id and not p.hidden then return true end end end
+    return false
+  end
+})
+
+function M.onBuildingProgress(msg, currentAnchor)
+  if not M.enabled then
+    for w in pairs(msg.slots or {}) do slotDrop(msgSlot(msg,w)) end
+    return false
+  end
+  local accepted=buildingProgress:receive(msg,currentAnchor)
+  if accepted then M.refreshBuildingCoverage(msg.key) end
+  return accepted
 end
 
 local function createChunk(chunk)
@@ -491,6 +749,15 @@ local function createChunk(chunk)
   for _, n in ipairs(chunk.n) do r:insertNodeNoRegen(vec3(n[1], n[2], n[3]), chunk.w, -1) end
   r:regenerate()
   return r:getId()
+end
+function M._createChunk(chunk,staged)
+  local id=createChunk(chunk)
+  if staged then
+    local o=scenetree.findObjectById(id)
+    local ok=pcall(function() o:setHidden(true) end)
+    if not ok then if o then o:delete() end;error('cannot stage road chunk') end
+  end
+  return id
 end
 
 -- Road geotiles (server --geo-tiles on, hello.roadGeo = M.ROAD_GEO; .claude/work/geotiles_plan.md phase 1c): a road
@@ -599,13 +866,60 @@ function M.mapStations(pl, recs)
 end
 
 -- The rows of tile t (key) handed to their modules, mapped into its current placement (made: replaced in place).
+local function buildingsReady(t)
+  for _,what in ipairs(t.data and t.data.buildingChunks and t.data.buildingChunks.visual or {}) do
+    if not t[what] then return false end
+  end
+  return true
+end
+
+local function flushBuildingDoors(t)
+  if t.pendingDoorProps and buildingsReady(t) then
+    local p=t.pendingDoorProps
+    require('beamngEarth/trees').onGeoRows('pd'..t.gkey,t.gkey,p.items,p.groups,nil,
+      t.frame,t.rowPivot or 0,t.anchorObj)
+    t.pendingDoorProps=nil;t.doorProps=true
+  end
+end
+
+local function vegetationBounds(key,t)
+  if t.geo and t.anchorObj then
+    local z,x,y=geotile.parse(t.gkey)
+    local box={math.huge,math.huge,-math.huge,-math.huge}
+    for _,p in ipairs(geotile.quad(t.anchorObj,z,x,y)) do
+      box[1],box[2],box[3],box[4]=math.min(box[1],p[1]),math.min(box[2],p[2]),math.max(box[3],p[1]),math.max(box[4],p[2])
+    end
+    return box
+  end
+  local x,y=tostring(key):match('(%-?%d+)_(%-?%d+)$')
+  if x then x,y=tonumber(x)*256,tonumber(y)*256; return {x,y,x+256,y+256} end
+end
+local function installVegetationExclusions(key,t,data,pl)
+  retiringSurfaceOwners[key]=nil -- a replacement owner's mask must never be released by an old retirement
+  local trees=require('beamngEarth/trees')
+  if trees.setSurfaceExclusions then
+    trees.setSurfaceExclusions('road:'..key,data.vegetationExclusions,pl,vegetationBounds(key,t))
+  end
+end
+
 local function geoRows(key, t, data, replacing)
   local pl = t.rowPl.pl
+  installVegetationExclusions(key,t,data,pl)
   if type(data.props) == 'table' and type(data.props.items) == 'table' then   -- street lights, poles (trees.lua)
     -- (at a rebase trees.lua places its own geotiles: trees.transform)
     if not replacing then
-      require('beamngEarth/trees').onGeoRows('p' .. t.gkey, t.gkey, data.props.items, data.props.groups, nil,
-        t.frame, t.rowPivot or 0, t.anchorObj)
+      local rows=data.props.items
+      if not buildingsReady(t) then
+        local normal,doors={},{}
+        for _,row in ipairs(rows) do
+          local list=data.props.groups[(row[1] or -1)+1]=='door' and doors or normal
+          list[#list+1]=row
+        end
+        rows=normal
+        if #doors>0 then t.pendingDoorProps={items=doors,groups=data.props.groups} end
+      end
+      require('beamngEarth/trees').onGeoRows('p' .. t.gkey, t.gkey, rows, data.props.groups, nil,
+        t.frame, t.rowPivot or 0, t.anchorObj, key)
     end
     require('beamngEarth/nightlights').onRows(key, M.mapRows(pl, data.props.items, 2, 5), data.props.groups)
     t.props = true
@@ -641,13 +955,13 @@ local function geoRows(key, t, data, replacing)
 end
 
 -- The mesh parts of geotile t queued (each its placement's, made by update); t.exactShape[what]: its exact variant.
-local function queueGeoParts(key, t, data)
-  local lean = t.parts.bldcol ~= nil
-  local leanRail = t.parts.railcol ~= nil
-  for _, what in ipairs(M.CONTENT_WHATS) do
-    if t.parts[what] then
+local function queueGeoParts(key, t, data, visualOnly)
+  local lean = t.leanBuildings or t.parts.bldcol ~= nil
+  local leanRail = t.leanRails or t.parts.railcol ~= nil
+  for _, what in ipairs(meshWhats(M.CONTENT_WHATS, data)) do
+    if t.parts[what] and not t[what] and (not visualOnly or buildingVisual(what)) then
       local q = { key = key, what = what, tile = t, geo = true,
-        renderOnly = what == 'wire' or (lean and what:sub(1, 3) == 'bld' and what ~= 'bldcol') or (leanRail and what == 'rail') }
+        renderOnly = what == 'wire' or (lean and buildingVisual(what)) or (leanRail and what == 'rail') }
       if not q.renderOnly then t.colWant[what] = true end
       if q.renderOnly or M.collideNear(t) then walkQ[#walkQ + 1] = q else parked[#parked + 1] = q end
     end
@@ -669,24 +983,33 @@ function M.geoWalk(t, what)
 end
 
 -- Server message `roads_tile` for a geotile key: its content (data: the JSON; frame, h, slots, exact).
-function M.onGeoTile(msg, currentAnchor, a)
+function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
+  if not admitted then return M._admit(M.onGeoTile,msg,currentAnchor,a,staged,true) end
   a = a or anchorObj
   if not a then return false end
   anchorObj = a
   local ok, data = true, msg.data
   if type(data) ~= 'table' then ok, data = pcall(jsonDecode, readFile(msg.path) or '') end
-  if not ok or type(data) ~= 'table' then
+  if not ok or type(data) ~= 'table' or not validBuildingChunks(data)
+    or not sectorManifest.valid(data,msg.key,sectorManifestRequired) then
     lastError = 'unreadable road geotile ' .. tostring(msg.path)
     return false
   end
-  local key = geoKey(msg.key)
+  local key = staged and staged.key or geoKey(msg.key)
   local old = tiles[key]
   local h = msg.h or data.h
-  if old and old.geo and h and old.h == h and not filesGone(old.parts, old.exactShape) then
+  local filesPresent=old and old.geo and not filesGone(old.parts, old.exactShape)
+  local reuse=filesPresent and data.physicalHash and old.data.physicalHash==data.physicalHash
+  if old and not staged then
+    local handled=M._handover('offer',key,msg,data,currentAnchor,a,reuse or filesPresent and h and old.h==h)
+    if handled~=nil then return handled end
+  end
+  if filesPresent and h and old.h == h then
+    releasePending(old,msg)
+    old.retireRequested=nil
+    buildingProgress:complete(msg.key,msg.buildingProgressToken)
     -- the same content again (a server restart): its objects stay; the new message's slots are not used
-    if type(msg.slots) == 'table' then
-      for w in pairs(msg.slots) do slotDrop(msgSlot(msg, w)) end
-    end
+    releaseSlots(messageSlots(msg),nil,old.slots)
     old.anchor, old.orphan = currentAnchor, nil
     -- (its furniture and guard rails again where trees.lua has them no more: a disconnect clears them all, trees.clear;
     -- the poles near the car were gone after a server restart, their wires, part of the tile, still up: the Stelvio,
@@ -701,19 +1024,51 @@ function M.onGeoTile(msg, currentAnchor, a)
       T.onGeoRows('g' .. old.gkey, old.gkey, data.guardrails.items, data.guardrails.groups, 17, old.frame,
         old.rowPivot or 0, old.anchorObj)
     end
+    M._incomingExact(old,msg,currentAnchor)
     M.geoStats.kept = M.geoStats.kept + 1
     return true
   end
-  if old then dropTile(key) end         -- (new content: its skin comes with it, roads.GeoTracker)
   local frame = geotile.frameOf({ frame = msg.frame or data.frame, key = msg.key })
   if not frame then lastError = 'road geotile without a frame: ' .. tostring(msg.key); return false end
-  local t = { anchor = currentAnchor, geo = true, gkey = msg.key, frame = frame, h = h, objs = {}, queued = 0,
+  -- A quality-only replacement can keep every physical object, skin and prop.
+  -- The server hashes the actual nonvisual bytes, not just their bounds.
+  local fallback=old and old.buildingFallback
+  if old and not fallback and ownBuildingsReady(old) then
+    fallback={frame=old.frame,parts={},slots={},exactShape={},exactOf={}}
+    for what,p in pairs(old.parts) do if buildingVisual(what) then
+      fallback.parts[what]=p;fallback[what]=old[what];old[what]=nil
+      fallback.exactShape[what]=old.exactShape[what];fallback.exactOf[what]=old.exactOf[what]
+      for _,w in ipairs({what,'x:'..what}) do fallback.slots[w]=old.slots[w];old.slots[w]=nil end
+    end end
+  end
+  if old then
+    old.buildingFallback=nil
+    if reuse then
+      for what in pairs(old.parts) do if buildingVisual(what) then
+        if old[what] then hideBuilding(old[what],true);deleteQ[#deleteQ+1]=old[what] end
+        old[what]=nil;old.parts[what]=nil;old.exactShape[what]=nil;old.exactOf[what]=nil
+        for _,w in ipairs({what,'x:'..what}) do slotDrop(old.slots[w]);old.slots[w]=nil end
+      end end
+      local function purge(list)
+        local keep={};for _,q in ipairs(list) do
+          if not (q.tile==old and buildingVisual(q.what)) then keep[#keep+1]=q end
+        end;return keep
+      end
+      walkQ,parked,held=purge(walkQ),purge(parked),purge(held)
+    else dropTile(key,true,true) end -- occupancy checked before detaching visuals
+  end
+  local t = reuse and old or { anchor = currentAnchor, geo = true, gkey = msg.key, frame = frame, h = h, objs = {}, queued = 0,
     colliders = {}, slots = {}, at = now(), colWant = {}, parts = {}, exactShape = {}, exactOf = {} }
+  t.h=h;t.anchor=currentAnchor;t.buildingFallback=fallback
+  t.staged=staged
+  if staged then staged.tile=t end
   local cols = type(data.colliders) == 'table' and data.colliders or {}
   local pivots, np = 0, 0
-  for _, what in ipairs(M.CONTENT_WHATS) do
+  for _, what in ipairs(meshWhats(M.CONTENT_WHATS, data)) do
     local e = data[what]
-    if type(e) == 'table' and e.shape and type(e.pos) == 'table' then
+    if reuse and not buildingVisual(what) then
+      slotDrop(msgSlot(msg,what))
+    elseif type(e) == 'table' and e.shape and type(e.pos) == 'table' then
       local sl = msgSlot(msg, what)
       t.parts[what] = { shape = sl and sl.path or e.shape, pos = e.pos, pivot = tonumber(e.pivot) or 0,
         relief = tonumber(e.relief) or 0 }
@@ -724,36 +1079,80 @@ function M.onGeoTile(msg, currentAnchor, a)
       slotDrop(msgSlot(msg, what))
     end
   end
+  local retainedExact={anchorId=currentAnchor,key=msg.key,contentHash=h,parts={},slots={}}
   for what, path in pairs(type(msg.exact) == 'table' and msg.exact or {}) do
-    if t.parts[what] and type(path) == 'string' then
+    if reuse and not buildingVisual(what) then
+      if type(path)=='string' and t.exactOf[what]~=currentAnchor then
+        retainedExact.parts[what]=path
+        retainedExact.slots[what]=msg.slots and msg.slots['x:'..what]
+      else slotDrop(msgSlot(msg,'x:'..what)) end
+    elseif t.parts[what] and type(path) == 'string' then
       local sl = msgSlot(msg, 'x:' .. what)
       t.exactShape[what] = sl and sl.path or path
       t.exactOf[what] = currentAnchor
       if sl then t.slots['x:' .. what] = sl end
     end
   end
-  t.rowPivot = np > 0 and pivots / np or 0
+  if reuse then
+    for what in pairs(t.parts) do
+      if not buildingVisual(what) and t.exactShape[what] and not (msg.exact and msg.exact[what]) then
+        retainedExact.parts[what]=false -- the base is exact enough in this anchor again
+      end
+    end
+  end
+  if not reuse then t.rowPivot = np > 0 and pivots / np or 0 end
   t.data = data
+  M._fileSessions(t)
   M.placeGeoTile(t, a)
   tiles[key] = t
+  if not staged then buildingProgress:attach(t,msg) end
   sinceChange = stopwatch.new()
-  geoRows(key, t, data)
-  queueGeoParts(key, t, data)
+  if not reuse and not staged then geoRows(key, t, data) end
+  queueGeoParts(key, t, data, reuse)
+  if next(retainedExact.parts) then M.onExact(retainedExact,currentAnchor) end
+  if not staged then flushBuildingDoors(t);M.refreshBuildingCoverage(t.gkey) end
   M.geoStats.tiles = M.geoStats.tiles + 1
   return true
 end
 
 -- Server message `roads_skin` {anchorId, key, data / path, slots}: the draped surfaces of a geotile for this anchor.
 -- The old skin's objects stay until the new ones are made (per part; what the new skin lacks: with its road mesh).
-function M.onSkin(msg, currentAnchor)
-  local t = tiles[geoKey(msg.key)]
+function M.onSkin(msg, currentAnchor, admitted, target)
+  if not admitted then return M._admit(M.onSkin,msg,currentAnchor,true) end
+  local t = target or tiles[geoKey(msg.key)]
   local function release()
     if type(msg.slots) == 'table' then for w in pairs(msg.slots) do slotDrop(msgSlot(msg, w)) end end
   end
   if not t or msg.anchorId ~= currentAnchor then release(); return false end
+  if not target and t.retireRequested then release();return false end
   local ok, data = true, msg.data
   if type(data) ~= 'table' then ok, data = pcall(jsonDecode, readFile(msg.path) or '') end
   if not ok or type(data) ~= 'table' then release(); lastError = 'unreadable road skin ' .. tostring(msg.path); return false end
+  local candidate,transaction
+  if not target then candidate,transaction=M._handover('route',geoKey(msg.key),data.contentHash) end
+  if candidate then
+    if transaction.phase=='awaitFrame' or transaction.phase=='rebaseWait' then
+      releaseSlots(transaction.skinSlots,msg);transaction.skinMsg={};for w,v in pairs(msg) do transaction.skinMsg[w]=v end
+      transaction.skinMsg.data=data;transaction.skinSlots=messageSlots(msg)
+      return true
+    end
+    t=candidate
+  end
+  if t.pendingGeo then
+    local p=t.pendingGeo
+    if data.contentHash~=p.msg.h then release();return false end
+    releaseSlots(p.skinSlots,msg)
+    p.skinMsg={};for w,v in pairs(msg) do p.skinMsg[w]=v end;p.skinMsg.data=data
+    p.skinSlots=messageSlots(msg)
+    return true
+  end
+  if t.physicalReplacement and t.physicalReplacement.kind~='patch' then release();return false end
+  if (sectorManifestRequired and data.contentHash==nil) or (data.contentHash and data.contentHash~=t.h) then
+    release();return false
+  end
+  if not target and not t.staged and (t.skin or t.physicalReplacement) then
+    return M._handover('patch',geoKey(msg.key),'skin',msg,data,currentAnchor,anchorObj)
+  end
   -- the previous skin: its objects kept as the old ones (swapped as the new are made), its queue entries gone
   t.oldSkin = t.oldSkin or {}
   for _, w in ipairs(M.SKIN_WHATS) do
@@ -763,7 +1162,9 @@ function M.onSkin(msg, currentAnchor)
       t[w] = nil
     end
     if t.cq then t.cq[w] = nil end
-    if t.slots[w] then t.oldSkin['s:' .. w] = t.slots[w]; t.slots[w] = nil end
+    if t.slots[w] then
+      slotDrop(t.oldSkin['s:'..w]);t.oldSkin['s:' .. w] = t.slots[w]; t.slots[w] = nil
+    end
   end
   for _, id in ipairs(t.objs) do deleteQ[#deleteQ + 1] = id end
   t.objs, t.queued = {}, 0
@@ -787,7 +1188,7 @@ function M.onSkin(msg, currentAnchor)
     if type(w) == 'table' and w.shape and type(w.pos) == 'table' then
       if sl then w = { shape = sl.path, pos = w.pos }; t.slots[what] = sl end
       t.skin[what] = { shape = w.shape, pos = w.pos }
-      local q = { key = geoKey(msg.key), walk = w, what = what, tile = t, skin = true,
+      local q = { key = t.staged and t.staged.key or geoKey(msg.key), walk = w, what = what, tile = t, skin = true,
         renderOnly = what == 'road' or (leanWalk and what == 'walk') }
       if not q.renderOnly then t.colWant[what] = true end
       t.skin.pending = t.skin.pending + 1
@@ -797,10 +1198,11 @@ function M.onSkin(msg, currentAnchor)
     end
   end
   if not road and type(data.chunks) == 'table' then       -- (no road mesh: DecalRoads, as an anchor tile's)
-    for _, c in ipairs(data.chunks) do createQ[#createQ + 1] = { key = geoKey(msg.key), chunk = c, skin = true, tile = t } end
+    for _, c in ipairs(data.chunks) do createQ[#createQ + 1] = { key = t.staged and t.staged.key or geoKey(msg.key), chunk = c, skin = true, tile = t } end
     t.queued = #data.chunks
   end
   if t.skin.pending == 0 then M.dropOldSkin(t) end
+  M._fileSessions(t)
   M.geoStats.skins = M.geoStats.skins + 1
   sinceChange = stopwatch.new()
   return true
@@ -819,16 +1221,53 @@ end
 
 -- Server message `roads_exact` {anchorId, key, parts {what: path | false}, slots}: parts shown as their exact variant
 -- for this anchor (false: the base shape again), each swapped once its new object is made.
-function M.onExact(msg, currentAnchor)
+function M.onExact(msg, currentAnchor, admitted)
+  if not admitted then return M._admit(M.onExact,msg,currentAnchor,true) end
   local t = tiles[geoKey(msg.key)]
+  if t and t.retireRequested then releaseSlots(messageSlots(msg));return false end
+  local candidate,transaction=M._handover('route',geoKey(msg.key),msg.contentHash)
+  if candidate then
+    if transaction.phase=='awaitFrame' or transaction.phase=='rebaseWait' then
+      releaseSlots(transaction.exactSlots,msg);transaction.exactMsg=msg;transaction.exactSlots=messageSlots(msg)
+      return true
+    end
+    t=candidate
+  end
   if not t or msg.anchorId ~= currentAnchor or type(msg.parts) ~= 'table' then
     if type(msg.slots) == 'table' then for w in pairs(msg.slots) do slotDrop(msgSlot(msg, w)) end end
     return false
   end
+  local count=0
+  for what,path in pairs(msg.parts) do
+    count=count+1
+    if count>4096 or type(what)~='string' or (path~=false and (type(path)~='string' or #path==0 or #path>4096)) then
+      releaseSlots(messageSlots(msg));return false
+    end
+  end
+  if t.pendingGeo then
+    local p=t.pendingGeo
+    if msg.contentHash~=p.msg.h then releaseSlots(messageSlots(msg));return false end
+    releaseSlots(p.exactSlots,msg)
+    p.exactMsg=msg;p.exactSlots=messageSlots(msg)
+    return true
+  end
+  if t.physicalReplacement and t.physicalReplacement.kind~='patch' then releaseSlots(messageSlots(msg));return false end
+  if (sectorManifestRequired and msg.contentHash==nil) or (msg.contentHash and msg.contentHash~=t.h) then
+    releaseSlots(messageSlots(msg));return false
+  end
+  if not t.staged then
+    local live=t.physicalReplacement~=nil
+    for what in pairs(msg.parts) do if t.parts[what] and t[what] then live=true end end
+    if live then return M._handover('patch',geoKey(msg.key),'exact',msg,nil,currentAnchor,anchorObj) end
+  end
   for what, path in pairs(msg.parts) do
     if t.parts[what] then
       local sl = msgSlot(msg, what)
-      if t.slots['x:' .. what] then t.oldPartSlot = t.oldPartSlot or {}; t.oldPartSlot[what] = t.slots['x:' .. what] end
+      if t.slots['x:' .. what] then
+        if t[what] then
+          t.oldPartSlot=t.oldPartSlot or {};slotDrop(t.oldPartSlot[what]);t.oldPartSlot[what]=t.slots['x:'..what]
+        else slotDrop(t.slots['x:'..what]) end
+      end
       t.slots['x:' .. what] = sl
       if path then
         t.exactShape[what] = sl and sl.path or path
@@ -847,16 +1286,33 @@ function M.onExact(msg, currentAnchor)
         local keep = {}
         for _, q in ipairs(walkQ) do if not (q.tile == t and q.what == what) then keep[#keep + 1] = q end end
         walkQ = keep
-        local lean = t.parts.bldcol ~= nil
-        local q = { key = geoKey(msg.key), what = what, tile = t, geo = true, swap = true,
-          renderOnly = what == 'wire' or (lean and what:sub(1, 3) == 'bld' and what ~= 'bldcol')
-            or (t.parts.railcol ~= nil and what == 'rail') }
+        local lean = t.leanBuildings or t.parts.bldcol ~= nil
+        local q = { key = t.staged and t.staged.key or geoKey(msg.key), what = what, tile = t, geo = true, swap = true,
+          renderOnly = what == 'wire' or (lean and buildingVisual(what))
+            or ((t.leanRails or t.parts.railcol ~= nil) and what == 'rail') }
         walkQ[#walkQ + 1] = q
       end
     end
   end
   sinceChange = stopwatch.new()
+  M._fileSessions(t)
   return true
+end
+
+-- A complete body retransmission still carries the current anchor's precision
+-- choices. Equal content hashes must not suppress these independent products.
+function M._incomingExact(t,msg,aid)
+  local parts,slots={},{}
+  for what,path in pairs(msg.exact or {}) do
+    parts[what]=path;slots[what]=msg.slots and msg.slots['x:'..what]
+  end
+  for what in pairs(t.exactShape or {}) do if not (msg.exact and msg.exact[what]) then parts[what]=false end end
+  for _,inputs in ipairs({(t.physicalReplacement and t.physicalReplacement.patchInputs) or {},(t.pendingPatch and t.pendingPatch.inputs) or {}}) do
+    for what in pairs(inputs.exact and inputs.exact.parts or {}) do
+      if not (msg.exact and msg.exact[what]) then parts[what]=false end
+    end
+  end
+  if next(parts) then M.onExact({anchorId=aid,key=t.gkey,contentHash=t.h,parts=parts,slots=slots},aid) end
 end
 
 -- A rebase / teleport near (core.lua): every geotile placed into anchor a (aid): its made parts moved (setPosRot),
@@ -864,12 +1320,24 @@ end
 -- the tiles moved.
 function M.replace(a, aid)
   if not a then return 0 end
+  buildingFade:finish()
+  M._handover('rebase')
   anchorObj = a
+  buildingProgress:place(a)
   local n = 0
   for key, t in pairs(tiles) do
     if t.geo then
+      if t.pendingGeo and t.pendingGeo.anchor~=aid then releasePending(t) end
+      if t.pendingPatch and t.pendingPatch.aid~=aid then M._releasePatch(t);M._handover('resync') end
       t.anchor = aid
       M.placeGeoTile(t, a)
+      if t.buildingFallback then
+        local f=t.buildingFallback;M.placeGeoTile(f,a)
+        for what in pairs(f.parts) do
+          local w=M.geoWalk(f,what);local o=f[what] and scenetree.findObjectById(f[what])
+          if o then o:setPosRot(w.pos[1],w.pos[2],w.pos[3],unpack(w.rot)) end
+        end
+      end
       for what, pp in pairs(t.pls) do
         local p = t.parts[what]
         local x, y, z = pp.xf:apply(p.pos[1], p.pos[2], p.pos[3])
@@ -885,6 +1353,8 @@ function M.replace(a, aid)
         local xf = sk.anchorObj:worldTransformTo(a, pv[1], pv[2], pv[3])
         local qx, qy, qz, qw = xf:beamngQuat()
         local lift = (sk.q or 0) / 2 + M.SKIN_LIFT_M
+        local occupancyXf=geodesy.transformOf(xf.r,{xf.t[1],xf.t[2],xf.t[3]+lift})
+        sk.occupancyInv=occupancyXf:inverse()
         for _, w in ipairs(M.SKIN_WHATS) do
           local e = sk[w]
           local o = e and t[w] and scenetree.findObjectById(t[w])
@@ -897,7 +1367,7 @@ function M.replace(a, aid)
         t.objs, t.queued = {}, 0
         sk.stale = true
       end
-      if t.data then geoRows(key, t, t.data, true) end
+      if t.data and not t.staged then geoRows(key, t, t.data, true) end
       n = n + 1
     end
   end
@@ -905,6 +1375,13 @@ function M.replace(a, aid)
   for _, f in pairs(far) do
     if f.geo then
       f.anchor = aid
+      if f.previous then
+        for _,p in pairs(f.previous.parts) do
+          M._farPartPlace(f.previous,p,a)
+          local o=p.id and scenetree.findObjectById(p.id)
+          if o then o:setPosRot(p.at[1],p.at[2],p.at[3],unpack(p.rot)) end
+        end
+      end
       for _, p in pairs(f.parts) do
         M._farPartPlace(f, p, a)          -- (defined below, with the far geotiles)
         local o = p.id and scenetree.findObjectById(p.id)
@@ -959,6 +1436,7 @@ end
 -- this anchor's and made?
 local function geoMade(t, aid, busy)
   if not t or not t.geo or busy[geoKey(t.gkey)] then return false end
+  if M._physicalPending(t) then return false end
   if not t.skin or t.skin.anchor ~= aid or t.skin.pending > 0 or t.queued > 0 then return false end
   return true
 end
@@ -966,25 +1444,29 @@ M._geoMade = geoMade
 
 -- Server message `roads_tile` {anchorId, key, path, n, data (the file's JSON, optional), slots}. A geotile key
 -- (geotile.lua): onGeoTile (a: the current anchor, geodesy).
-function M.onTile(msg, currentAnchor, a)
+function M.onTile(msg, currentAnchor, a, admitted)
+  if not admitted then return M._admit(M.onTile,msg,currentAnchor,a,true) end
   if not M.enabled then return false end
   switchAnchor(currentAnchor)
   if geotile.isKey(msg.key) then return M.onGeoTile(msg, currentAnchor, a) end
   if msg.anchorId ~= currentAnchor then return false end
   local key = tileKey(msg.anchorId, msg.key)
-  if tiles[key] then dropTile(key) end
   -- the file's JSON in the message (server staging.inline_json: Windows' first read of a file the server just wrote took
   -- up to 0.5 s in the frame), else the file
   local ok, data = true, msg.data
   if type(data) ~= 'table' then ok, data = pcall(jsonDecode, readFile(msg.path) or '') end
-  if not ok or type(data) ~= 'table' or type(data.chunks) ~= 'table' then
+  if not ok or type(data) ~= 'table' or type(data.chunks) ~= 'table' or not validBuildingChunks(data) then
     lastError = 'unreadable road tile ' .. tostring(msg.path)
     return false
   end
+  if tiles[key] then
+    if M.occupied(tiles[key]) then return M._holdReplacement(tiles[key],msg,data,currentAnchor) end
+    dropTile(key,false,true)
+  end
   -- pooled shape files: the server's slot paths instead of the tile's own files
   local slots = {}
-  for _, what in ipairs({ 'road', 'deck', 'walk', 'walkcol', 'bld', 'bld2', 'bld3', 'bld4', 'bldcol', 'wire', 'tunnel', 'rail',
-      'railcol', 'exits', 'mileposts', 'merges', 'speeds' }) do
+  for _, what in ipairs(meshWhats({ 'road', 'deck', 'walk', 'walkcol', 'bld', 'bld2', 'bld3', 'bld4', 'bldcol', 'wire', 'tunnel', 'rail',
+      'railcol', 'exits', 'mileposts', 'merges', 'speeds' }, data)) do
     local sl = msgSlot(msg, what)
     if sl then
       if type(data[what]) == 'table' and type(data[what].pos) == 'table' then
@@ -997,7 +1479,13 @@ function M.onTile(msg, currentAnchor, a)
   end
   local road = type(data.road) == 'table' and data.road.shape and type(data.road.pos) == 'table' and data.road
   tiles[key] = { anchor = msg.anchorId, objs = {}, queued = road and 0 or #data.chunks,
-    colliders = type(data.colliders) == 'table' and data.colliders or {}, slots = slots, at = now(), colWant = {} }
+    colliders = type(data.colliders) == 'table' and data.colliders or {}, slots = slots, at = now(), colWant = {}, data = data }
+  tiles[key].fileSessions={}
+  for _,e in pairs(data) do
+    local s=type(e)=='table' and type(e.shape)=='string' and e.shape:match('^/temp/beamngEarth/([^/]+)/')
+    if s then tiles[key].fileSessions[s]=true end
+  end
+  installVegetationExclusions(key,tiles[key],data)
   sinceChange = stopwatch.new()
   if road then                -- the tile's road mesh replaces its DecalRoads (server/roadmesh.py)
     walkQ[#walkQ + 1] = { key = key, walk = road, what = 'road', tile = tiles[key] }
@@ -1005,7 +1493,7 @@ function M.onTile(msg, currentAnchor, a)
     for _, c in ipairs(data.chunks) do createQ[#createQ + 1] = { key = key, chunk = c } end
   end
   if type(data.props) == 'table' and type(data.props.items) == 'table' then   -- street lights, poles (trees.lua)
-    require('beamngEarth/trees').onRows(msg.anchorId, 'p' .. tostring(msg.key), data.props.items, data.props.groups)
+    require('beamngEarth/trees').onRows(msg.anchorId, 'p' .. tostring(msg.key), data.props.items, data.props.groups, nil, key)
     require('beamngEarth/nightlights').onRows(key, data.props.items, data.props.groups)   -- (the lamps' light)
     tiles[key].props = true
   end
@@ -1058,11 +1546,11 @@ function M.onTile(msg, currentAnchor, a)
   local leanWalk = type(data.walkcol) == 'table' and data.walkcol.shape ~= nil
   local leanRail = type(data.railcol) == 'table' and data.railcol.shape ~= nil
   -- tunnels (server roadmesh.tunnel: tubes and portals) and railway tracks (server railways.py) collide like the decks
-  for _, what in ipairs({ 'walk', 'deck', 'bld', 'bld2', 'bld3', 'bld4', 'bldcol', 'walkcol', 'tunnel', 'rail', 'railcol' }) do
+  for _, what in ipairs(meshWhats({ 'walk', 'deck', 'bld', 'bld2', 'bld3', 'bld4', 'bldcol', 'walkcol', 'tunnel', 'rail', 'railcol' }, data)) do
     local w = data[what]
     if type(w) == 'table' and w.shape and type(w.pos) == 'table' then
       local q = { key = key, walk = w, what = what, tile = tiles[key],
-        renderOnly = (lean and what:sub(1, 3) == 'bld' and what ~= 'bldcol') or (leanWalk and what == 'walk')
+        renderOnly = (lean and buildingVisual(what)) or (leanWalk and what == 'walk')
           or (leanRail and what == 'rail') }
       if not q.renderOnly then tiles[key].colWant[what] = true end
       if q.renderOnly or M.collideNear(tiles[key]) then walkQ[#walkQ + 1] = q else parked[#parked + 1] = q end
@@ -1089,7 +1577,7 @@ function M.onFarTile(msg, currentAnchor, kind)
   if type(data) ~= 'table' then ok, data = pcall(jsonDecode, readFile(msg.path) or '') end
   if not ok or type(data) ~= 'table' then lastError = 'unreadable far building tile ' .. tostring(msg.path); return false end
   local key = tileKey(msg.anchorId, (kind or '') .. msg.key)
-  if not kind then farSeen[key] = true end
+  if not kind then farSeen[key] = nil end
   local old = far[key]
   if old then farLamps(key, old, false) end
   if old and old.id then deleteQ[#deleteQ + 1] = old.id end
@@ -1103,9 +1591,11 @@ function M.onFarTile(msg, currentAnchor, kind)
                  sky = sky and { tonumber(ux), tonumber(uy) } or nil,
                  deckOf = kind == 'B' and tileKey(msg.anchorId, msg.key) or nil,
                  lamps = type(data.lamps) == 'table' and #data.lamps > 0 and data.lamps or nil }
+    M._fileSessions(far[key])
     farQ[#farQ + 1] = key
   else
     slotDrop(sl)
+    if not kind then farSeen[key] = true end -- confirmed empty coverage
   end
   return true
 end
@@ -1211,16 +1701,31 @@ local function farGeoLamps(f, on)
 end
 
 -- A far geotile goes (its objects, slots and lamps).
+local function retireFar(f)
+  if not f then return end
+  farGeoLamps(f,false)
+  for _,p in pairs(f.parts) do
+    if p.id then hideBuilding(p.id,true);deleteQ[#deleteQ+1]=p.id end
+    slotDrop(p.slot)
+  end
+end
+
+local function farReady(f)
+  for _,p in pairs(f.parts) do if not p.id then return false end end
+  return true
+end
+
 function M.dropFarGeo(key)
   local f = far[key]
   if not f or not f.geo then return false end
-  farGeoLamps(f, false)
-  for _, p in pairs(f.parts) do
-    if p.id then deleteQ[#deleteQ + 1] = p.id end
-    slotDrop(p.slot)
-  end
+  retireFar(f.previous);retireFar(f)
   if f.kind == 'F' then farSeen[key] = nil end
   far[key] = nil
+  if M.refreshBuildingCoverage and f.kind~='B' then
+    if f.kind=='S' then
+      for _,child in ipairs(f.skyKeys or (f.previous and f.previous.skyKeys) or {}) do M.refreshBuildingCoverage(child:sub(3)) end
+    else M.refreshBuildingCoverage(f.gkey) end
+  end
   return true
 end
 
@@ -1242,7 +1747,6 @@ function M.onFarGeo(msg, currentAnchor, kind)
     return false
   end
   local key = farGeoKey(k, msg.key)
-  if k == 'F' then farSeen[key] = true end
   local old = far[key]
   local h = data.h
   if old and old.geo and h ~= nil and old.h == h and not filesGone(old.parts) then
@@ -1251,14 +1755,27 @@ function M.onFarGeo(msg, currentAnchor, kind)
     M.geoStats.farKept = (M.geoStats.farKept or 0) + 1
     return true
   end
-  if old then
-    if old.geo then M.dropFarGeo(key) else far[key] = nil end
-    if k == 'F' then farSeen[key] = true end
-  end
   local frame = geotile.frameOf({ frame = msg.frame or data.frame, key = msg.key })
   if not frame then release(); lastError = 'far geotile without a frame: ' .. tostring(msg.key); return false end
+  if k~='B' and data.shape~=nil and (type(data.shape)~='string' or type(data.pos)~='table'
+    or type(data.pos[1])~='number' or type(data.pos[2])~='number' or type(data.pos[3])~='number') then
+    release();lastError='invalid far building shape';return false
+  end
+  local previous
+  if old then
+    if old.geo and k~='B' then
+      if old.previous then previous=old.previous;retireFar(old)
+      elseif farReady(old) then previous=old
+      else retireFar(old) end
+      -- Stale queue entries identify only key/sub, so discard them before
+      -- queuing a replacement with the same identity.
+      local keep={};for _,q in ipairs(farQ) do
+        if q:sub(1,#key+1)~=key..'#' then keep[#keep+1]=q end
+      end;farQ=keep
+    elseif old.geo then M.dropFarGeo(key) else far[key]=nil end
+  end
   local f = { geo = true, kind = k, gkey = msg.key, frame = frame, h = h, anchor = currentAnchor, parts = {},
-    lamps = type(data.lamps) == 'table' and next(data.lamps) ~= nil and data.lamps or nil }
+    previous=previous,lamps = type(data.lamps) == 'table' and next(data.lamps) ~= nil and data.lamps or nil }
   if k == 'S' then
     local z, x, y = geotile.parse(msg.key)
     f.sky = { z, x, y }
@@ -1285,7 +1802,11 @@ function M.onFarGeo(msg, currentAnchor, kind)
     end
   end
   release(used)
+  M._fileSessions(f)
   far[key] = f
+  if farReady(f) then retireFar(f.previous);f.previous=nil end
+  if k=='F' then farSeen[key]=(farReady(f) or f.previous~=nil) or nil end
+  if k~='B' then M.refreshBuildingCoverage(f.gkey) end
   M.geoStats.far = (M.geoStats.far or 0) + 1
   return true
 end
@@ -1294,10 +1815,12 @@ end
 -- (tk: its key in tiles, 'g:' .. gkey, when the caller has it: the far geotiles ask every frame)
 local BLD_WHATS = { 'bld', 'bld2', 'bld3', 'bld4' }
 function M.nearShowsBuildings(gkey, tk)
+  if buildingProgress:covers(gkey) then return true end
   local t = tiles[tk or geoKey(gkey)]
   if not t or not t.geo then return false end
-  for _, what in ipairs(BLD_WHATS) do
-    if t.parts[what] and not t[what] then return false end
+  if t.buildingFallback then return true end
+  for _, what in ipairs(t.data and t.data.buildingChunks and t.data.buildingChunks.visual or BLD_WHATS) do
+    if t.parts[what] and not t[what] and not (t.oldPart and t.oldPart[what]) then return false end
   end
   return true
 end
@@ -1314,6 +1837,7 @@ end
 -- Pure-ish: is far geotile f's part sub hidden now (the ownership rule above)?
 function M.farGeoHidden(f, sub)
   if f.kind == 'S' then
+    if f.covered~=nil then return f.covered end
     if not f.skyKeys then           -- (its square's far buildings tiles' keys, once)
       local z, x, y = f.sky[1], f.sky[2], f.sky[3]
       if not z then return false end
@@ -1323,30 +1847,90 @@ function M.farGeoHidden(f, sub)
         for i = 0, n - 1 do f.skyKeys[#f.skyKeys + 1] = farGeoKey('F', geotile.key(x * n + i, y * n + j, geotile.Z)) end
       end
     end
-    for _, k in ipairs(f.skyKeys) do if not farSeen[k] then return false end end
+    for _, k in ipairs(f.skyKeys) do
+      if not farSeen[k] and not M.nearShowsBuildings(k:sub(3)) then f.covered=false;return false end
+    end
+    f.covered=true
     return true
   end
   local p = f.parts[sub]
   if not p or not p.near then return false end
   p.nearKey = p.nearKey or geoKey(p.near)
   if f.kind == 'B' then return M.nearShowsDeck(p.near, p.nearKey) end
-  return M.nearShowsBuildings(p.near, p.nearKey)
+  return M.nearShowsBuildings(p.near, p.nearKey) or M.skyBlocksBuildings(p.near)
+end
+
+local function skylineFor(key)
+  local z,x,y=geotile.parse(key)
+  if not z then return nil end
+  local f
+  if z==15 then f=far[farGeoKey('S',key)]
+  elseif z==geotile.Z then f=far[farGeoKey('S',geotile.key(math.floor(x/4),math.floor(y/4),15))] end
+  return f and (not farReady(f) and f.previous or f)
+end
+
+function M.skyBlocksBuildings(key)
+  local f=skylineFor(key)
+  if not f or not next(f.parts) then return false end
+  for _,p in pairs(f.parts) do if not p.id then return false end end
+  return not M.farGeoHidden(f)
 end
 
 local function updateFarGeo(key, f)
+  if f.previous then f=f.previous end
   local shown = false
   for sub, p in pairs(f.parts) do
     if p.id then
       local hide = M.farGeoHidden(f, sub)
       if hide ~= (p.hidden or false) then
         local o = scenetree.findObjectById(p.id)
-        if o then o:setHidden(hide) end
+        if o then hideBuilding(p.id,hide) end
         p.hidden = hide
       end
       if not hide then shown = true end
     end
   end
   if f.lamps then farGeoLamps(f, shown) end
+end
+
+-- Coverage changes are applied in their completion/drop frame, independently
+-- of the round-robin maintenance scan. A skyline's 16 children form one atomic
+-- coverage group: no early parent retirement, no coplanar partial overlap.
+function M.refreshBuildingCoverage(key)
+  local current=tiles[geoKey(key)]
+  if current and ownBuildingsReady(current) then dropBuildingFallback(current) end
+  local sky=skylineFor(key)
+  local keys={farGeoKey('F',key)}
+  if sky then
+    -- Coverage changes only on import, cancellation, replacement or drop. Avoid
+    -- re-scanning 16 children for every far object in the frame maintenance loop.
+    sky.covered=nil
+    M.farGeoHidden(sky) -- also establishes children for a confirmed empty skyline
+    updateFarGeo(farGeoKey('S',sky.gkey),sky)
+    keys=sky.skyKeys or keys
+  end
+  for _,fk in ipairs(keys) do
+    local f=far[fk]
+    if f then updateFarGeo(fk,f) end
+    local gkey=fk:sub(3)
+    local t=tiles[geoKey(gkey)]
+    if t and t.buildingFallback then
+      for what in pairs(t.buildingFallback.parts) do
+        hideBuilding(t.buildingFallback[what],M.skyBlocksBuildings(gkey))
+      end
+    end
+    if buildingProgress.entries[gkey] then buildingProgress:visibility(gkey,true)
+    else
+      local t=tiles[geoKey(gkey)]
+      if t then
+        local hidden=M.skyBlocksBuildings(gkey) or (not ownBuildingsReady(t)
+          and (t.buildingFallback~=nil or buildingProgress.api.farVisible(gkey)))
+        for what in pairs(t.parts) do if buildingVisual(what) and t[what] then
+          hideBuilding(t[what],hidden)
+        end end
+      end
+    end
+  end
 end
 
 -- The far tiles' hide checks, round-robin: at most FAR_CHECKS_PER_FRAME a frame (all ~600 of them every frame cost
@@ -1372,13 +1956,14 @@ local function updateFarOne(key, f)
       end
       if hide ~= (f.hidden or false) then
         local o = scenetree.findObjectById(f.id)
-        if o then o:setHidden(hide) end
+        if o then hideBuilding(f.id,hide) end
         f.hidden = hide
       end
     end
     if f.lamps and not f.geo then farLamps(key, f, f.id ~= nil and not f.hidden) end
 end
-local function updateFar(gov)
+local function updateFar(gov, importOnly)
+  if not importOnly then
   if farCursor ~= nil and far[farCursor] == nil then farCursor = nil end     -- (gone: next() cannot go on from it)
   local key, f = next(far, farCursor)
   local wrapped = farCursor == nil
@@ -1394,7 +1979,8 @@ local function updateFar(gov)
     farCursor = key
     key, f = next(far, key)
   end
-  while #farQ > 0 and #walkQ == 0 and gov:try('roadWalk') do
+  end
+  while #farQ > 0 and (importOnly or #walkQ == 0) and not deferImports and importsThisFrame < M.MAX_IMPORTS_PER_FRAME and gov:try('roadWalk') do
     local key = table.remove(farQ, 1)
     local gk, sub = key:match('^(.-)#(.*)$')
     local f = far[gk or key]
@@ -1403,12 +1989,16 @@ local function updateFar(gov)
       local t0 = now()
       loadMaterials()
       farPartPlace(f, p, anchorObj)
-      local ok, id = pcall(createWalk, { shape = p.shape, pos = p.at, rot = p.rot }, false)
-      if ok then
+      importsThisFrame = importsThisFrame + 1
+      local ok, id = pcall(createWalk, { shape = p.shape, pos = p.at, rot = p.rot, buildingFade=f.kind~='B' }, false)
+      if ok and id then
         p.id = id
         slotMade(id, p.shape)
+        if farReady(f) then retireFar(f.previous);f.previous=nil end
         p.hidden = M.farGeoHidden(f, sub)
-        if p.hidden then scenetree.findObjectById(id):setHidden(true) end
+        hideBuilding(id,p.hidden)
+        if f.kind=='F' then farSeen[gk]=true end
+        if f.kind~='B' then M.refreshBuildingCoverage(f.gkey) end
       else lastError = tostring(id) end
       local ms = now() - t0
       gov:charge('roadWalk', ms)
@@ -1416,8 +2006,13 @@ local function updateFar(gov)
     elseif f and not f.geo and not f.id then
       local t0 = now()
       loadMaterials()
-      local ok, id = pcall(createWalk, { shape = f.shape, pos = f.pos }, false)
-      if ok then f.id = id; slotMade(id, f.shape) else lastError = tostring(id) end
+      importsThisFrame = importsThisFrame + 1
+      local ok, id = pcall(createWalk, { shape = f.shape, pos = f.pos, buildingFade=true }, false)
+      if ok and id then
+        f.id = id; slotMade(id, f.shape)
+        if not f.sky and not f.deckOf then farSeen[key]=true end
+        updateFarOne(key,f)
+      else lastError = tostring(id) end
       local ms = now() - t0
       gov:charge('roadWalk', ms)
       noteUnit('bldfar', ms, f.shape)
@@ -1473,11 +2068,15 @@ function M.transform(xf, geodesy)
   local any = false
   for key, t in pairs(tiles) do
     if t.geo then goto continue end        -- (placed again by M.replace)
+    releasePending(t)
+    t.retentionInv=occupancy.rebaseInverse(t.retentionInv,xf)
     t.q = newQ(t.q or { 0, 0, 0, 1 })
-    for _, what in ipairs(WHATS) do moveObj(t[what], t.q) end
+    for _, what in ipairs(meshWhats(WHATS, t.data)) do moveObj(t[what], t.q) end
     for _, id in ipairs(t.objs) do deleteQ[#deleteQ + 1] = id end
     t.objs, t.queued, t.cq = {}, 0, nil
     if t.cx then t.cx, t.cy = xf:apply(t.cx, t.cy, 0) end
+    local trees=require('beamngEarth/trees')
+    if trees.transformSurfaceExclusions then trees.transformSurfaceExclusions('road:'..key,xf) end
     t.ghost = true
     any = true
     ::continue::
@@ -1576,8 +2175,9 @@ local function releaseGhosts(player)
       local far = p and t.cx and ghostSince() > M.GHOST_FAR_WAIT_S * 1000
         and M.boxGap(p.x, p.y, t.cx, t.cy, M.TILE_M / 2) > M.GHOST_FAR_M
       if all or far or (t.cx and (t.signOnly and covered0(signsDone, t.cx, t.cy) or (not t.signOnly and covered(done, t.cx, t.cy, busyKeys)))) then
-        dropTile(key)
-        if not t.signOnly then collisionDirty = true end
+        if dropTile(key) then
+          if not t.signOnly then collisionDirty = true end
+        else left=true end
       else left = true end
     end
   end
@@ -1608,44 +2208,379 @@ local function step(name)
   M.steps[name] = t - stepT0
   stepT0 = t
 end
+local handoverResync=false
+function M.takeResync() local wanted=handoverResync;handoverResync=false;return wanted end
+function M._tileIds(t)
+  local ids,seen={},{}
+  local function add(id) if type(id)=='number' and not seen[id] then seen[id]=true;ids[#ids+1]=id end end
+  for _,id in ipairs(t.objs or {}) do add(id) end
+  for _,what in ipairs(meshWhats({'road','walk','walkcol','deck','bld','bld2','bld3','bld4','bldcol','wire','tunnel','rail','railcol'},t.data)) do add(t[what]) end
+  for _,what in ipairs(M.SIGN_WHATS) do add(t[what]) end
+  for _,id in pairs(t.oldPart or {}) do add(id) end
+  for _,id in pairs(t.oldSkin or {}) do add(id) end
+  for what in pairs(t.buildingFallback and t.buildingFallback.parts or {}) do add(t.buildingFallback[what]) end
+  return ids
+end
+function M._releasePatch(t)
+  if t.pendingPatch then releaseSlots(t.pendingPatch.tokens);t.pendingPatch=nil end
+end
+function M._cancelQueued(t) releasePending(t);M._releasePatch(t) end
+function M._normalizeExact(t,input,aid)
+  if not input then return end
+  for w,v in pairs(input.parts) do
+    local sl=input.slots and input.slots[w];local old=t.slots['x:'..w]
+    local same=old and sl and old.path==sl[1] and old[2]==tonumber(sl[2]) and t.exactOf[w]==aid
+    if (v==false and not t.exactShape[w]) or (v~=false and same) then
+      input.parts[w]=nil;if input.slots then input.slots[w]=nil end
+    end
+  end
+end
+function M._sameExact(a,b)
+  if not a or not b then return a==b end
+  for _,pair in ipairs({{a,b},{b,a}}) do
+    for w,v in pairs(pair[1].parts) do
+      local sa,sb=pair[1].slots and pair[1].slots[w],pair[2].slots and pair[2].slots[w]
+      if pair[2].parts[w]~=v or (sa==nil)~=(sb==nil) or (sa and (sa[1]~=sb[1] or sa[2]~=sb[2])) then return false end
+    end
+  end
+  return true
+end
+function M._holdPatch(t,kind,msg,data,aid,r)
+  local previous=t.pendingPatch and t.pendingPatch.inputs or
+    (r and (r.phase=='loading' or r.phase=='prepared') and r.patchInputs) or {}
+  local inputs={};for k,v in pairs(previous) do inputs[k]=v end
+  if kind=='skin' then
+    local copy={};for k,v in pairs(msg) do copy[k]=v end;copy.data=data;inputs.skin=copy
+  else
+    local copy={key=msg.key,anchorId=aid,contentHash=msg.contentHash,parts={},slots={}}
+    if inputs.exact then
+      for w,v in pairs(inputs.exact.parts) do copy.parts[w]=v end
+      for w,v in pairs(inputs.exact.slots or {}) do copy.slots[w]=v end
+    end
+    for w,v in pairs(msg.parts) do copy.parts[w]=v;copy.slots[w]=msg.slots and msg.slots[w] or nil end
+    if not r or r.phase=='loading' or r.phase=='prepared' then M._normalizeExact(t,copy,aid) end
+    inputs.exact=copy
+  end
+  if r and (r.phase=='loading' or r.phase=='prepared') and not t.pendingPatch
+    and inputs.skin==r.patchInputs.skin and M._sameExact(inputs.exact,r.patchInputs.exact) then return false end
+  local p={inputs=inputs,aid=aid,h=t.h,tokens={}}
+  local files={parts={}}
+  for _,input in pairs(inputs) do for _,sl in ipairs(messageSlots(input)) do p.tokens[#p.tokens+1]=sl end end
+  files.skin=inputs.skin and inputs.skin.data
+  for w,path in pairs(inputs.exact and inputs.exact.parts or {}) do files.parts[w]={shape=path} end
+  M._fileSessions(files);p.fileSessions=files.fileSessions
+  M._releasePatch(t);t.pendingPatch=p
+end
+function M._buildPatch(r,aid,a)
+  local old=r.old
+  local t={anchor=aid,geo=true,gkey=old.gkey,frame=old.frame,h=old.h,data=old.data,
+    objs={},queued=0,colliders={},slots={},parts={},exactShape={},exactOf={},colWant={},at=now(),
+    rowPivot=old.rowPivot,staged=r,leanBuildings=old.parts.bldcol~=nil,leanRails=old.parts.railcol~=nil}
+  r.tile=t;r.targets={};r.exactTargets={};r.hasSkin=r.patchInputs.skin~=nil;r.needsSkin=r.hasSkin
+  tiles[r.key]=t
+  local input=r.patchInputs.exact
+  for what,path in pairs(input and input.parts or {}) do
+    if old.parts[what] then
+      local p={};for k,v in pairs(old.parts[what]) do p[k]=v end;t.parts[what]=p
+      t.colliders[what]=old.colliders[what];r.targets[what]=true;r.exactTargets[what]=true
+      if path~=false then
+        local sl=msgSlot(input,what);t.slots['x:'..what]=sl
+        t.exactShape[what]=sl and sl.path or path;t.exactOf[what]=aid
+      end
+    end
+  end
+  M.placeGeoTile(t,a)
+  queueGeoParts(r.key,t,t.data)
+  if r.hasSkin then
+    for _,w in ipairs(M.SKIN_WHATS) do r.targets[w]=true end
+    if not M.onSkin(r.patchInputs.skin,aid,true,t) then return false end
+  end
+  M._fileSessions(t)
+  return true
+end
+function M._patchOldView(r)
+  local selected={}
+  for what in pairs(r.targets) do
+    if (r.old.retentionColliders and r.old.retentionColliders[what]) or (r.old.cq and r.old.cq[what]) then selected[what]=true end
+  end
+  return setmetatable({retentionColliders=selected},{__index=r.old})
+end
+function M._patchOldIds(r)
+  local ids,seen={},{}
+  local function add(id) if type(id)=='number' and not seen[id] then seen[id]=true;ids[#ids+1]=id end end
+  for what in pairs(r.targets) do
+    add(r.old[what]);add(r.old.oldPart and r.old.oldPart[what]);add(r.old.oldSkin and r.old.oldSkin[what])
+  end
+  if r.hasSkin then for _,id in ipairs(r.old.objs) do add(id) end end
+  return ids
+end
+function M._commitPatch(r)
+  local old,t=r.old,r.tile
+  local function purge(list)
+    local keep={}
+    for _,q in ipairs(list) do
+      if q.tile~=old or not (r.targets[q.what] or (r.hasSkin and q.skin)) then keep[#keep+1]=q end
+    end
+    return keep
+  end
+  walkQ,parked,held,createQ=purge(walkQ),purge(parked),purge(held),purge(createQ)
+  for _,id in ipairs(M._patchOldIds(r)) do hideBuilding(id,true);deleteQ[#deleteQ+1]=id end
+  for what in pairs(r.targets) do
+    local prior=old[what]
+    old[what]=t[what]
+    if buildingVisual(what) then buildingProgress:replaceInstance(old,prior,t[what]) end
+    if old.oldPart then old.oldPart[what]=nil end
+    if old.oldPartSlot then slotDrop(old.oldPartSlot[what]);old.oldPartSlot[what]=nil end
+    if old.oldSkin then slotDrop(old.oldSkin['s:'..what]);old.oldSkin[what]=nil;old.oldSkin['s:'..what]=nil end
+    if r.exactTargets[what] then
+      slotDrop(old.slots['x:'..what]);old.slots['x:'..what]=t.slots['x:'..what]
+      old.exactShape[what]=t.exactShape[what];old.exactOf[what]=t.exactOf[what]
+    else
+      slotDrop(old.slots[what]);old.slots[what]=t.slots[what]
+      old.colliders[what]=t.colliders[what]
+    end
+    old.cq=old.cq or {};old.cq[what]=t.cq and t.cq[what]
+    if old.cq[what] then old.cq[what].key=r.parent;old.cq[what].tile=old end
+    old.colWant[what]=t.colWant[what]
+    old.retentionColliders=old.retentionColliders or {};old.retentionColliders[what]=t.retentionColliders and t.retentionColliders[what]
+    old.colReload=old.colReload or {};old.colReload[what]=old.cq[what] and reloads or nil
+    old.colAt=old.colAt or {};old.colAt[what]=old.cq[what] and lastReloadAt or nil
+    hideBuilding(old[what],false)
+  end
+  if r.hasSkin then
+    old.skin=t.skin;old.objs=t.objs;old.queued=0
+    for _,id in ipairs(old.objs) do hideBuilding(id,false) end
+  end
+  if old.oldSkin and next(old.oldSkin)==nil then old.oldSkin=nil end
+  old.retireRequested=r.retire or old.retireRequested
+  tiles[r.key]=nil
+  M._fileSessions(old);buildingProgress:sync(old);M.refreshBuildingCoverage(old.gkey)
+end
+physicalHandover=require('beamngEarth/physicalhandover').new({
+  lookup=function(key) return tiles[key] end,
+  build=function(r,msg,aid,a) return M.onGeoTile(msg,aid,a,r) end,
+  hold=function(t,msg,data,aid) return M._holdReplacement(t,msg,data,aid) end,
+  consumePending=M._cancelQueued,
+  cancelPending=M._cancelQueued,
+  holdPatch=M._holdPatch,
+  normalizePatch=function(t,p,aid) M._normalizeExact(t,p.inputs.exact,aid) end,
+  releasePatch=M._releasePatch,
+  releasePatchTokens=function(p) releaseSlots(p.tokens) end,
+  buildPatch=M._buildPatch,
+  available=function(records)
+    if #deleteQ>0 then return false end
+    local count=0;for _ in pairs(records) do count=count+1 end
+    return count<M.MAX_PHYSICAL_STAGES
+  end,
+  releaseDuplicate=function(msg,r)
+    releasePending(r.old)
+    if r.kind=='patch' then M._incomingExact(r.old,msg,msg.anchorId or r.aid) end
+    releaseSlots(messageSlots(msg))
+  end,
+  frame=function() return engineDebt.frame end,
+  requestCollision=function() M.requestCollision(true) end,
+  resync=function() handoverResync=true end,
+  destroy=function(r)
+    if tiles[r.key] then dropTile(r.key,true,true) end
+    releaseSlots(r.skinSlots);releaseSlots(r.exactSlots)
+  end,
+  ready=function(r)
+    local t=r.tile
+    if not t or t.importFailed or (t.queued or 0)>0 then return false end
+    for what in pairs(t.parts) do if not t[what] then return false end end
+    if r.needsSkin and (not t.skin or t.skin.pending>0 or t.skin.anchor~=t.anchor) then return false end
+    return not t.skin or t.skin.pending==0
+  end,
+  clear=function(r) return not M.occupied(r.kind=='patch' and M._patchOldView(r) or r.old,true) and not M.occupied(r.tile,true) end,
+  direct=function(r)
+    if r.kind~='patch' or next(r.tile.cq or {}) then return false end
+    for _,id in ipairs(M._patchOldIds(r)) do local o=scenetree.findObjectById(id);if o and isCollider(o) then return false end end
+    return true
+  end,
+  swapCollision=function(r)
+    local changes={}
+    for _,id in ipairs(r.kind=='patch' and M._patchOldIds(r) or M._tileIds(r.old)) do
+      local o=scenetree.findObjectById(id)
+      if o and isCollider(o) then changes[#changes+1]={o=o,old=o:getField('collisionType',0),new='None',id=id,retiring=true} end
+    end
+    for what,q in pairs(r.tile.cq or {}) do
+      local id=r.tile[what];local o=id and scenetree.findObjectById(id)
+      if not o then return false end
+      changes[#changes+1]={o=o,old=o:getField('collisionType',0),new=M._collisionKind(what,q),id=id}
+    end
+    local function undo()
+      for _,c in ipairs(changes) do pcall(c.o.setField,c.o,'collisionType',0,c.old) end
+    end
+    local ok,err=pcall(function()
+      for _,c in ipairs(changes) do
+        if c.retiring and objSlot[c.id] then engineDebt:deleted(objSlot[c.id]) end
+        c.o:setField('collisionType',0,c.new)
+      end
+    end)
+    if not ok then undo();lastError=tostring(err);return false end
+    return true,undo
+  end,
+  commit=function(r)
+    if r.kind=='patch' then return M._commitPatch(r) end
+    local t=r.tile;local pending=r.old.pendingGeo;r.old.pendingGeo=nil
+    tiles[r.key]=nil
+    dropTile(r.parent,true,true)
+    tiles[r.parent]=t;t.staged=nil;t.pendingGeo=pending;t.retireRequested=r.retire or nil
+    for _,list in ipairs({walkQ,parked,held,createQ}) do
+      for _,q in ipairs(list) do if q.tile==t then q.key=r.parent end end
+    end
+    for _,q in pairs(t.cq or {}) do q.key=r.parent end
+    for _,id in ipairs(M._tileIds(t)) do
+      hideBuilding(id,false)
+    end
+    for what in pairs(t.cq or {}) do
+      t.colAt=t.colAt or {};t.colAt[what]=lastReloadAt
+      t.colReload=t.colReload or {};t.colReload[what]=reloads
+    end
+    buildingProgress:drop(t.gkey)
+    buildingProgress:attach(t,r.msg)
+    local ok,err=pcall(geoRows,r.parent,t,t.data)
+    if not ok then lastError=tostring(err) end
+    flushBuildingDoors(t);M.refreshBuildingCoverage(t.gkey)
+  end,
+  after=function(r)
+    local t=tiles[r.parent]
+    if r.skinMsg then M.onSkin(r.skinMsg,t.anchor);releaseSlots(r.skinSlots) end
+    if r.exactMsg then M.onExact(r.exactMsg,t.anchor);releaseSlots(r.exactSlots) end
+  end,
+})
+function M._handover(event,...)
+  if event=='offer' then return physicalHandover:offer(...) end
+  if event=='route' then return physicalHandover:route(...) end
+  if event=='patch' then return physicalHandover:patch(...) end
+  if event=='rebase' then return physicalHandover:rebase() end
+  if event=='clear' then return physicalHandover:clear() end
+  if event=='busy' then return physicalHandover:busy() end
+  if event=='resync' then handoverResync=true end
+end
+function M._physicalPending(t)
+  local r=t and t.physicalReplacement
+  return r and (r.phase=='awaitFrame' or r.phase=='rebaseWait' or r.phase=='submitting') or false
+end
+function M._solid(t,what)
+  if not t[what] or M._physicalPending(t) then return false end
+  local epoch=t.colReload and t.colReload[what]
+  if epoch then return epoch<=reloads end
+  return ((t.colAt and t.colAt[what]) or math.huge)<lastReloadAt
+end
+function M._rebuildCollision()
+  local changed=physicalHandover:beforeRebuild()
+  local ok,err=pcall(be.reloadCollision,be)
+  physicalHandover:submitted(changed,ok)
+  if not ok then lastError=tostring(err);return false end
+  return true
+end
+-- Keep lifecycle work outside update's already-large closure (LuaJIT has a
+-- strict 60-upvalue limit). It shares the existing queues and import governor.
+function M._lifetime(event,currentAnchor)
+  if event=='begin' then
+    inUpdate,actorPositions=true,nil
+    for _,key in ipairs(engineDebt:step()) do
+      local d=slotDropped[key]
+      if d and not slotLive[key] then slotDropped[key]=nil;slotsGone[#slotsGone+1]=d end
+    end
+  elseif event=='end' then inUpdate,actorPositions=false,nil
+  elseif event=='submitted' then engineDebt:submitted()
+  elseif event=='stats' then
+    local out=engineDebt:stats();out.pendingPhysical=0;out.occupiedRetirements=0
+    for _,t in pairs(tiles) do
+      if t.pendingGeo then out.pendingPhysical=out.pendingPhysical+1 end
+      if t.pendingPatch then out.pendingPhysical=out.pendingPhysical+1 end
+      if t.physicalReplacement then out.pendingPhysical=out.pendingPhysical+1 end
+      if t.retireRequested then out.occupiedRetirements=out.occupiedRetirements+1 end
+    end
+    out.transactions=physicalHandover.stats
+    out.activeTransactions=0;for _ in pairs(physicalHandover.records) do out.activeTransactions=out.activeTransactions+1 end
+    out.owners=0;out.ownedFiles=0
+    for _,ref in pairs(slotRefs) do out.owners=out.owners+ref.count;out.ownedFiles=out.ownedFiles+1 end
+    return out
+  elseif event=='retry' then
+    physicalHandover:step()
+    for key,t in pairs(tiles) do
+      if not t.staged and t.retireRequested and not M.occupied(t) then dropTile(key)
+      elseif not t.staged and not t.physicalReplacement and t.pendingGeo and physicalHandover:canStage()
+        and (geotile.isKey(t.pendingGeo.msg.key) or not M.occupied(t)) then
+        local p=t.pendingGeo
+        if p.anchor==currentAnchor and (anchorObj or not geotile.isKey(p.msg.key)) then
+          t.pendingGeo=nil
+          if M.onTile(p.msg,currentAnchor,anchorObj) then
+            if p.skinMsg then M.onSkin(p.skinMsg,currentAnchor) end
+            if p.exactMsg then M.onExact(p.exactMsg,currentAnchor) end
+          end
+          releaseSlots(p.slots);releaseSlots(p.skinSlots);releaseSlots(p.exactSlots)
+        elseif p.anchor~=currentAnchor then releasePending(t) end
+      elseif not t.staged and not t.physicalReplacement and not t.pendingGeo and t.pendingPatch and physicalHandover:canStage() then
+        physicalHandover:resumePatch(key,currentAnchor,anchorObj)
+      end
+    end
+  end
+end
 function M.update(gov, currentAnchor, player, view, a)
+  buildingFade:update()
+  M._lifetime('begin')
   stepT0 = stepClock()
+  importsThisFrame, deferImports = 0, false
   viewAt = view
   if a then anchorObj = a end
-  if prewarmWant then prewarmNow()
+  if prewarmWant then
+    if gov:try('roadWalk') then
+      local t0 = now()
+      if prewarmNow() then
+        importsThisFrame = 1
+        local ms = now() - t0
+        gov:charge('roadWalk', ms)
+        noteUnit('prewarm', ms)
+      end
+    end
   elseif prewarmId and not scenetree.findObjectById(prewarmId) then   -- (the level loaded again: gone with it)
     prewarmId, prewarmWant = nil, prewarmPath
   end
   if currentAnchor then switchAnchor(currentAnchor) end
+  M._lifetime('retry',currentAnchor)
   step('anchor')
   releaseGhosts(player)
   step('ghosts')
   if M._releaseOrphans then M._releaseOrphans(player) end
   step('orphans')
+  local deferredDeletes={}
   while #deleteQ > 0 and gov:try('roadDelete') do
     local t0 = now()
     local did = table.remove(deleteQ)
-    local o = scenetree.findObjectById(did)
-    if o then
-      if isCollider(o) then
-        if M.nearPlayer(o:getPosition(), M.DELETE_NEAR_M) then collisionDirty = true else deletesDirty = true end
+    if buildingFade:held(did) then
+      hideBuilding(did,true);deferredDeletes[#deferredDeletes+1]=did
+    else
+      buildingFade:forget(did)
+      local o = scenetree.findObjectById(did)
+      local collided = o and isCollider(o)
+      if o then
+        if isCollider(o) then
+          if M.nearPlayer(o:getPosition(), M.DELETE_NEAR_M) then collisionDirty = true else deletesDirty = true end
+        end
+        o:delete()
       end
-      o:delete()
+      slotObjGone(did, collided)
+      local ms = now() - t0
+      gov:charge('roadDelete', ms)
+      noteUnit('delete', ms)
+      sinceChange = stopwatch.new()
     end
-    slotObjGone(did)
-    local ms = now() - t0
-    gov:charge('roadDelete', ms)
-    noteUnit('delete', ms)
-    sinceChange = stopwatch.new()
   end
+  for _,id in ipairs(deferredDeletes) do deleteQ[#deleteQ+1]=id end
+  releaseSurfaceOwners()
   while #createQ > 0 and gov:try('roadChunk') do
     local q = table.remove(createQ, 1)
     local t = tiles[q.key]
     if t then
       local t0 = now()
       loadMaterials()
-      local ok, id = pcall(createChunk, q.chunk)
+      local ok, id = pcall(M._createChunk, q.chunk, t.staged)
       if ok then t.objs[#t.objs + 1] = id else lastError = tostring(id) end
+      if not ok and t.staged then t.importFailed=true end
       t.queued = t.queued - 1
       local ms = now() - t0
       gov:charge('roadChunk', ms)
@@ -1658,12 +2593,30 @@ function M.update(gov, currentAnchor, player, view, a)
   step('held')
   updateCollideRange()
   step('collideRange')
+  -- Reserve a frame for an already-due rebuild so a continuous import queue
+  -- cannot starve collision, or stack a rebuild on top of a mesh import.
+  deferImports = not swapQuiet and ((collisionDirty and (propCollisionDirty or sinceReload() > M.RELOAD_EVERY_S * 1000))
+    or (collisionDirty and (holdActive or M.urgentColliders()) and sinceReload() > M.URGENT_GAP_S * 1000)
+    or (deletesDirty and sinceReload() > M.RELOAD_DELETES_S * 1000))
   local forced = nil
   if #walkQ > 0 and sinceUrgent >= M.URGENT_EVERY_FRAMES and not (gov.isHeavyFrame and gov:isHeavyFrame()) then
     forced = M.urgentWalk(walkQ)
   end
   sinceUrgent = sinceUrgent + 1
-  while #walkQ > 0 and (forced or gov:try('roadWalk')) do
+  progressFrame = progressFrame + 1
+  if not forced and progressFrame % M.FAR_IMPORT_EVERY == 0 then updateFar(gov,true) end
+  if not forced and not deferImports and importsThisFrame < M.MAX_IMPORTS_PER_FRAME
+    and (#walkQ == 0 or progressFrame % 2 == 0) then
+    local choice=buildingProgress:prepare(anchorObj,view or player)
+    if choice and gov:try('roadWalk',choice.ms) then
+      local elapsed=stopwatch.new()
+      if buildingProgress:step(anchorObj,view or player,choice) then
+        importsThisFrame = importsThisFrame + 1
+        local ms=elapsed();gov:charge('roadWalk',ms);noteUnit('buildingProgress',ms)
+      end
+    end
+  end
+  while #walkQ > 0 and not deferImports and importsThisFrame < M.MAX_IMPORTS_PER_FRAME and (forced or gov:try('roadWalk')) do
     local q = table.remove(walkQ, forced or M.nextWalk(walkQ))
     if forced then forced, sinceUrgent, M.urgentWalks = nil, 0, (M.urgentWalks or 0) + 1 end
     local t = tiles[q.key]
@@ -1672,7 +2625,7 @@ function M.update(gov, currentAnchor, player, view, a)
     -- (only a colliding mesh waits: a render-only one (q.renderOnly: the drawn sidewalks and buildings beside their lean
     -- collision meshes) cannot catch the car, and holding it hid a whole tile's sidewalks while the car stood in their
     -- box: a roundabout's island band was never drawn, 2026-10-17 Harbor Point)
-    if t and q.what ~= 'road' and not q.renderOnly and playerIn(t.colliders[q.what], q.what, t) then
+    if t and not t.staged and q.what ~= 'road' and not q.renderOnly and playerIn(t.colliders[q.what], q.what, t) then
       held[#held + 1] = q           -- the car is on it: made once the car is clear (playerIn)
       t = nil
     end
@@ -1682,27 +2635,48 @@ function M.update(gov, currentAnchor, player, view, a)
       local t0 = now()
       loadMaterials()
       local isRoad = q.what == 'road' or q.what == 'wire' or q.renderOnly   -- render-only meshes
+      walk.buildingFade=buildingVisual(q.what) and q.renderOnly
+      walk.nativeLod=buildingVisual(q.what) and isRoad
+      walk.staged=t.staged~=nil
+      importsThisFrame = importsThisFrame + 1
       -- the buildings' and sidewalks' lean meshes are a collision detail (server cdae collision_only): never drawn
-      local ok, id = pcall(createWalk, walk,
-        (q.what == 'bldcol' or q.what == 'walkcol' or q.what == 'railcol') and 'Collision Mesh' or not isRoad)
+      local ok, id = pcall(createWalk, walk, M._collisionKind(q.what,q))
       if ok then slotMade(id, walk.shape) end
+      if ok and q.what=='wire' and t.roadsideWireBlocked then
+        local o=scenetree.findObjectById(id);if o then o:setHidden(true) end
+      end
       if ok and q.skin and t.skin then             -- a new skin's part: the old one's goes (all, with the last)
         t.skin.pending = t.skin.pending - 1
         M.dropOldSkin(t, q.what)
         if t.skin.pending <= 0 then M.dropOldSkin(t) end
       end
       if ok and q.swap and t.oldPart and t.oldPart[q.what] then     -- an exact variant / the base again: swapped
+        if buildingVisual(q.what) then
+          hideBuilding(t.oldPart[q.what],true)
+        end
         deleteQ[#deleteQ + 1] = t.oldPart[q.what]
         t.oldPart[q.what] = nil
         if t.oldPartSlot and t.oldPartSlot[q.what] then slotDrop(t.oldPartSlot[q.what]); t.oldPartSlot[q.what] = nil end
       end
       if ok then
-        if not isRoad then t.cq = t.cq or {}; t.cq[q.what] = q end
-        if isRoad then t[q.what] = id else
-          t[q.what] = id; collisionDirty = true; newColliders[#newColliders + 1] = { id, q }
-          t.colAt = t.colAt or {}; t.colAt[q.what] = now()
+        if not isRoad then
+          t.cq = t.cq or {}; t.cq[q.what] = q
+          t.retentionColliders=t.retentionColliders or {};t.retentionColliders[q.what]=true
         end
-      else lastError = tostring(id) end
+        if isRoad then t[q.what] = id else
+          t[q.what] = id
+          if not t.staged then
+            collisionDirty = true; newColliders[#newColliders + 1] = { id, q }
+            t.colAt = t.colAt or {}; t.colAt[q.what] = now()
+            if t.colReload then t.colReload[q.what]=nil end
+          end
+        end
+      else lastError = tostring(id);if t.staged then t.importFailed=true end end
+      if ok and t.geo and not t.staged and buildingVisual(q.what) then
+        buildingProgress:sync(t)
+        M.refreshBuildingCoverage(t.gkey)
+        flushBuildingDoors(t)
+      end
       local ms = now() - t0
       gov:charge('roadWalk', ms)
       noteUnit(tostring(q.what), ms, walk and walk.shape)
@@ -1710,15 +2684,16 @@ function M.update(gov, currentAnchor, player, view, a)
     end
   end
   step('walks')
-  updateFar(gov)                -- far buildings: only with the near meshes all made (they share the budget)
+  updateFar(gov)                -- remaining far work shares the frame's import budget
   step('far')
   if swapQuiet then
     swapQuiet.frames = swapQuiet.frames - 1
     if swapQuiet.frames <= 0 and swapQuiet.since() >= M.SWAP_QUIET_MS then swapQuiet = nil end
   end
   local urgent = collisionDirty and (holdActive or M.urgentColliders()) and sinceReload() > M.URGENT_GAP_S * 1000
-  local due = not swapQuiet and ((collisionDirty and sinceReload() > M.RELOAD_EVERY_S * 1000) or urgent
+  local due = not swapQuiet and ((collisionDirty and (propCollisionDirty or sinceReload() > M.RELOAD_EVERY_S * 1000)) or urgent
       or (deletesDirty and sinceReload() > M.RELOAD_DELETES_S * 1000))
+  if importsThisFrame > 0 then due = false end
   if due and not holdActive and reloadWaits < M.RELOAD_WAIT_FRAMES and gov.roomFor and not gov:roomFor(M.RELOAD_ROOM_MS) then
     reloadWaits = reloadWaits + 1
     due = false
@@ -1727,9 +2702,12 @@ function M.update(gov, currentAnchor, player, view, a)
     reloadWaits = 0
     local t0 = now()
     noteNewColliders()
-    be:reloadCollision()
-    lastReloadAt, reloads = now(), reloads + 1
-    collisionDirty, deletesDirty, sinceReload = false, false, stopwatch.new()
+    if M._rebuildCollision() then
+      M._lifetime('submitted')
+      lastReloadAt, reloads = now(), reloads + 1
+      collisionDirty, deletesDirty, sinceReload = false, false, stopwatch.new()
+      propCollisionDirty = false
+    end
     local ms = now() - t0
     -- out of the frame's budget, not into the meshes' cost estimate (from PR #41: a ~40 ms rebuild in the roadWalk
     -- EMA held the next sidewalk and building meshes back as if each cost that much more)
@@ -1737,6 +2715,9 @@ function M.update(gov, currentAnchor, player, view, a)
     noteUnit('reloadCollision', ms)
   end
   step('collision')
+  buildingFade:commit()
+  M.importsThisFrame = importsThisFrame
+  M._lifetime('end')
 end
 
 -- A colliding mesh (sidewalks, bridge decks) never turns solid around the player's car (2026-10-13: the
@@ -1763,28 +2744,40 @@ function M.nearPlayer(p, r)
   return dx * dx + dy * dy <= r * r
 end
 
+-- V2 occupancy rings follow a collider box as its optional seventh element.
+-- Even-odd containment leaves courtyards clear; distance to every boundary keeps
+-- the car's existing clearance margin on both courtyard and exterior walls.
+local function actors()
+  if inUpdate then actorPositions=actorPositions or occupancy.snapshot();return actorPositions end
+  return occupancy.snapshot()
+end
+
 playerIn = function(boxes, what, t)
-  -- (a drop hold: the car does not move until its ground and colliders are in, then it is set on top of them)
-  if holdActive or type(boxes) ~= 'table' or #boxes == 0 then return false end
-  local veh = getPlayerVehicle and getPlayerVehicle(0)
-  if not veh then return false end
-  local p = veh:getPosition()
+  if type(boxes)~='table' or #boxes==0 then return false end
   local pp = t and t.geo and t.pls and t.pls[what]
-  if pp then      -- a geotile's content: its boxes are in the tile's frame, the player mapped into it
-    local x, y, z = pp.inv:apply(p.x, p.y, p.z)
-    p = { x = x, y = y, z = z }
-  end
-  local r, dz = (what == 'walk' or what == 'walkcol') and M.WALK_PLAYER_R or M.PLAYER_R, M.PLAYER_DZ
-  for _, b in ipairs(boxes) do
-    if p.x >= b[1] - r and p.x <= b[4] + r and p.y >= b[2] - r and p.y <= b[5] + r then
-      if what == 'deck' then
-        -- a deck: only with the car under its surface (in its slab, or under it within a car's height): driving up
-        -- onto a late deck the car was always in its box, the deck held until the car was past, and the car fell
-        -- through it (I-95, Baltimore, a Deck test drive 2026-10-20)
-        local surf = b[3] + M.DECK_BOX_BELOW_M
-        if p.z < surf - M.DECK_ON_M and p.z > surf - M.DECK_BOX_BELOW_M - dz then return true end
-      elseif p.z >= b[3] - dz and p.z <= b[6] + dz then
-        return true
+  -- A frozen teleporting player may have colliders placed around it. Other
+  -- supported actors still participate in the safety check during that hold.
+  local inv=pp and pp.inv or (t and t.skin and t.skin[what] and t.skin.occupancyInv) or (t and t.retentionInv)
+  return occupancy.intersects(holdActive and occupancy.snapshot(true) or actors(),boxes,what,inv,false,M)
+end
+
+function M.occupied(t,allowDropHold)
+  local snapshot=allowDropHold and holdActive and occupancy.snapshot(true) or actors()
+  for what in pairs(t.retentionColliders or t.cq or {}) do
+    if t[what] then
+      if snapshot.unknown then return true end
+      local boxes=t.colliders and t.colliders[what]
+      local pp=t.geo and t.pls and t.pls[what]
+      local inv=pp and pp.inv or (t.skin and t.skin[what] and t.skin.occupancyInv) or t.retentionInv
+      if type(boxes)=='table' and #boxes>0 then
+        if occupancy.intersects(snapshot,boxes,what,inv,true,M) then return true end
+      else
+        -- Old products may lack a collider inventory: conservatively retain
+        -- their whole tile near an actor rather than guessing its surface.
+        for _,p in ipairs(snapshot.positions) do
+          if not t.cx or (math.abs(p.x-t.cx)<=M.TILE_M/2+M.PLAYER_R
+            and math.abs(p.y-t.cy)<=M.TILE_M/2+M.PLAYER_R) then return true end
+        end
       end
     end
   end
@@ -1810,7 +2803,7 @@ noteNewColliders = function()
     local t = tiles[q.key]
     if t and t[q.what] == c[1] and playerIn(t.colliders[q.what], q.what, t) then
       local o = scenetree.findObjectById(c[1])
-      if o then o:delete() end
+      if o then o:delete(); slotObjGone(c[1], true) end
       t[q.what] = nil
       held[#held + 1] = q
       removed = removed + 1
@@ -1857,6 +2850,7 @@ function M.nextWalk(q)
       end
     end
     if e.renderOnly or e.what == 'wire' then k = k + 1e6 end
+    if t and t.staged then k=k+2e6 end -- accepted coverage exists; missing coverage comes first
     if e.what == 'deck' or e.what == 'tunnel' then k = math.max(0, k - M.DRIVE_FIRST_M) end
     if k < bestKey then best, bestKey = i, k end
   end
@@ -1873,7 +2867,7 @@ function M.urgentWalk(q)
   for i, e in ipairs(q) do
     if e.what == 'deck' or e.what == 'tunnel' then
       local t = tiles[e.key]
-      if t and t.cx and not t.ghost and (not e.tile or e.tile == t) then
+      if t and t.cx and not t.ghost and not t.staged and (not e.tile or e.tile == t) then
         local dx, dy = t.cx - p.x, t.cy - p.y
         local d = math.sqrt(dx * dx + dy * dy)
         if d <= reach and d < bd and (not dir or dx * dir.x + dy * dir.y > -M.TILE_M / 2) then best, bd = i, d end
@@ -1923,9 +2917,9 @@ function M.readyAround(aid, x, y, r)
     for _, k in ipairs(M.geoKeysNear(x, y, r)) do
       local key = geoKey(k)
       local t = tiles[key]
-      if not t or busy[key] or not t.skin or t.skin.anchor ~= aid then return false end
+      if not t or M._physicalPending(t) or busy[key] or not t.skin or t.skin.anchor ~= aid then return false end
       for what in pairs(t.colWant or {}) do
-        if not t[what] or ((t.colAt and t.colAt[what]) or math.huge) >= lastReloadAt then return false end
+        if not M._solid(t,what) then return false end
       end
     end
     return true
@@ -1936,7 +2930,7 @@ function M.readyAround(aid, x, y, r)
       local t = tiles[key]
       if not t or t.ghost or busy[key] then return false end
       for what in pairs(t.colWant or {}) do
-        if not t[what] or ((t.colAt and t.colAt[what]) or math.huge) >= lastReloadAt then return false end
+        if not M._solid(t,what) then return false end
       end
     end
   end
@@ -1945,21 +2939,26 @@ end
 
 -- Something else made colliding objects near the player (trees.lua's Forest items): rebuild collision at the
 -- next throttled slot.
-function M.requestCollision() collisionDirty = true end
+function M.requestCollision(removedOrMoved)
+  collisionDirty = true
+  propCollisionDirty = propCollisionDirty or removedOrMoved == true
+end
 
 -- Collision rebuilds so far (be:reloadCollision, ours or the terrain commit's): what was made before one collides from
 -- the frame after it (terrainpatch.groundReady).
 function M.reloads() return reloads end
 
-function M.hasWork() return #createQ > 0 or #deleteQ > 0 or #walkQ > 0 or #farQ > 0 or collisionDirty end
+function M.hasWork() return buildingFade:busy() or #createQ > 0 or #deleteQ > 0 or #walkQ > 0 or #farQ > 0 or collisionDirty or buildingProgress:hasWork() or M._handover('busy') end
 
 
 -- Somebody else just ran be:reloadCollision() (the terrain commit): the sidewalks made so far collide.
 function M.collisionRebuilt()
   -- that rebuild already made them solid: one held now leaves the physics at the next one
+  engineDebt:submitted()
   local removed = noteNewColliders()
   lastReloadAt, reloads = now(), reloads + 1
   collisionDirty, deletesDirty, sinceReload = removed > 0, false, stopwatch.new()
+  propCollisionDirty = false
 end
 
 -- Every road removed now (setting off, mod unload).
@@ -1975,60 +2974,82 @@ prewarmNow = function()
   if prewarmId then
     local o = scenetree.findObjectById(prewarmId)
     if o then o:delete() end
+    slotObjGone(prewarmId)
     prewarmId = nil
   end
   loadMaterials()
   local t = stopwatch.new()
   local ok, id = pcall(createWalk, { shape = path, pos = { 0, 0, -5000 } }, false)
-  if not ok then lastError = tostring(id); return end
+  if not ok then lastError = tostring(id); return true end
+  slotMade(id,path)
   prewarmId, prewarmPath = id, path
   log('I', 'beamngEarth', string.format('roads: materials prewarmed in %.0f ms (%s)', t(), path))
+  return true
 end
 
 function M.prewarm(path)
   if type(path) ~= 'string' then return false end
   prewarmWant = path
-  prewarmNow()
   return true
 end
 
 function M.clear()
-  for key in pairs(tiles) do dropTile(key) end
+  buildingFade:clear()
+  handoverResync=false
+  M._handover('clear')
+  buildingProgress:clear()
+  -- Explicit mod unload/off is a teardown. Normal retirement never uses force.
+  for key in pairs(tiles) do dropTile(key,false,true) end
   for key, f in pairs(far) do
     if f.geo then M.dropFarGeo(key) end
     if f.id then deleteQ[#deleteQ + 1] = f.id end
     slotDrop(f.slot)
   end
-  far, farQ = {}, {}
+  far, farQ, farSeen = {}, {}, {}
   createQ, held, newColliders = {}, {}, {}
   for _, id in ipairs(deleteQ) do
     local o = scenetree.findObjectById(id)
+    local collided = o and isCollider(o)
     if o then
       if isCollider(o) then collisionDirty = true end
       o:delete()
     end
-    slotObjGone(id)
+    slotObjGone(id, collided)
   end
   deleteQ = {}
+  releaseSurfaceOwners()
   walkQ, parked = {}, {}
-  if collisionDirty then be:reloadCollision(); collisionDirty = false end
+  if collisionDirty or deletesDirty then
+    be:reloadCollision(); engineDebt:submitted(); collisionDirty, deletesDirty = false, false
+  end
+  propCollisionDirty = false
 end
 
 -- The level ended: its objects are gone with it.
 function M.reset()
+  handoverResync=false
+  M._handover('clear')
+  buildingProgress:clear()
   -- (the level took the objects: every slot goes)
-  for _, t in pairs(tiles) do for _, sl in pairs(t.slots or {}) do slotsGone[#slotsGone + 1] = { sl[1], sl[2], sl[3] } end end
-  for _, f in pairs(far) do
-    if f.slot then slotsGone[#slotsGone + 1] = { f.slot[1], f.slot[2], f.slot[3] } end
-    for _, p in pairs(f.parts or {}) do
-      if p.slot then slotsGone[#slotsGone + 1] = { p.slot[1], p.slot[2], p.slot[3] } end
-    end
+  for key, t in pairs(tiles) do
+    releasePending(t)
+    M._releasePatch(t)
+    local trees=require('beamngEarth/trees')
+    if trees.clearSurfaceExclusions then trees.clearSurfaceExclusions('road:'..key) end
   end
-  for n, d in pairs(slotDropped) do slotsGone[#slotsGone + 1] = { n, d[1], d[2] } end
-  objSlot, slotLive, slotDropped = {}, {}, {}
+  local treeMasks=require('beamngEarth/trees')
+  for key in pairs(retiringSurfaceOwners) do
+    if treeMasks.clearSurfaceExclusions then treeMasks.clearSurfaceExclusions('road:'..key) end
+  end
+  retiringSurfaceOwners={}
+  for _,ref in pairs(slotRefs) do slotsGone[#slotsGone+1]={ref[1],ref[2],ref[3]} end
+  for _, d in pairs(slotDropped) do slotsGone[#slotsGone + 1] = d end
+  objSlot, slotLive, slotDropped, slotRefs, objectSessions = {}, {}, {}, {}, {}
+  engineDebt:clear()
   tiles, createQ, deleteQ, walkQ, anchorId, loadedMaterials = {}, {}, {}, {}, nil, false
-  far, farQ = {}, {}
+  far, farQ, farSeen = {}, {}, {}
   collisionDirty, deletesDirty = false, false
+  propCollisionDirty = false
 end
 
 -- On / off (the settings page, through core.setRoadsEnabled, which asks the server for the tiles
@@ -2087,7 +3108,7 @@ function M.ahead(x, y, hx, hy, dist)
           want = want + 1
           if t[what] then
             made = made + 1
-            if (t.colAt and t.colAt[what] or tnow) < lastReloadAt then solid = solid + 1 end
+            if M._solid(t,what) then solid = solid + 1 end
           end
         end
         e.col = want == 0 and 'none' or (solid == want and 'solid') or (made == want and 'made') or 'parked'
@@ -2120,9 +3141,14 @@ M.ORPHAN_MAX_S = 120
 M.ORPHAN_FAR_M = 960
 local orphanSince = nil
 function M.newSession()
+  buildingFade:finish()
+  M._handover('rebase')
+  buildingProgress:clear()
   if not M.geo and not M.farGeo then return M.clear() end      -- (anchor tiles only: all of them go)
   local any = false
   for key, t in pairs(tiles) do
+    releasePending(t)
+    M._releasePatch(t)
     if t.geo and M.geo then
       t.orphan = true
       if t.skin then t.skin.anchor = -1 end
@@ -2153,6 +3179,7 @@ function M.newSession()
     end
   end
   far, farSeen = keepFar, keepSeen
+  for _,t in pairs(tiles) do if t.geo then M.refreshBuildingCoverage(t.gkey) end end
   local fq = {}
   for _, k in ipairs(farQ) do if far[k:match('^(.-)#') or k] then fq[#fq + 1] = k end end
   farQ = fq
@@ -2173,9 +3200,9 @@ local function releaseOrphans(player)
     end
   end
   for key, t in pairs(tiles) do
-    if t.orphan then
+    if t.orphan and not t.staged then
       local far_ = player and t.cx and M.boxGap(player.x, player.y, t.cx, t.cy, M.TILE_M / 2) > M.ORPHAN_FAR_M
-      if all or far_ then dropTile(key); collisionDirty = true else left = true end
+      if (all or far_) and dropTile(key) then collisionDirty = true else left = true end
     end
   end
   if not left then orphanSince = nil end
@@ -2202,7 +3229,7 @@ end
 -- (each path's folder memoised: it runs on every pose, farfield.heldSessions; cleared past HELD_MEMO_MAX paths)
 local HELD_MEMO_MAX = 20000
 local heldMemo, heldMemoN = {}, 0
-function M.heldSessions()
+function M._shapeSessions()
   local ff = require('beamngEarth/farfield')
   local set = {}
   local function add(sh)
@@ -2262,6 +3289,8 @@ function M.status()
     walks = nw, roadMeshes = nr, decks = nd, buildings = nb, guardrailForestTiles = ngForest,
     guardrailForestRows = ngRows, farBuildings = nf, walksQueued = #walkQ, solidAround = M.solidAround or 0,
     urgentWalks = M.urgentWalks or 0, quietS = sinceChange() / 1000, error = lastError, units = unitStats, unitLog = unitLog,
+    buildingProgress = buildingProgress:diagnostics(),
+    resourceLifetime = M._lifetime('stats'),
     geo = M.geo or false, geoStats = M.geoStats, farGeo = M.farGeo or false, farGeoTiles = ngf,
     farGeoShown = ngShown }
 end

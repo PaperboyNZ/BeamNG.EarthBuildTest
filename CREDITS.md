@@ -106,6 +106,7 @@ only, nothing redistributed. Licence notes marked *(verify)* must be re-checked 
 | BeamNG.drive (BeamNG GmbH) | the game; its Lua API, engine, built-in MCP server, and stock assets referenced at runtime (never redistributed) | proprietary game; this is an unofficial fan mod | in use |
 | Python 3 | companion server and tools | PSF License | in use |
 | NumPy | terrain, mesh and imagery processing | BSD-3-Clause | in use |
+| Shapely / GEOS | validated building polygons and constrained roof triangulation | BSD-3-Clause (Shapely) / LGPL-2.1-or-later (GEOS) | experimental building generator v2 |
 | Pillow | image decoding and encoding | MIT-CMU (HPND) | in use |
 | LuaJIT | offline tests of the mod's Lua | MIT | in use (tests) |
 | GeographicLib (data files) | gravity model data | MIT (library) / NGA data public domain | in use |

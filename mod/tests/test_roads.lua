@@ -3,6 +3,14 @@
 local dir = (arg[0]:match('^(.*)[/\\]') or '.')
 local T = dofile(dir .. '/testlib.lua')
 local S = dofile(dir .. '/stubs.lua')
+-- Lifecycle assertions use zero-second rebuild intervals. Windows os.clock can
+-- return the same value for several frames, making a strict > 0 check flaky.
+local tick=0
+local function clock()
+  local start=tick
+  return function() tick=tick+.001;return tick-start end
+end
+package.loaded['beamngEarth/stopwatch']={clock=clock,new=clock}
 
 -- DecalRoad methods roads.lua calls (not in the generic stub object)
 local realCreate = createObject
@@ -19,6 +27,9 @@ readFile = function(p) return files[p] end
 jsonDecode = function(s) return assert(load('return ' .. s))() end   -- the test writes Lua table text
 
 local roads = require('beamngEarth/roads')
+-- These geometry/lifecycle checks explicitly drain imports. The default
+-- one-import-per-frame contract is exercised by test_building_staging.lua.
+roads.MAX_IMPORTS_PER_FRAME = math.huge
 
 local gov = { tries = 0 }
 function gov:try() self.tries = self.tries + 1; return self.allow == nil or self.tries <= self.allow end
@@ -106,6 +117,8 @@ T.check(#statics() == 1 and roads.status().walks == 1, 'sidewalk mesh made')
 T.check(w.fields.shapeName == '/t/walks_2_5_5.cdae' and w.fields.collisionType == 'Visible Mesh Final' and w.canSave == false,
   'shape, collides with its visible mesh, not saved')
 T.check(w.pos.x == 256 and w.pos.y == 512, 'at the tile corner')
+T.check(S.calls.reloadCollision == 0, 'mesh import and collision rebuild occupy different frames')
+roads.update(gov, 2)
 T.check(S.calls.reloadCollision == 1, 'collision reloaded for it')
 roads.update(gov, 2)
 T.check(S.calls.reloadCollision == 1, 'nothing more while nothing changes')
@@ -179,9 +192,13 @@ roads.onDrop({ anchorId = 2, key = '6_7' })
 T.check(#roads.takeSlotsGone('sA') == 0, 'dropped but its objects not deleted yet: still held')
 roads.update(gov, 2)
 gone = roads.takeSlotsGone('sA')
+-- Render-only files can go now; collision files wait through the rebuild's
+-- asynchronous frame before the server is allowed to refill them.
+roads.update(gov, 2)
+for _, g in ipairs(roads.takeSlotsGone('sA')) do gone[#gone + 1] = g end
 local got = {}
 for _, g in ipairs(gone) do got[g[1]] = g[2] end
-T.check(#gone == 2 and got[12] == 40 and got[13] == 41, 'objects deleted: both slots reported with their serials')
+T.check(#gone == 2 and got[12] == 40 and got[13] == 41, 'objects deleted and collision settled: both slots reported with their serials')
 T.check(#roads.takeSlotsGone('other') == 0, 'reports are per server session')
 
 -- (from PR #64, KyzoFox 1.5.4) a tile sent again under the same key before its meshes were made: the old tile's queued meshes
@@ -224,9 +241,11 @@ car.pos = vec3(120.5, 105, 0.5)        -- just past its box (the box's own margi
 roads.update(gov, 2)
 T.check(#statics() == 1, 'made with the car beside it (only the car over a sidewalk holds it)')
 -- made, then the car drives into it before collision is rebuilt: removed, made again once clear
+car.pos = vec3(200,105,0.5) -- leave the retirement safety margin before resetting this fixture
 roads.onDrop({ anchorId = 2, key = '0_0' })
 roads.update(gov, 2)
 roads.RELOAD_EVERY_S = 1e9
+car.pos = vec3(120.5,105,0.5)
 roads.onTile({ anchorId = 2, key = '0_0', path = '/t/h.json', n = 0 }, 2)
 roads.update(gov, 2)
 T.check(#statics() == 1, 'made (car clear)')
@@ -239,6 +258,38 @@ T.check(#statics() == 1, 'made again once clear')
 roads.RELOAD_EVERY_S = 0
 roads.onDrop({ anchorId = 2, key = '0_0' })
 roads.update(gov, 2)
+-- A v2 building has an occupied polygon inside its broad-phase box. A car in
+-- its courtyard can receive collision; one beside the inner wall still holds it.
+files['/t/court.json'] = '{ chunks = {}, bldcol = { shape = "/t/court.cdae", pos = {0,0,0} }, ' ..
+  'colliders = { bldcol = {{100,100,0,180,180,15, {' ..
+  '{{100,100},{180,100},{180,180},{100,180}}, {{120,120},{120,160},{160,160},{160,120}}' ..
+  '}}} } }'
+car.pos = vec3(140, 140, 0.5)
+roads.onTile({ anchorId = 2, key = '0_0', path = '/t/court.json', n = 0 }, 2)
+roads.update(gov, 2)
+T.check(#statics() == 1, 'courtyard: collision loads while the car is in the open courtyard')
+roads.onDrop({ anchorId = 2, key = '0_0' })
+roads.update(gov, 2)
+car.pos = vec3(121, 140, 0.5)
+roads.onTile({ anchorId = 2, key = '0_0', path = '/t/court.json', n = 0 }, 2)
+roads.update(gov, 2)
+T.check(#statics() == 0, 'courtyard: car clearance still holds collision near an inner wall')
+car.pos = vec3(110, 140, 0.5)
+roads.update(gov, 2)
+T.check(#statics() == 0, 'courtyard: collision held inside the occupied building area')
+car.pos = vec3(140, 140, 0.5)
+roads.update(gov, 2)
+T.check(#statics() == 1, 'courtyard: held collision loads when the car returns to the courtyard')
+roads.onDrop({ anchorId = 2, key = '0_0' })
+roads.update(gov, 2)
+files['/t/overpass.json'] = '{ chunks = {}, bldcol = { shape = "/t/overpass.cdae", pos = {0,0,0} }, ' ..
+  'colliders = { bldcol = {{100,100,8,180,180,20, {{{100,100},{180,100},{180,180},{100,180}}}}} } }'
+roads.onTile({ anchorId = 2, key = '0_0', path = '/t/overpass.json', n = 0 }, 2)
+roads.update(gov, 2)
+T.check(#statics() == 1, 'elevated building: car in the passage does not hold collision above it')
+roads.onDrop({ anchorId = 2, key = '0_0' })
+roads.update(gov, 2)
+
 -- a deck is held only with the car under its surface: a car on the approach at the deck's height (in its box) gets
 -- it at once (held, a late deck stayed out until the car was past and the car fell through it, 2026-10-20)
 files['/t/d.json'] = '{ chunks = { }, deck = { shape = "/t/deck_2_9_9.cdae", pos = { 0, 0, 0 } }, ' ..
@@ -249,6 +300,9 @@ roads.update(gov, 2)
 T.check(#statics() == 1, 'a deck made with the car driving onto it')
 roads.onDrop({ anchorId = 2, key = '0_0' })
 roads.update(gov, 2)
+T.check(#statics()==1,'occupied deck retained after retirement request')
+car.pos=vec3(200,105,10.5);roads.update(gov,2)
+T.check(#statics()==0,'deck retires after the actor leaves support')
 car.pos = vec3(110, 105, 9.0)          -- in its slab
 roads.onTile({ anchorId = 2, key = '0_0', path = '/t/d.json', n = 0 }, 2)
 roads.update(gov, 2)
@@ -346,8 +400,8 @@ T.check(#statics() == 0 and S.calls.reloadCollision == 0, 'dropped without a col
 
 -- origin rebase: the shown tiles move into the new frame and stay ("ghosts") until the new anchor's made tiles cover
 -- them; the server's drop of a ghost does not remove it early
-local shift = { apply = function(_, x, y, z) return x, y - 20, z end, beamngQuat = function() return 0, 0, 0, 1 end }
-local geo = { quatMul = function(ax, ay, az, aw) return ax, ay, az, aw end }
+local geo = require('beamngEarth/geodesy')
+local shift = geo.transformOf({1,0,0,0,1,0,0,0,1},{0,-20,0})
 roads.onTile({ anchorId = 2, key = '0_0', path = '/t/r.json', n = 2 }, 2)
 roads.update(gov, 2)
 local g0 = statics()[1]

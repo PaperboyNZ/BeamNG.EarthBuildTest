@@ -54,6 +54,10 @@ M.SCHEMA = {
   -- how far the far buildings, the skyline and the far bridges reach (M.BUILDING_DISTANCE: buildingScale)
   buildingDistance = { kind = 'enum', default = 'normal', values = { 'near', 'normal', 'far', 'max' },
     label = 'Building draw distance' },
+  buildingQuality = { kind = 'enum', default = 'adaptive', values = { 'lite', 'adaptive', 'full' },
+    label = 'Building generation quality' },
+  buildingDetailM = { kind = 'number', default = 350, min = 100, max = 640,
+    label = 'Building refinement distance (m)' },
   -- the drawn terrain block's aerial photo (px over the 1 km block; terrain.setPhotoSize, the server's photoPx):
   -- from the next level load
   groundPhoto = { kind = 'enum', default = '2048', values = { '1024', '2048', '4096' }, label = 'Ground photo resolution' },
@@ -125,7 +129,7 @@ M.SCHEMA = {
   updateDismissed = { kind = 'string', default = '', maxLen = 40, label = 'Update notice dismissed (version)' },
   devNoticeSeen = { kind = 'string', default = '', maxLen = 40, label = 'Development build notice seen (version)' },
 }
-M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'objectDetail',
+M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'buildingQuality', 'buildingDetailM', 'objectDetail',
   'grassDistance', 'nightLights', 'rebaseDistance', 'viewDistanceMode', 'viewDistanceKm', 'hazeStrength', 'skyMode', 'clouds',
   'weatherMode', 'realGravity', 'groundCover', 'groundCoverDensity', 'rocks', 'roads', 'highwaySigns', 'dashboardSatellite',
   'hudVisible', 'statusBar', 'profilerMode', 'runtimeProfiler',
@@ -142,23 +146,23 @@ M.HIDDEN = { welcomeSeen = true, updateDismissed = true, devNoticeSeen = true, q
 -- quality setting that puts everything at max quality to the real horizon"): every knob at its most, never picked by
 -- the first run (M.detectQuality).
 M.PRESET_KEYS = { 'trees', 'treeDistance', 'groundCover', 'groundCoverDensity', 'grassDistance', 'rocks', 'nightLights',
-  'viewDistanceMode', 'viewDistanceKm', 'terrainDetail', 'buildingDistance', 'groundPhoto', 'objectDetail' }
+  'viewDistanceMode', 'viewDistanceKm', 'terrainDetail', 'buildingDistance', 'buildingQuality', 'buildingDetailM', 'groundPhoto', 'objectDetail' }
 M.PRESETS = {
   low = { trees = 'low', treeDistance = 'near', groundCover = false, groundCoverDensity = 'low', grassDistance = 'near',
     rocks = true, nightLights = 'few', viewDistanceMode = 'fixed', viewDistanceKm = 40, terrainDetail = 'low',
-    buildingDistance = 'near', groundPhoto = '1024', objectDetail = 'game' },
+    buildingDistance = 'near', buildingQuality = 'lite', buildingDetailM = 200, groundPhoto = '1024', objectDetail = 'game' },
   medium = { trees = 'medium', treeDistance = 'medium', groundCover = true, groundCoverDensity = 'low',
     grassDistance = 'normal', rocks = true, nightLights = 'few', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'normal', buildingDistance = 'normal', groundPhoto = '2048', objectDetail = 'game' },
+    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'adaptive', buildingDetailM = 250, groundPhoto = '2048', objectDetail = 'game' },
   high = { trees = 'normal', treeDistance = 'normal', groundCover = true, groundCoverDensity = 'normal',
     grassDistance = 'normal', rocks = true, nightLights = 'normal', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'normal', buildingDistance = 'normal', groundPhoto = '2048', objectDetail = 'game' },
+    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'adaptive', buildingDetailM = 350, groundPhoto = '2048', objectDetail = 'game' },
   ultra = { trees = 'high', treeDistance = 'far', groundCover = true, groundCoverDensity = 'high', grassDistance = 'normal',
     rocks = true, nightLights = 'many', viewDistanceMode = 'horizon', viewDistanceKm = 100, terrainDetail = 'high',
-    buildingDistance = 'far', groundPhoto = '2048', objectDetail = 'game' },
+    buildingDistance = 'far', buildingQuality = 'adaptive', buildingDetailM = 500, groundPhoto = '2048', objectDetail = 'game' },
   extreme = { trees = 'extreme', treeDistance = 'max', groundCover = true, groundCoverDensity = 'high',
     grassDistance = 'far', rocks = true, nightLights = 'many', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'extreme', buildingDistance = 'max', groundPhoto = '4096', objectDetail = 'extreme' },
+    terrainDetail = 'extreme', buildingDistance = 'max', buildingQuality = 'full', buildingDetailM = 640, groundPhoto = '4096', objectDetail = 'extreme' },
 }
 M.PRESET_ORDER = { 'low', 'medium', 'high', 'ultra', 'extreme' }
 
@@ -401,6 +405,8 @@ function M.serverGraphics()
     lodScale = M.TERRAIN_DETAIL[values.terrainDetail] or 1.0,
     treeScale = okT and trees.distanceScale and trees.distanceScale(values.treeDistance) or 1.0,
     buildingScale = M.BUILDING_DISTANCE[values.buildingDistance] or 1.0,
+    buildingQuality = values.buildingQuality,
+    buildingDetailM = values.buildingDetailM,
     photoPx = okR and terrain.photoSize and terrain.photoSize() or tonumber(values.groundPhoto),
     -- a fixed view distance: the far field's radius at most (nothing past it is drawn); 0 = the real horizon
     viewM = values.viewDistanceMode == 'fixed' and values.viewDistanceKm * 1000 or 0,
@@ -452,6 +458,8 @@ M.APPLY = {
   end,
   terrainDetail = sendGraphics,
   buildingDistance = sendGraphics,
+  buildingQuality = sendGraphics,
+  buildingDetailM = sendGraphics,
   groundPhoto = function(v)
     require('beamngEarth/terrain').setPhotoSize(tonumber(v))
     sendGraphics()

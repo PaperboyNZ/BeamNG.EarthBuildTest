@@ -18,6 +18,7 @@ cell's map data and VERSION; its random choices (species, yaw, size, thinning ra
 """
 import logging
 import math
+import time
 import os
 import threading
 from collections import OrderedDict
@@ -33,7 +34,8 @@ import staging
 
 log = logging.getLogger("earthd.vegetation")
 
-VERSION = 20          # (the cached cells hold their groups: 14 for the regional rules of GitHub #110; 16: the roads'
+VERSION = 21          # (21: all decorations clear paved surfaces by finite footprint, including CHM trees/footways)
+                      # (the cached cells hold their groups: 14 for the regional rules of GitHub #110; 16: the roads'
                       # drawn widths and sidewalks kept clear; 17: BC's lidar canopy heights, mapdata's canopy layer 2;
                       # 18: the rounded junction corners kept clear, roadcorners.py; 19: one tree per flat crown, thin_tops; 20: none on or
                       # beside a bridge deck, _mask_decks)
@@ -46,11 +48,10 @@ GROUPS = ("deciduous", "conifer", "shrub", "rock", "pine_west", "palm", "juniper
 (G_DECIDUOUS, G_CONIFER, G_SHRUB, G_ROCK, G_PINE_WEST, G_PALM, G_JUNIPER, G_DESERT_SHRUB, G_DESERT_ROCK,
  G_OAK_WEST, G_TROPICAL) = range(len(GROUPS))
 ROAD_CLEAR_M = 1.5          # trees kept this far off a road's edge (its width by class below)
-TREE_PIT_M = 0.4            # m past a road's edge (+ the push's 0.6) where a top over the road lands: a sidewalk's
-                            # tree pit by the curb (pushed out of the full corridor, Boston Street's trees landed on the
-                            # row houses at the back of the sidewalk and all went; Mapillary: one every ~8 m, 2026-10-17)
-PATH_CLASSES = {"footway", "path", "steps", "cycleway", "bridleway", "pedestrian"}   # no corridor: street trees
-                            # stand in the sidewalk (mapped as a footway: Boston Street's row sat on its line)
+TREE_PIT_M = 0.4            # retained compatibility constant; no inferred pavement/tree-pit exemption
+PATH_CLASSES = {"footway", "path", "steps", "cycleway", "bridleway", "pedestrian"}
+PATH_HALF_WIDTH_M = 1.0     # conservative missing-width corridor; existing road_specs omits these classes
+DECORATION_CLEAR_M = .25    # finite footprint/row rounding margin, not a regional design dimension
 ROAD_HALF_WIDTH_M = {"motorway": 7.0, "trunk": 6.0, "primary": 5.5, "secondary": 5.0, "tertiary": 4.5,
                      "residential": 4.0, "service": 3.0, "unclassified": 3.5, "living_street": 3.0}
 ROAD_HALF_DEFAULT_M = 2.5
@@ -298,7 +299,7 @@ class Vegetation:
         # the blocked pixels: buildings, roads, water (on the CHM grid, with the neighbours' features)
         blocked = np.zeros(h.shape, bool)
         road = np.zeros(h.shape, bool)
-        curb = np.zeros(h.shape, bool)      # the roads themselves (+ TREE_PIT_M): where a street tree may not land
+        curb = np.zeros(h.shape, bool)      # full road/sidewalk corridor: relocation cannot invent a tree pit
         push = np.zeros((3,) + h.shape, np.float32)
         push[2] = np.inf
         deck = np.zeros(h.shape, bool)      # bridge decks (+ DECK_CLEAR_M): no tree on, beside or moved off one
@@ -314,7 +315,7 @@ class Vegetation:
                 _mask_polys(c2.layers.get("buildings"), blocked, chm, 1.0)
                 _mask_polys(c2.layers.get("water"), blocked, chm, 0.0, kind=3)
                 _mask_roads(c2.layers.get("roads"), road, chm, specs=self._specs, walks=True)
-                _mask_roads(c2.layers.get("roads"), curb, chm, push, clear=TREE_PIT_M, specs=self._specs)
+                _mask_roads(c2.layers.get("roads"), curb, chm, push, specs=self._specs, walks=True)
                 _mask_decks(c2.layers.get("roads"), deck, chm, self._specs)
                 road_cells.append(c2.layers.get("roads"))
         # the rounded corners of curbless junctions (roadcorners.py): no tree, bush or rock on their asphalt
@@ -330,16 +331,24 @@ class Vegetation:
         tops &= ~blocked
         tops[~rj, :] = False
         tops[:, ~ci] = False
-        # street trees: a top over a road corridor (its crown overhangs the street) moves just out of it,
-        # onto the verge / sidewalk by the curb, unless that lands on a building, water or another road
+        # A source crown over a road may move beyond the complete road/sidewalk
+        # corridor. No unobserved tree pit is inferred inside paved walking space.
         tops &= ~deck                       # (over a deck: the crown of a tree below it, or none; not moved off it
         blocked |= deck                     # onto the river or the bank under the deck, East Pratt Street 2026-10-31)
         on_road = tops & road
         tops &= ~road
         rj_, ri_ = np.nonzero(on_road)
         if len(rj_):
-            nc = np.rint(ri_ + push[0, rj_, ri_]).astype(np.int64)
-            nr = np.rint(rj_ + push[1, rj_, ri_]).astype(np.int64)
+            vx,vy=push[0,rj_,ri_],push[1,rj_,ri_]
+            distance=np.hypot(vx,vy)
+            # Maximum generated CHM scale is 1.15. Reserve the entire resulting
+            # crown footprint before final jitter, then check it again below.
+            latitude=_to4326(mx[ri_],my[rj_])[1]
+            radius=(.12*hs[rj_,ri_]+1.)*1.15+DECORATION_CLEAR_M
+            extra=radius/(chm.dx*np.maximum(.05,np.cos(np.radians(latitude))))
+            factor=1.+extra/np.maximum(distance,1e-9)
+            nc = np.rint(ri_ + vx*factor).astype(np.int64)
+            nr = np.rint(rj_ + vy*factor).astype(np.int64)
             ok = (nc >= 0) & (nc < n_c) & (nr >= 0) & (nr < n_r)
             ok[ok] &= ~blocked[nr[ok], nc[ok]] & ~curb[nr[ok], nc[ok]]
             moved = np.zeros(h.shape, bool)
@@ -387,20 +396,20 @@ class Vegetation:
         tree = Items(tlon2, tlat2, th.astype(np.float32), (0.12 * th + 1.0).astype(np.float32), kind, group,
                      _hash01(gx, gy, 5).astype(np.float32), (u2 * 360.0).astype(np.float32),
                      (0.85 + 0.3 * _hash01(gx, gy, 6)).astype(np.float32))
-        # squares, pedestrian areas and parking lots: no scattered bushes or rocks (a real tree there stays)
+        # Squares, pedestrian areas, paved parking and observed hard surfaces:
+        # trees have no exemption, and forest-edge bushes use the same mask.
         paved = np.zeros(h.shape, bool)
-        try:
-            cl = self.md.cell((mapcells.ZOOM, x, y), layers=("land_use", "infrastructure"))
-            lu, inf = cl.layers.get("land_use"), cl.layers.get("infrastructure")
-            if lu is not None and len(lu) and lu.attrs.get("subtype") is not None:
-                _mask_polys(lu, paved, chm, 0.0, select=lu.attrs["subtype"].astype(str) == "pedestrian")
-            if inf is not None and len(inf) and inf.attrs.get("class") is not None:
-                _mask_polys(inf, paved, chm, 0.0, select=inf.attrs["class"].astype(str) == "parking")
-        except Exception as e:                  # not at hand: scattered as before
-            log.debug("vegetation: land use of %s: %s", (x, y), e)
+        for dy in (-1,0,1):
+            for dx in (-1,0,1):
+                try:
+                    cl=self.md.cell((mapcells.ZOOM,x+dx,y+dy),layers=("land_use","infrastructure"))
+                    _mask_paved(cl.layers.get("land_use"),paved,chm,land_use=True)
+                    _mask_paved(cl.layers.get("infrastructure"),paved,chm)
+                except Exception as e:
+                    log.debug("vegetation: paved surface of %s: %s",(x+dx,y+dy),e)
         scatter = self._scatter(cd, lc, blocked | paved, chm, hs)
-        edge = self._edge(cd, lc, blocked, road, chm, hs)
-        return _concat(_concat(tree, scatter), edge)
+        edge = self._edge(cd, lc, blocked | paved, road, chm, hs)
+        return _clear_surface_footprints(_concat(_concat(tree,scatter),edge),blocked|paved,chm)
 
     def _edge(self, cd, lc, blocked, road, chm, hs):
         """The thicket along forest edges beside roads (EDGE_*), outside the dry West."""
@@ -575,6 +584,87 @@ def _mask_polys(f, mask, chm, grow_m, kind=3, select=None):
                         float(chm.dx), float(chm.dy), grow_m / chm.dx)
 
 
+def _mask_paved(f,mask,chm,land_use=False):
+    """Mapped hardscape, using existing retained classes/surface observations.
+
+    Fill interiors and conservatively cover intersected boundary pixels with
+    native corridors. This includes thin polygons that contain no pixel centre;
+    holes remain available once an object's complete footprint fits inside them.
+    """
+    if f is None or not len(f.kind):return
+    import roads as roadsmod
+    import surface
+    count=len(f.kind)
+    cls=np.asarray(f.attrs.get('class',np.full(count,''))).astype(str)
+    sub=np.asarray(f.attrs.get('subtype',np.full(count,''))).astype(str)
+    material=np.char.lower(np.asarray(f.attrs.get('surface',np.full(count,''))).astype(str))
+    observed=np.isin(material,list(roadsmod.PAVED|roadsmod.COBBLE|roadsmod.COBBLE_ALIASES))
+    if land_use:
+        selected=(sub=='pedestrian')|np.isin(cls,list(surface.PLAZA_CLASSES))|observed
+    else:
+        parking=surface._parking(f)
+        selected=(parking if parking is not None else np.zeros(count,bool))|np.isin(cls,list(surface.YARD_CLASSES))|observed
+    selected=np.asarray(selected,bool)&(f.kind==3)
+    _mask_polys(f,mask,chm,0.,select=selected)
+    ids=np.flatnonzero(selected).astype(np.int64)
+    if not len(ids):return
+    fast.require(63,'road_segments')
+    # A full grid diagonal is deliberately conservative. _mask_polys' grow_m
+    # only expands its search box; it does not geometrically buffer a polygon.
+    latitude=float(_to4326(chm.x0,chm.y0)[1])
+    width=math.hypot(chm.dx,chm.dy)*max(.05,math.cos(math.radians(latitude)))
+    segs,half=fast._ef.road_segments(np.ascontiguousarray(f.lonlat,np.float64),
+        np.ascontiguousarray(f.coord_off,np.int64),np.ascontiguousarray(f.ring_off,np.int64),
+        np.ascontiguousarray(f.part_off,np.int64),ids,np.full(len(ids),width),
+        float(chm.x0),float(chm.y0),float(chm.dx),float(chm.dy),*mask.shape)
+    if len(half):fast._ef.road_corridors(mask,None,np.ascontiguousarray(segs),np.ascontiguousarray(half))
+
+
+def footprint_radius(items):
+    """Conservative row8-compatible footprint shared with the client filter.
+
+    Trees: .12*h+1; shrubs: max(.12*h+1,.6*h); rocks: .6*h, all times scale.
+    Retain a larger producer-declared Items.radius. Client asset bounds may add
+    further conservatism; no wire-format change or new source map is required.
+    """
+    height=np.asarray(items.height,float)
+    rock=np.isin(items.group,(G_ROCK,G_DESERT_ROCK))
+    shrub=np.isin(items.group,(G_SHRUB,G_DESERT_SHRUB))
+    radius=np.where(rock,.6*height,np.where(shrub,np.maximum(.12*height+1.,.6*height),.12*height+1.))
+    return np.maximum(radius,np.asarray(items.radius,float))*np.asarray(items.scale,float)
+
+
+def _clear_surface_footprints(items,mask,chm):
+    """Reject full finite footprints, after all relocation and position jitter.
+
+    One summed-area grid and vectorized rectangle queries; work is bounded by
+    the existing CHM grid and candidate arrays, not by object radius or polygons
+    per object. Axis-aligned footprint squares conservatively cover the circles.
+    """
+    if not len(items):return items
+    x,y=_to3857(items.lon,items.lat)
+    radius=footprint_radius(items)+DECORATION_CLEAR_M
+    pixels=radius/np.maximum(.05,np.cos(np.radians(items.lat)))
+    rows,cols=mask.shape
+    finite=(np.isfinite(x)&np.isfinite(y)&np.isfinite(pixels)&(pixels>=0)
+            &np.isfinite(items.height)&(items.height>0)&np.isfinite(items.scale)&(items.scale>0)
+            &(pixels<math.hypot(chm.dx*cols,chm.dy*rows)))
+    x=np.where(finite,x,chm.x0);y=np.where(finite,y,chm.y0)
+    safe=np.where(finite,pixels,0.)
+    c0=np.floor((x-safe-chm.x0)/chm.dx).astype(np.int64)
+    c1=np.floor((x+safe-chm.x0)/chm.dx).astype(np.int64)+1
+    r0=np.floor((chm.y0-y-safe)/chm.dy).astype(np.int64)
+    r1=np.floor((chm.y0-y+safe)/chm.dy).astype(np.int64)+1
+    # A footprint extending outside observed raster space cannot be certified
+    # against neighbouring pavement. It is omitted rather than assumed clear.
+    valid=finite&(c0>=0)&(r0>=0)&(c1<=cols)&(r1<=rows)
+    c0,c1=np.clip(c0,0,cols),np.clip(c1,0,cols)
+    r0,r1=np.clip(r0,0,rows),np.clip(r1,0,rows)
+    summed=np.pad(np.cumsum(np.cumsum(mask,dtype=np.int64,axis=0),dtype=np.int64,axis=1),((1,0),(1,0)))
+    blocked=summed[r1,c1]-summed[r0,c1]-summed[r1,c0]+summed[r0,c0]
+    return items.take(valid&(blocked==0))
+
+
 def _mask_corners(road_cells, masks, chm, bounds, urban=None, widths=None, grow=ROAD_CLEAR_M):
     """Mark the rounded corners of the junctions among road_cells (road Features; roadcorners.pads, their arcs grown by
     grow m) that may reach the cell's bounds (lon0, lat0, lon1, lat1) on each CHM-grid mask of masks: a tree whose top
@@ -640,7 +730,7 @@ def _mask_decks(f, mask, chm, specs):
 
 
 def _mask_roads(f, mask, chm, push=None, clear=ROAD_CLEAR_M, specs=None, walks=False):
-    """Mark road corridors (half width + clear) on the CHM-grid mask (footpaths left out): the half width the road is
+    """Mark complete road/path corridors (half width + clear) on the CHM grid: the half width the road is
     drawn with (specs(f): roads.road_specs; walks: with its sidewalks) or its class's, the wider. push (optional, (3, rows,
     cols) float32: dx, dy in px and the distance to the nearest road, inf where none) gets, per corridor
     pixel, the move that takes it just out of its nearest road's corridor (street trees: vegetation._build). With the
@@ -651,17 +741,23 @@ def _mask_roads(f, mask, chm, push=None, clear=ROAD_CLEAR_M, specs=None, walks=F
     n_r, n_c = mask.shape
     cls = f.attrs.get("class", np.full(len(f.kind), "", object))
     fast.require(63, "road_segments")
-    sel = [i for i in np.flatnonzero(f.kind == 2) if str(cls[i]) not in PATH_CLASSES]
+    sel = list(np.flatnonzero(f.kind == 2))
     if not sel:
         return
     sp = specs(f) if specs is not None else [None] * len(f.kind)
     import roads as roadsmod
 
-    def drawn(s):       # the drawn half width, its sidewalks too (walks: the canopy's trees and the bushes keep off
-        if s is None:   # them; the street trees, pushed to the curb, stand in pits at its edge: GitHub #424 / #425)
+    def drawn(s):       # include the complete drawn walking corridor for all decorations
+        if s is None:
             return 0.0
         return s.width / 2 + (s.walk if walks and getattr(s, "walk", 0) and roadsmod.has_sidewalks(s) else 0.0)
-    hw_m = np.array([max(ROAD_HALF_WIDTH_M.get(str(cls[i]), ROAD_HALF_DEFAULT_M), drawn(sp[i])) + clear
+    def measured(i):
+        width=f.attrs.get('width')
+        if width is None:return 0.
+        try:value=float(width[i])
+        except (ValueError,TypeError,OverflowError):return 0.
+        return value/2 if math.isfinite(value) and 0<value<=200 else 0.
+    hw_m = np.array([max(PATH_HALF_WIDTH_M if str(cls[i]) in PATH_CLASSES else ROAD_HALF_WIDTH_M.get(str(cls[i]), ROAD_HALF_DEFAULT_M), drawn(sp[i]), measured(i)) + clear
                      for i in sel], np.float64)
     # every ring's segments on the CHM grid, its half width in grid pixels (a 3857 metre is 1 / cos(lat) of a ground
     # metre), rings off the grid left out (earthfast road_segments, 2026-10-23: the per-ring Python loop it
@@ -969,8 +1065,24 @@ class Tracker:
         self._quads = {}            # (anchor id, key) -> its quad in that anchor's world
         self.rebuilt = 0            # tiles built again for a key sent before (diagnostics: 0 with geo)
         self.ever = set()
+        # Optional visual refreshes share this tracker's existing queue/pool.
+        # Sent coverage stays resident while at most one desired revision waits.
+        self.refinements = {}
+        self.refined = {}
+        self.refinement_jobs = {}
+        self.refinement_retries = {}
+
+    def refine(self,key,revision):
+        if self.geo and (key in self.sent or key in self.building):
+            if key not in self.building and self.refined.get(key)==revision:
+                self.refinements.pop(key,None);return
+            if self.refinements.get(key)!=revision:
+                self.refinements[key]=revision
+                self.refinement_retries.pop(key,None)
 
     def close(self):
+        self.closed=True
+        self.refinements.clear();self.refined.clear();self.refinement_jobs.clear();self.refinement_retries.clear()
         if self.pool is not None:
             self.pool.shutdown(wait=False, cancel_futures=True)
 
@@ -1032,7 +1144,7 @@ class Tracker:
         inner's tiles left out), the tiles' quads in the anchor's world (frame: its EnuFrame); an anchor change keeps
         what was sent and in flight."""
         import geotiles
-        if frame is None:
+        if frame is None or getattr(self,'closed',False):
             return
         if aid != self.aid:
             self.aid, self.frame = aid, frame
@@ -1065,14 +1177,23 @@ class Tracker:
             if k not in done:
                 done.add(k)
                 order.append(k)
+        self.wanted=done
+        # New coverage first. Refreshes never evict the accepted sent tile and
+        # cannot add another worker or bypass the existing per-pose bound.
         want = [k for k in order if k not in self.sent and k not in self.building]
+        now=time.monotonic()
+        want += [k for k in order if k in self.sent and k in self.refinements and k not in self.building
+                 and self.refinement_retries.get(k,0.)<=now]
         for gx, gy in want[:max(0, self.per_pose - len(self.building))]:
             self.building.add((gx, gy))
+            self.refinement_jobs[(gx,gy)]=self.refinements.get((gx,gy))
             fut = self.futs[(gx, gy)] = loop.run_in_executor(self.pool, build, gx, gy)
             fut.add_done_callback(lambda f, k=(gx, gy): self._built_geo(conn, k, f))
         for k in [k for k in list(self.sent) if all(self._geo_dist(k, *p) > self.drop_m for p in spots)
                   and all(self._geo_dist(k, f[0], f[1]) > f[2] + 256.0 for f in foci)]:
             self.sent.discard(k)
+            self.refinements.pop(k,None);self.refinement_retries.pop(k,None)
+            self.refined.pop(k,None)
             conn.send({"type": f"{self.kind}_drop", "anchorId": aid, "key": geotiles.key(*k, z)})
 
     def _geo_dist(self, k, x, y, own=False):
@@ -1091,16 +1212,24 @@ class Tracker:
 
     def _built_geo(self, conn, key, fut):
         import geotiles
+        if self.futs.get(key) is not fut:return
+        revision=self.refinement_jobs.pop(key,None)
         self.building.discard(key)
         self.futs.pop(key, None)
+        if getattr(self,'closed',False):return
+        if key not in getattr(self,'wanted',{key}) and key not in self.sent:
+            self.refinements.pop(key,None);self.refinement_retries.pop(key,None);self.refined.pop(key,None)
+            return
         if fut.cancelled():
             return
         try:
             res = fut.result()
         except Exception as e:
             log.debug("%s geotile %s: %s: %s", self.kind, key, type(e).__name__, e)
+            if key in self.sent:self.refinement_retries[key]=time.monotonic()+1.
             return
         if res is None:
+            if key in self.sent:self.refinement_retries[key]=time.monotonic()+1.
             return
         path, n, frame, pivot = res[:4]
         shapes = res[4] if len(res) > 4 else None       # (the far geotiles': {what: shape file}, pooled paths below)
@@ -1113,6 +1242,13 @@ class Tracker:
         s = getattr(conn, "s", None)
         out_dir = getattr(s, "out_dir", None)
         data = staging.inline_json(out_dir, path) if out_dir else None
+        used=(data.get('acceptedPlan') or {}).get('revision') if isinstance(data,dict) else None
+        # The queued target is an attempted refresh, including safe fallback
+        # when a requested cache child was evicted/corrupt. New near references
+        # trigger another target; the same failed cache cannot busy-loop.
+        self.refined[key]=revision or used
+        if self.refined[key]==self.refinements.get(key):
+            self.refinements.pop(key,None);self.refinement_retries.pop(key,None)
         if data is not None:
             m["data"] = data
         pool = getattr(s, "pool_shapes", None)

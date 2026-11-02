@@ -25,6 +25,7 @@ import re
 import threading
 import time
 import zipfile
+from codefiles import source_files
 
 ON = os.environ.get("BNE_REVISIT", "on") != "off"
 SKIP = {k for k in os.environ.get("BNE_REVISIT_SKIP", "").split(",") if k}     # kinds left out (tests: "roads,far")
@@ -59,10 +60,12 @@ def code_key():
         if not _code:
             here = os.path.dirname(os.path.abspath(__file__))
             h = hashlib.sha1()
-            for name in sorted(os.listdir(here)):
+            names = set(source_files(here))
+            names.update(n for n in os.listdir(here) if n == "CODE_ID" or n.startswith("earthfast"))
+            for name in sorted(names):
                 # (a packaged app's modules are in its archive, not beside __file__: the build's CODE_ID, their
                 # fingerprint, is; without it a Python-only update reused the older build's items. From PR #368)
-                if name == "CODE_ID" or name.endswith(".py") or name.startswith("earthfast"):
+                if os.path.isfile(os.path.join(here, name)):
                     try:
                         with open(os.path.join(here, name), "rb") as f:
                             h.update(name.encode() + b"\0" + f.read())
@@ -71,6 +74,14 @@ def code_key():
             for k in sorted(os.environ):                # (the build switches: BNE_*)
                 if k.startswith("BNE_") and k not in ("BNE_REVISIT", "BNE_REVISIT_MB", "BNE_REVISIT_SKIP"):
                     h.update(f"{k}={os.environ[k]}".encode())
+            if os.environ.get("BNE_BUILDING_GENERATOR", "legacy") == "v2":
+                import shapely
+                from buildgen import roof_colours, zones, site_data
+                h.update(f"building_geometry={shapely.__version__}/{shapely.geos_version_string}".encode())
+                h.update(f"building_evidence={roof_colours.catalogue()[0]}/{zones.catalogue()[0]}".encode())
+                h.update(f"building_sites={site_data.catalogue()[0]}".encode())
+                from sitegen import shared_courts
+                h.update(f"shared_site_records={shared_courts.catalogue()[0]}".encode())
             _code.append(h.hexdigest()[:16])
         return _code[0]
 

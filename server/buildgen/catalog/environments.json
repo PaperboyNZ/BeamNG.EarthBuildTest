@@ -1,0 +1,2893 @@
+{
+  "schema": 1,
+  "note": "64 active regional themes selected by explicit overlays or bundled geographic polygons. Parameters are authored visual priors; mapped evidence has priority. Advanced heritage forms and unsurveyed local variants remain outside this bounded grammar.",
+  "environments": {
+    "unknown": {
+      "preset_weights": {}
+    },
+    "residential_unspecified": {
+      "preset_weights": {}
+    },
+    "low_density_residential": {
+      "preset_weights": {
+        "suburban_lowrise_home": 4,
+        "residential_lowrise": 1
+      }
+    },
+    "medium_density_residential": {
+      "preset_weights": {
+        "compact_lowrise_home": 3,
+        "urban_walkup": 4,
+        "residential_lowrise": 1
+      }
+    },
+    "high_density_residential": {
+      "preset_weights": {
+        "urban_walkup": 2,
+        "perimeter_block": 3,
+        "residential_block": 2
+      }
+    },
+    "rural_residential": {
+      "preset_weights": {
+        "rural_lowrise_home": 4
+      }
+    },
+    "rural": {
+      "preset_weights": {
+        "rural_lowrise_home": 3
+      }
+    },
+    "commercial_unspecified": {
+      "preset_weights": {}
+    },
+    "commercial_frontage": {
+      "preset_weights": {
+        "ci_form_pier_frontage": 3,
+        "commercial_frontage_shell": 3
+      }
+    },
+    "town_centre": {
+      "preset_weights": {
+        "ci_form_pier_frontage": 3,
+        "commercial_frontage_shell": 3,
+        "mixed_use_midrise": 3
+      }
+    },
+    "city_centre": {
+      "preset_weights": {
+        "ci_form_ribbon_block": 3,
+        "ci_form_pier_frontage": 2,
+        "commercial_block_shell": 3,
+        "mixed_use_midrise": 3,
+        "perimeter_block": 2
+      }
+    },
+    "mixed_use": {
+      "preset_weights": {
+        "ci_form_pier_frontage": 2,
+        "mixed_use_midrise": 3,
+        "commercial_frontage_shell": 2
+      }
+    },
+    "large_format_retail": {
+      "preset_weights": {
+        "ci_form_display_hall": 4,
+        "commercial_hall_shell": 4
+      }
+    },
+    "industrial_unspecified": {
+      "preset_weights": {}
+    },
+    "light_industry": {
+      "preset_weights": {
+        "ci_form_glazed_workhall": 3,
+        "ci_form_industrial_grid": 2,
+        "light_industrial_hall": 4
+      }
+    },
+    "heavy_industry": {
+      "preset_weights": {
+        "ci_form_service_hall": 3,
+        "ci_form_clerestory_hall": 3,
+        "heavy_industrial_shell": 4
+      }
+    },
+    "education": {
+      "preset_weights": {
+        "civic_campus_shell": 3
+      }
+    },
+    "health": {
+      "preset_weights": {
+        "civic_campus_shell": 3
+      }
+    },
+    "transport": {
+      "preset_weights": {}
+    },
+    "open_space": {
+      "preset_weights": {}
+    },
+    "vacant": {
+      "preset_weights": {}
+    },
+    "special_purpose": {
+      "preset_weights": {}
+    }
+  },
+  "regions": {
+    "us_northeast": {
+      "label": "US Northeast",
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "brick",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "North America",
+      "coverage": "New England and the Mid-Atlantic; NYC adapter footprint only at runtime",
+      "style_directions": [
+        "Federal and Georgian townhouses",
+        "brick rowhouses and brownstones",
+        "timber suburbs and contemporary infill"
+      ],
+      "detailing_goals": "Stoops, aligned sash bays, cornices and restrained shopfront insertion",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#us_northeast"
+    },
+    "us_southeast": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "brick",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "US Southeast and Gulf",
+      "group": "North America",
+      "coverage": "Southeastern states, Appalachia and the Gulf Coast",
+      "style_directions": [
+        "Porch houses and shotgun houses",
+        "Appalachian timber homes",
+        "brick ranch and contemporary suburban stock"
+      ],
+      "detailing_goals": "Porch depth, screened openings and climate-specific eaves",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#us_southeast"
+    },
+    "us_midwest": {
+      "facade": [
+        [
+          "brick",
+          4
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "US Midwest and Great Plains",
+      "group": "North America",
+      "coverage": "Great Lakes, central plains and interior US Rockies",
+      "style_directions": [
+        "Worker cottages and brick two-flats",
+        "Prairie and Craftsman houses",
+        "farmsteads and postwar ranches"
+      ],
+      "detailing_goals": "Broad eaves, masonry bases and distinct urban/rural frontage rhythms",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#us_midwest"
+    },
+    "us_southwest": {
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "US Southwest",
+      "group": "North America",
+      "coverage": "Desert Southwest and inland southern California",
+      "style_directions": [
+        "Pueblo Revival",
+        "Spanish Colonial Revival",
+        "desert modern and ordinary stucco suburbs"
+      ],
+      "detailing_goals": "Recessed openings, shaded courts and separately evidenced parapets",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#us_southwest"
+    },
+    "us_pacific": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "US Pacific Coast",
+      "group": "North America",
+      "coverage": "Coastal California, Oregon and Washington",
+      "style_directions": [
+        "Craftsman and timber vernacular",
+        "California Spanish Revival",
+        "mid-century and contemporary coastal infill"
+      ],
+      "detailing_goals": "Porches, projecting bays, siding and local flat/pitched roof variants",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#us_pacific"
+    },
+    "canada_atlantic": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "brick",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Atlantic Canada and Quebec",
+      "group": "North America",
+      "coverage": "Maritime provinces, Newfoundland, Quebec and eastern Ontario",
+      "style_directions": [
+        "Maritime timber houses",
+        "Quebec stone and brick streets",
+        "duplexes and contemporary infill"
+      ],
+      "detailing_goals": "Painted siding, dormers, exterior stairs only where evidenced",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "lunenburg"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#canada_atlantic"
+    },
+    "canada_prairie": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Canadian Prairies and interior",
+      "group": "North America",
+      "coverage": "Prairie provinces, inland British Columbia and northern Ontario",
+      "style_directions": [
+        "Prairie farmhouses",
+        "railway-town brick main streets",
+        "bungalows and modern infill"
+      ],
+      "detailing_goals": "Wind lobbies, compact envelopes and shopfront/parapet variation",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#canada_prairie"
+    },
+    "canada_pacific": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "shingle",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Coastal British Columbia",
+      "group": "North America",
+      "coverage": "Pacific Canadian settlements and coastal islands",
+      "style_directions": [
+        "Timber coastal vernacular",
+        "Arts and Crafts",
+        "West Coast modern and mixed-use infill"
+      ],
+      "detailing_goals": "Rain-sheltered entries, wood cladding and deep glazed bays",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#canada_pacific"
+    },
+    "arctic_north_america": {
+      "facade": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Alaska, northern Canada and Greenland",
+      "group": "North America",
+      "coverage": "Arctic/subarctic settlements including Greenland; separate local communities",
+      "style_directions": [
+        "Painted timber settlements",
+        "compact insulated modular housing",
+        "contemporary Arctic civic buildings"
+      ],
+      "detailing_goals": "Wind vestibules, insulated panels and surveyed foundation clearances",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#arctic_north_america"
+    },
+    "latin_american_local": {
+      "label": "Mexico and northern Mesoamerica",
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "Latin America and Caribbean",
+      "coverage": "Mexico and adjoining highland settlement traditions; locality-specific",
+      "style_directions": [
+        "Courtyard and adobe traditions",
+        "colonial masonry streets",
+        "modernist and incremental urban housing"
+      ],
+      "detailing_goals": "Recessed entries, courtyard-facing galleries and separately mapped roof terraces",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "compatibility_note": "Legacy ID retained; formerly broad placeholder now has the explicit scope above.",
+      "runtime_profile": "regional_profiles.json#latin_american_local"
+    },
+    "caribbean_creole": {
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Caribbean and Atlantic island towns",
+      "group": "Latin America and Caribbean",
+      "coverage": "Greater/Lesser Antilles, Bahamas, Bermuda and Caribbean coastal enclaves",
+      "style_directions": [
+        "Creole timber houses",
+        "Spanish courtyard streets",
+        "Art Deco and reinforced-concrete urban stock"
+      ],
+      "detailing_goals": "Louvres, shaded galleries, hurricane shutters and local roof profiles",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#caribbean_creole"
+    },
+    "central_america": {
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "tile",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Central American isthmus",
+      "group": "Latin America and Caribbean",
+      "coverage": "Guatemala through Panama, including Belize and both coasts",
+      "style_directions": [
+        "Highland courtyard houses",
+        "Caribbean timber settlements",
+        "tropical modern and ordinary concrete housing"
+      ],
+      "detailing_goals": "Verandas, covered circulation and highland/coastal material separation",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#central_america"
+    },
+    "andean_highlands": {
+      "facade": [
+        [
+          "concrete",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Andean highlands",
+      "group": "Latin America and Caribbean",
+      "coverage": "Colombia, Ecuador, Peru and Bolivia highland settlements",
+      "style_directions": [
+        "Adobe and stone courtyard houses",
+        "colonial urban blocks",
+        "brick and concrete self-built neighbourhoods"
+      ],
+      "detailing_goals": "Thick reveals, sheltered courts and local tile/metal roof choices",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#andean_highlands"
+    },
+    "brazil_coastal": {
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Coastal and southeastern Brazil",
+      "group": "Latin America and Caribbean",
+      "coverage": "Atlantic Brazil, including northeast, southeast and southern coastal cities",
+      "style_directions": [
+        "Portuguese-derived townhouses",
+        "Art Deco streets",
+        "Brazilian modernism and contemporary apartments"
+      ],
+      "detailing_goals": "Shaded balconies, cobogo-inspired screens and ordinary rendered facades",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#brazil_coastal"
+    },
+    "amazon_guianas": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "shingle",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Amazon and Guianas",
+      "group": "Latin America and Caribbean",
+      "coverage": "Amazon basin, inland tropical lowlands, Guyana, Suriname and French Guiana",
+      "style_directions": [
+        "Riverine timber housing",
+        "Guianese veranda houses",
+        "contemporary lowland masonry settlements"
+      ],
+      "detailing_goals": "Ventilated eaves, rain protection and raised floors only with evidence",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#amazon_guianas"
+    },
+    "southern_cone": {
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "brick",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Southern Cone plains and Patagonia",
+      "group": "Latin America and Caribbean",
+      "coverage": "Argentina, Uruguay, Paraguay and inland southern Brazil; Patagonian localities",
+      "style_directions": [
+        "Patio and chorizo houses",
+        "Italianate urban fronts",
+        "modernist blocks and Patagonian timber/metal homes"
+      ],
+      "detailing_goals": "Courtyard sequences, rhythmic cornices and cold/warm locality variants",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#southern_cone"
+    },
+    "chile_pacific": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Chilean Pacific settlements",
+      "group": "Latin America and Caribbean",
+      "coverage": "Chilean coast, central valleys, Chiloe and far-south settlements",
+      "style_directions": [
+        "Hillside port houses",
+        "Chilote timber and shingle traditions",
+        "contemporary seismic-frame housing"
+      ],
+      "detailing_goals": "Stepped fronts within measured envelopes and timber/metal cladding",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "valparaiso"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#chile_pacific"
+    },
+    "eu_atlantic": {
+      "label": "Britain, Ireland and Atlantic islands",
+      "facade": [
+        [
+          "brick",
+          6
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "stone",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "slate",
+          5
+        ],
+        [
+          "tile",
+          3
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "Europe",
+      "coverage": "Britain, Ireland and locally verified Azores/Madeira traditions",
+      "style_directions": [
+        "Georgian and Victorian terraces",
+        "stone cottages",
+        "postwar estates and contemporary infill"
+      ],
+      "detailing_goals": "Sash-bay rhythm, brick/stone reveals and local slate/tile distinctions",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "compatibility_note": "Legacy ID retained; formerly broad placeholder now has the explicit scope above.",
+      "runtime_profile": "regional_profiles.json#eu_atlantic"
+    },
+    "eu_mediterranean": {
+      "label": "Iberian Mediterranean and interior",
+      "facade": [
+        [
+          "render",
+          7
+        ],
+        [
+          "stone",
+          2
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          6
+        ],
+        [
+          "membrane",
+          3
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "group": "Europe",
+      "coverage": "Spain, Portugal and Balearic settlements; local Atlantic variants",
+      "style_directions": [
+        "Patio houses",
+        "whitewashed and tiled urban fronts",
+        "modern apartment and suburban stock"
+      ],
+      "detailing_goals": "Shutters, balconies, shaded courts and ceramic accents",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "compatibility_note": "Legacy ID retained; formerly broad placeholder now has the explicit scope above.",
+      "runtime_profile": "regional_profiles.json#eu_mediterranean"
+    },
+    "nordic_cold": {
+      "label": "Nordic countries and North Atlantic",
+      "facade": [
+        [
+          "wood",
+          6
+        ],
+        [
+          "render",
+          2
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          4
+        ],
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "Europe",
+      "coverage": "Scandinavia, Finland, Iceland, Faroe Islands and Svalbard",
+      "style_directions": [
+        "Painted timber towns",
+        "Nordic classicism",
+        "functionalist housing and contemporary timber"
+      ],
+      "detailing_goals": "Weather-protected entries, restrained trim and locality-specific roof systems",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#nordic_cold"
+    },
+    "france_regional": {
+      "facade": [
+        [
+          "render",
+          7
+        ],
+        [
+          "stone",
+          2
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          7
+        ],
+        [
+          "slate",
+          2
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "France and regional traditions",
+      "group": "Europe",
+      "coverage": "French mainland and Corsica; regional and urban/rural subdivisions",
+      "style_directions": [
+        "Haussmannian streets",
+        "half-timber and stone regional houses",
+        "modernist estates and contemporary infill"
+      ],
+      "detailing_goals": "Mansard details only with roof support, shutters and rhythmic stone bays",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#france_regional"
+    },
+    "low_countries": {
+      "facade": [
+        [
+          "brick",
+          8
+        ],
+        [
+          "render",
+          1
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "membrane",
+          3
+        ],
+        [
+          "slate",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Low Countries",
+      "group": "Europe",
+      "coverage": "Netherlands, Belgium and Luxembourg",
+      "style_directions": [
+        "Brick canal and merchant houses",
+        "Flemish terraces",
+        "modernist and contemporary brick housing"
+      ],
+      "detailing_goals": "Narrow bay rhythms, gable variations and recessed entrances",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#low_countries"
+    },
+    "central_europe": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "brick",
+          3
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "membrane",
+          3
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "German-speaking and central Europe",
+      "group": "Europe",
+      "coverage": "Germany, Czechia, Poland, Slovakia and non-Alpine Austria/Switzerland",
+      "style_directions": [
+        "Half-timber and masonry townhouses",
+        "perimeter blocks",
+        "postwar estates and contemporary housing"
+      ],
+      "detailing_goals": "Rendered panels, brick trim, regular street walls and local roof pitches",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#central_europe"
+    },
+    "alpine": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "wood",
+          2
+        ],
+        [
+          "stone",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "metal",
+          3
+        ],
+        [
+          "slate",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Alpine settlements",
+      "group": "Europe",
+      "coverage": "Alpine valleys and uplands across national borders",
+      "style_directions": [
+        "Timber chalet traditions",
+        "stone valley houses",
+        "contemporary Alpine apartments"
+      ],
+      "detailing_goals": "Deep eaves, timber galleries and snow details only where validated",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#alpine"
+    },
+    "italy_regional": {
+      "facade": [
+        [
+          "render",
+          7
+        ],
+        [
+          "brick",
+          2
+        ],
+        [
+          "stone",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          7
+        ],
+        [
+          "membrane",
+          2
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Italian peninsula and islands",
+      "group": "Europe",
+      "coverage": "Italy, Sicily, Sardinia and Malta; separate local palettes",
+      "style_directions": [
+        "Palazzo and courtyard blocks",
+        "stone/stucco vernacular",
+        "rationalist and contemporary apartment buildings"
+      ],
+      "detailing_goals": "Shutters, loggias, restrained cornices and island-specific stonework",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#italy_regional"
+    },
+    "adriatic_balkans": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "brick",
+          3
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          7
+        ],
+        [
+          "metal",
+          2
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Adriatic and Balkan interior",
+      "group": "Europe",
+      "coverage": "Slovenia, Croatia, Bosnia and Herzegovina, Serbia, Montenegro, Kosovo, Albania and North Macedonia",
+      "style_directions": [
+        "Adriatic stone streets",
+        "Ottoman-influenced timber/masonry houses",
+        "Yugoslav modernism and infill"
+      ],
+      "detailing_goals": "Balconies, shaded loggias and coastal/interior roof differentiation",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#adriatic_balkans"
+    },
+    "aegean": {
+      "facade": [
+        [
+          "render",
+          7
+        ],
+        [
+          "concrete",
+          2
+        ],
+        [
+          "stone",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "membrane",
+          4
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Greece and Cyprus",
+      "group": "Europe",
+      "coverage": "Mainland Greece, Aegean islands and Cyprus",
+      "style_directions": [
+        "Island courtyard houses",
+        "neoclassical townhouses",
+        "polykatoikia apartment blocks"
+      ],
+      "detailing_goals": "Shutters, balcony bands and locality-specific whitewash/stone treatment",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#aegean"
+    },
+    "eastern_europe": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "concrete",
+          3
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "tile",
+          3
+        ],
+        [
+          "membrane",
+          3
+        ]
+      ],
+      "status": "active",
+      "label": "Eastern Europe and Baltic",
+      "group": "Europe",
+      "coverage": "Estonia, Latvia, Lithuania, Belarus, Ukraine, Moldova, Romania, Bulgaria and Hungary",
+      "style_directions": [
+        "Timber and masonry vernacular",
+        "eclectic and Art Nouveau streets",
+        "socialist-era blocks and contemporary infill"
+      ],
+      "detailing_goals": "Bay/cornice variation and explicit rural/urban distinctions",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#eastern_europe"
+    },
+    "russia_north": {
+      "facade": [
+        [
+          "render",
+          5
+        ],
+        [
+          "brick",
+          3
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          5
+        ],
+        [
+          "metal",
+          3
+        ],
+        [
+          "tile",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Russia and northern Eurasia",
+      "group": "Europe",
+      "coverage": "European Russia, Siberia and Russian Far East; local traditions required",
+      "style_directions": [
+        "Timber izba houses",
+        "classical and eclectic urban blocks",
+        "constructivist and panel housing"
+      ],
+      "detailing_goals": "Carved trim only with support, panel rhythms and climate-specific entries",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#russia_north"
+    },
+    "african_local": {
+      "label": "West African Atlantic and Gulf of Guinea",
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          7
+        ],
+        [
+          "tile",
+          2
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "group": "Africa",
+      "coverage": "Coastal West Africa from Senegal to Nigeria; separate city/community variants",
+      "style_directions": [
+        "Compound houses",
+        "Afro-Brazilian urban fronts",
+        "tropical modern and contemporary masonry housing"
+      ],
+      "detailing_goals": "Shaded galleries, ventilation screens and courtyard-facing openings",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "compatibility_note": "Legacy ID retained; formerly broad placeholder now has the explicit scope above.",
+      "runtime_profile": "regional_profiles.json#african_local"
+    },
+    "maghreb": {
+      "facade": [
+        [
+          "render",
+          7
+        ],
+        [
+          "concrete",
+          2
+        ],
+        [
+          "stone",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          7
+        ],
+        [
+          "tile",
+          2
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Maghreb and northwest Africa",
+      "group": "Africa",
+      "coverage": "Morocco, Algeria, Tunisia, Libya and locally verified Saharan/Canary settlements",
+      "style_directions": [
+        "Medina courtyard houses",
+        "Amazigh earthen and stone traditions",
+        "modern Mediterranean urban stock"
+      ],
+      "detailing_goals": "Deep reveals, shaded courts and local tile/plaster detailing",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#maghreb"
+    },
+    "sahel": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          6
+        ],
+        [
+          "metal",
+          3
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Sahel and western Sudanian belt",
+      "group": "Africa",
+      "coverage": "Mauritania, Mali, Burkina Faso, Niger, Chad and inland West African localities",
+      "style_directions": [
+        "Sudano-Sahelian earthen compounds",
+        "courtyard trading towns",
+        "contemporary masonry housing"
+      ],
+      "detailing_goals": "Buttressed forms only with footprint support and shaded recessed openings",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "djenne"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#sahel"
+    },
+    "nile_valley": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          8
+        ],
+        [
+          "metal",
+          1
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Nile Valley and northeast desert",
+      "group": "Africa",
+      "coverage": "Egypt and Sudan; river, delta, Nubian and desert localities",
+      "style_directions": [
+        "Nubian courtyard traditions",
+        "urban masonry apartment blocks",
+        "modern concrete housing"
+      ],
+      "detailing_goals": "Shading, deep reveals and separately evidenced vault/dome forms",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#nile_valley"
+    },
+    "horn_africa": {
+      "facade": [
+        [
+          "concrete",
+          4
+        ],
+        [
+          "render",
+          4
+        ],
+        [
+          "stone",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          6
+        ],
+        [
+          "tile",
+          2
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Horn of Africa and Ethiopian highlands",
+      "group": "Africa",
+      "coverage": "Ethiopia, Eritrea, Djibouti and Somalia with highland/coastal distinctions",
+      "style_directions": [
+        "Highland stone compounds",
+        "Asmara modernism",
+        "coastal and contemporary urban masonry"
+      ],
+      "detailing_goals": "Local stone/render treatment, verandas and modernist horizontal bands",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "asmara"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#horn_africa"
+    },
+    "swahili_east_africa": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "wood",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          8
+        ],
+        [
+          "tile",
+          1
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Swahili coast and East African interior",
+      "group": "Africa",
+      "coverage": "Kenya, Tanzania, Uganda, Rwanda and Burundi; coast and lake/highland variants",
+      "style_directions": [
+        "Swahili courtyard townhouses",
+        "inland masonry and timber housing",
+        "tropical modern urban buildings"
+      ],
+      "detailing_goals": "Carved-entry references, shaded verandas and coast/interior differentiation",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#swahili_east_africa"
+    },
+    "central_africa": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "wood",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          7
+        ],
+        [
+          "tile",
+          2
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Central African forest and plateau",
+      "group": "Africa",
+      "coverage": "Cameroon, Central African Republic, South Sudan, Equatorial Guinea, Gabon and both Congos",
+      "style_directions": [
+        "Forest timber compounds",
+        "veranda houses",
+        "contemporary blockwork and concrete cities"
+      ],
+      "detailing_goals": "Rain-shedding eaves, ventilated screens and timber/masonry alternatives",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#central_africa"
+    },
+    "southern_africa": {
+      "facade": [
+        [
+          "render",
+          5
+        ],
+        [
+          "brick",
+          4
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Southern African plateau and coasts",
+      "group": "Africa",
+      "coverage": "Angola, Zambia, Malawi, Mozambique, Zimbabwe, Botswana, Namibia, South Africa, Lesotho and Eswatini",
+      "style_directions": [
+        "Cape and veranda traditions",
+        "courtyard homesteads",
+        "modernist, township and contemporary suburban stock"
+      ],
+      "detailing_goals": "Stoep/porch treatments, shade devices and separate highland/arid/coastal variants",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#southern_africa"
+    },
+    "indian_ocean_africa": {
+      "facade": [
+        [
+          "brick",
+          5
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          5
+        ],
+        [
+          "tile",
+          3
+        ],
+        [
+          "shingle",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Madagascar and western Indian Ocean",
+      "group": "Africa",
+      "coverage": "Madagascar, Comoros, Mauritius, Reunion, Seychelles and nearby islands",
+      "style_directions": [
+        "Malagasy highland brick houses",
+        "coastal timber traditions",
+        "Creole veranda and contemporary concrete housing"
+      ],
+      "detailing_goals": "Steep local roof variants, timber galleries and cyclone-conscious detailing",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#indian_ocean_africa"
+    },
+    "arid_warm": {
+      "label": "Arabian Peninsula and Gulf",
+      "facade": [
+        [
+          "render",
+          7
+        ],
+        [
+          "concrete",
+          3
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          8
+        ],
+        [
+          "tile",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "West and Central Asia",
+      "coverage": "Gulf states, Saudi Arabia, Oman and Yemen; distinct coastal/highland/desert variants",
+      "style_directions": [
+        "Courtyard and wind-tower traditions",
+        "Yemeni tower houses",
+        "contemporary villas and urban blocks"
+      ],
+      "detailing_goals": "Screened openings, shaded courts and locally evidenced tower/roof forms",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "shibam"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "compatibility_note": "Legacy ID retained; formerly broad placeholder now has the explicit scope above.",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#arid_warm"
+    },
+    "levant": {
+      "facade": [
+        [
+          "stone",
+          6
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          7
+        ],
+        [
+          "tile",
+          3
+        ]
+      ],
+      "status": "active",
+      "label": "Levant and eastern Mediterranean",
+      "group": "West and Central Asia",
+      "coverage": "Lebanon, Syria, Jordan, Israel and Palestinian localities",
+      "style_directions": [
+        "Stone courtyard houses",
+        "arcaded urban fronts",
+        "modern apartment and suburban buildings"
+      ],
+      "detailing_goals": "Limestone-like palettes, balconies and deep window reveals",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#levant"
+    },
+    "anatolia_caucasus": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "brick",
+          3
+        ],
+        [
+          "stone",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          5
+        ],
+        [
+          "tile",
+          3
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Anatolia and Caucasus",
+      "group": "West and Central Asia",
+      "coverage": "Turkiye, Armenia, Georgia and Azerbaijan; coastal/highland subdivisions",
+      "style_directions": [
+        "Timber Ottoman houses",
+        "Caucasian stone and balcony houses",
+        "modern apartment neighbourhoods"
+      ],
+      "detailing_goals": "Projecting upper bays, shaded galleries and regional masonry details",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#anatolia_caucasus"
+    },
+    "iran_plateau": {
+      "facade": [
+        [
+          "brick",
+          5
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "stone",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          8
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Iranian plateau and Afghan uplands",
+      "group": "West and Central Asia",
+      "coverage": "Iran and Afghanistan; desert, mountain and Caspian localities",
+      "style_directions": [
+        "Courtyard and earthen traditions",
+        "Caspian timber houses",
+        "brick/concrete urban apartments"
+      ],
+      "detailing_goals": "Recessed courts, local brick patterns and evidenced windcatchers",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "yazd"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#iran_plateau"
+    },
+    "mesopotamia": {
+      "facade": [
+        [
+          "render",
+          5
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "brick",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          9
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Mesopotamian plains",
+      "group": "West and Central Asia",
+      "coverage": "Iraq and adjoining river plain localities",
+      "style_directions": [
+        "Courtyard brick houses",
+        "shanashil timber-front traditions",
+        "contemporary masonry and concrete blocks"
+      ],
+      "detailing_goals": "Screened projecting bays, recessed entries and shaded passage fronts",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#mesopotamia"
+    },
+    "central_asia_oases": {
+      "facade": [
+        [
+          "render",
+          5
+        ],
+        [
+          "brick",
+          4
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          5
+        ],
+        [
+          "membrane",
+          4
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Central Asian oasis towns",
+      "group": "West and Central Asia",
+      "coverage": "Uzbekistan, Turkmenistan, Tajikistan and oasis settlements of neighbouring states",
+      "style_directions": [
+        "Earthen courtyard houses",
+        "brick merchant streets",
+        "Soviet-era and contemporary apartment stock"
+      ],
+      "detailing_goals": "Courtyard orientation, restrained brick patterns and local timber galleries",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#central_asia_oases"
+    },
+    "central_asia_steppe": {
+      "facade": [
+        [
+          "brick",
+          4
+        ],
+        [
+          "render",
+          4
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          6
+        ],
+        [
+          "shingle",
+          3
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Central Asian steppe and mountain towns",
+      "group": "West and Central Asia",
+      "coverage": "Kazakhstan, Kyrgyzstan and Mongolia; permanent settlements",
+      "style_directions": [
+        "Timber and masonry townhouses",
+        "Soviet-era apartment blocks",
+        "contemporary low-rise and urban infill"
+      ],
+      "detailing_goals": "Wind-sheltered entries and permanent-building treatment of settlement edges",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#central_asia_steppe"
+    },
+    "indus_gangetic": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          8
+        ],
+        [
+          "tile",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Indus, Gangetic plains and western India",
+      "group": "South Asia",
+      "coverage": "Pakistan, northern India, Rajasthan and Gujarat; explicit local subvariants",
+      "style_directions": [
+        "Haveli and pol courtyard houses",
+        "brick bazaar fronts",
+        "modern concrete and mixed-use neighbourhoods"
+      ],
+      "detailing_goals": "Jali-inspired screens, shaded balconies and local timber/brick detail",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "ahmedabad"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#indus_gangetic"
+    },
+    "india_peninsular": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          7
+        ],
+        [
+          "tile",
+          2
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Peninsular India and Deccan",
+      "group": "South Asia",
+      "coverage": "Central, western and southern Indian peninsula",
+      "style_directions": [
+        "Deccan courtyard houses",
+        "Kerala/Malabar timber and tile traditions",
+        "modernist and contemporary concrete housing"
+      ],
+      "detailing_goals": "Deep verandas, rain eaves and dry/wet locality distinction",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#india_peninsular"
+    },
+    "bengal_delta": {
+      "facade": [
+        [
+          "concrete",
+          5
+        ],
+        [
+          "render",
+          4
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          8
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Bengal and northeast South Asia",
+      "group": "South Asia",
+      "coverage": "Bangladesh, eastern India, Assam and northeast Indian localities",
+      "style_directions": [
+        "Bengal courtyard and curved-roof traditions",
+        "raised timber/bamboo houses",
+        "brick and concrete urban stock"
+      ],
+      "detailing_goals": "Monsoon eaves, shaded openings and mapped floor-height constraints",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Bamboo, thatch and woven panels need dedicated assets; current candidates use supported families only.",
+      "runtime_profile": "regional_profiles.json#bengal_delta"
+    },
+    "himalayan": {
+      "facade": [
+        [
+          "brick",
+          5
+        ],
+        [
+          "render",
+          4
+        ],
+        [
+          "wood",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          5
+        ],
+        [
+          "metal",
+          4
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Himalayan foothills and valleys",
+      "group": "South Asia",
+      "coverage": "Nepal, Bhutan and Indian/Pakistani Himalayan localities",
+      "style_directions": [
+        "Newar brick and timber houses",
+        "Bhutanese timber/masonry traditions",
+        "contemporary hill-town buildings"
+      ],
+      "detailing_goals": "Timber bands, deep eaves and slope-aware fronts within source geometry",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#himalayan"
+    },
+    "sri_lanka_maldives": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "wood",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "membrane",
+          3
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Sri Lanka and Maldives",
+      "group": "South Asia",
+      "coverage": "Sri Lankan wet/dry zones and Maldivian islands",
+      "style_directions": [
+        "Courtyard and veranda houses",
+        "tropical modernism",
+        "island masonry and contemporary urban housing"
+      ],
+      "detailing_goals": "Shaded colonnades, ventilation and tile/metal alternatives",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#sri_lanka_maldives"
+    },
+    "jp_temperate": {
+      "label": "Japan and Ryukyu islands",
+      "facade": [
+        [
+          "render",
+          4
+        ],
+        [
+          "wood",
+          3
+        ],
+        [
+          "metal",
+          3
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          5
+        ],
+        [
+          "tile",
+          4
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "group": "East Asia",
+      "coverage": "Japanese archipelago; Hokkaido, mainland and Okinawan subvariants",
+      "style_directions": [
+        "Machiya and minka traditions",
+        "postwar compact houses",
+        "contemporary narrow urban infill"
+      ],
+      "detailing_goals": "Layered eaves, screened fronts and local tile/metal roof distinctions",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#jp_temperate"
+    },
+    "china_north": {
+      "facade": [
+        [
+          "brick",
+          6
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "membrane",
+          4
+        ],
+        [
+          "metal",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Northern and inland China",
+      "group": "East Asia",
+      "coverage": "Northern plains, northeast China and northwestern inland towns",
+      "style_directions": [
+        "Siheyuan courtyard houses",
+        "brick hutong fronts",
+        "danwei and contemporary apartment stock"
+      ],
+      "detailing_goals": "Courtyard gates, brick bays and cold-region enclosure",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#china_north"
+    },
+    "china_south": {
+      "facade": [
+        [
+          "concrete",
+          5
+        ],
+        [
+          "render",
+          4
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          7
+        ],
+        [
+          "metal",
+          2
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Southern China, Taiwan and coastal cities",
+      "group": "East Asia",
+      "coverage": "Southern/southwestern China, Hong Kong, Macao and Taiwan; local subvariants",
+      "style_directions": [
+        "Jiangnan courtyard houses",
+        "Lingnan qilou and Taiwanese shophouses",
+        "modern high-density and village stock"
+      ],
+      "detailing_goals": "Arcaded fronts, rain eaves and separate hill/coast urban forms",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#china_south"
+    },
+    "korea": {
+      "facade": [
+        [
+          "brick",
+          6
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          7
+        ],
+        [
+          "metal",
+          2
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Korean peninsula",
+      "group": "East Asia",
+      "coverage": "North and South Korean localities, including Jeju",
+      "style_directions": [
+        "Hanok courtyard traditions",
+        "brick urban houses",
+        "modern apartment and mixed-use blocks"
+      ],
+      "detailing_goals": "Courtyard-facing eaves, timber accents and ordinary contemporary facades",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#korea"
+    },
+    "tibetan_plateau": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "stone",
+          3
+        ],
+        [
+          "brick",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          8
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Tibetan plateau and high mountain settlements",
+      "group": "East Asia",
+      "coverage": "Tibetan cultural plateau and adjoining high-altitude localities",
+      "style_directions": [
+        "Stone and rammed-earth courtyard houses",
+        "timber-trimmed highland homes",
+        "contemporary masonry town buildings"
+      ],
+      "detailing_goals": "Deep reveals, local parapets and climate-specific compact openings",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Earth/adobe/rammed-earth assets are not implemented; render is a candidate visual proxy only.",
+      "runtime_profile": "regional_profiles.json#tibetan_plateau"
+    },
+    "tropical_humid": {
+      "label": "Malay Peninsula and equatorial trading towns",
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "wood",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "membrane",
+          3
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "Southeast Asia",
+      "coverage": "Malaysia, Singapore and Brunei; local urban/rural variants",
+      "style_directions": [
+        "Malay timber houses",
+        "Straits shophouses",
+        "tropical modern and contemporary urban housing"
+      ],
+      "detailing_goals": "Five-foot-way-inspired frontage, ventilated screens and rain eaves",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "compatibility_note": "Legacy ID retained; formerly broad placeholder now has the explicit scope above.",
+      "runtime_profile": "regional_profiles.json#tropical_humid"
+    },
+    "mainland_southeast_asia": {
+      "facade": [
+        [
+          "render",
+          6
+        ],
+        [
+          "concrete",
+          3
+        ],
+        [
+          "wood",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          6
+        ],
+        [
+          "metal",
+          3
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Mainland Southeast Asia",
+      "group": "Southeast Asia",
+      "coverage": "Myanmar, Thailand, Laos, Cambodia and Vietnam",
+      "style_directions": [
+        "Timber stilt-house traditions",
+        "trading-port shophouses",
+        "tube houses and modern concrete neighbourhoods"
+      ],
+      "detailing_goals": "Narrow frontage rhythms, shaded galleries and mapped raised floors",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "hoi_an"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#mainland_southeast_asia"
+    },
+    "indonesian_archipelago": {
+      "facade": [
+        [
+          "render",
+          5
+        ],
+        [
+          "wood",
+          3
+        ],
+        [
+          "concrete",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          5
+        ],
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Indonesia and Timor",
+      "group": "Southeast Asia",
+      "coverage": "Indonesian islands and Timor-Leste; separate island/community variants",
+      "style_directions": [
+        "Javanese courtyard and pavilion traditions",
+        "Sumatran and Sulawesi timber forms",
+        "contemporary kampung masonry"
+      ],
+      "detailing_goals": "Ventilated roof edges and distinctive roof silhouettes only with evidence",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Bamboo, thatch and woven panels need dedicated assets; current candidates use supported families only.",
+      "runtime_profile": "regional_profiles.json#indonesian_archipelago"
+    },
+    "philippines": {
+      "facade": [
+        [
+          "concrete",
+          5
+        ],
+        [
+          "render",
+          3
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "membrane",
+          5
+        ],
+        [
+          "metal",
+          4
+        ],
+        [
+          "tile",
+          1
+        ]
+      ],
+      "status": "active",
+      "label": "Philippine archipelago",
+      "group": "Southeast Asia",
+      "coverage": "Luzon, Visayas and Mindanao; local settlement variants",
+      "style_directions": [
+        "Bahay kubo and bahay na bato traditions",
+        "Art Deco town fronts",
+        "contemporary concrete and mixed-use buildings"
+      ],
+      "detailing_goals": "Shaded upper galleries, vent panels and local roof/eave systems",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Bamboo, thatch and woven panels need dedicated assets; current candidates use supported families only.",
+      "runtime_profile": "regional_profiles.json#philippines"
+    },
+    "nz_temperate": {
+      "label": "New Zealand and temperate southern Pacific",
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "shingle",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "Oceania",
+      "coverage": "New Zealand settlements including Chatham Islands; Christchurch pilot only at runtime",
+      "style_directions": [
+        "Timber villas and bungalows",
+        "brick/render suburban houses",
+        "contemporary infill and locally evidenced Maori civic traditions"
+      ],
+      "detailing_goals": "Weatherboards, sheltered porches and metal/tile roof distinctions",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#nz_temperate"
+    },
+    "au_southeast": {
+      "label": "Southeastern and temperate Australia",
+      "facade": [
+        [
+          "brick",
+          4
+        ],
+        [
+          "render",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "tile",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "status": "active",
+      "group": "Oceania",
+      "coverage": "Southeastern Australia, Tasmania and temperate southwest settlements",
+      "style_directions": [
+        "Victorian terraces and Federation houses",
+        "brick veneer suburbs",
+        "contemporary coastal and urban infill"
+      ],
+      "detailing_goals": "Verandas, ironwork references, local brick/render and metal/tile roofs",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#au_southeast"
+    },
+    "au_tropical_arid": {
+      "facade": [
+        [
+          "wood",
+          4
+        ],
+        [
+          "metal",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "tile",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Northern and inland Australia",
+      "group": "Oceania",
+      "coverage": "Tropical north, Queensland, inland arid regions and remote settlements",
+      "style_directions": [
+        "Queenslander timber houses",
+        "arid-region veranda buildings",
+        "tropical modern and contemporary modular housing"
+      ],
+      "detailing_goals": "Deep shade, ventilation and separately evidenced elevated floors",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#au_tropical_arid"
+    },
+    "pacific_islands": {
+      "facade": [
+        [
+          "concrete",
+          4
+        ],
+        [
+          "wood",
+          2
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "tile",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Melanesia, Micronesia and Polynesia",
+      "group": "Oceania",
+      "coverage": "Papua New Guinea, Pacific island states/territories and Hawaii; local subvariants",
+      "style_directions": [
+        "Community-specific timber/pavilion traditions",
+        "Pacific bungalow and plantation-era forms",
+        "contemporary island masonry housing"
+      ],
+      "detailing_goals": "Open shaded edges, rain protection and cyclone-aware local roof profiles",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "material_gap": "Bamboo, thatch and woven panels need dedicated assets; current candidates use supported families only.",
+      "runtime_profile": "regional_profiles.json#pacific_islands"
+    },
+    "antarctic_stations": {
+      "facade": [
+        [
+          "metal",
+          6
+        ],
+        [
+          "concrete",
+          1
+        ]
+      ],
+      "roof": [
+        [
+          "metal",
+          4
+        ],
+        [
+          "membrane",
+          2
+        ]
+      ],
+      "status": "active",
+      "label": "Antarctic and subantarctic stations",
+      "group": "Antarctica and subantarctic",
+      "coverage": "Mapped research stations and field infrastructure, including southern ocean islands",
+      "style_directions": [
+        "Historic expedition timber huts",
+        "insulated modular stations",
+        "contemporary research and service buildings"
+      ],
+      "detailing_goals": "Panel joints, wind vestibules and surveyed raised foundations",
+      "design_status": "photo_informed_authored_defaults",
+      "reference_ids": [
+        "antarctic"
+      ],
+      "selection_scope": "explicit_overlay_then_bundled_geographic_polygons",
+      "geometry_status": "parameterized_regional_grammar_v3_polished",
+      "runtime_profile": "regional_profiles.json#antarctic_stations"
+    }
+  },
+  "catalogue_revision": 3,
+  "authoring_contract": {
+    "ordinary_stock": "Each locality needs ordinary housing, contemporary infill and commercial/industrial stock; heritage examples never set their frequency.",
+    "selection": "Choose locality, settlement type, use and evidenced era before a style variant; never infer ethnicity, religion or a historic style from coordinates.",
+    "geometry": "Do not invent footprints, courtyards, storeys, roof forms, stilt heights, sacred features or monuments from a regional label.",
+    "materials": "Palette weights are candidate artistic ratios. Render is not an implemented earth material; metal/tile do not implement thatch.",
+    "activation": "All 64 themes use a bundled offline polygon map and bounded regional grammar. Further local variants require reference review, geometry checks and game playtesting.",
+    "coverage": "Global country/map-unit coverage with province/locality overrides and 500 m unambiguous shoreline tolerance; administrative and authored transitions approximate architectural geography."
+  },
+  "references": {
+    "lunenburg": {
+      "title": "UNESCO: Old Town Lunenburg",
+      "url": "https://whc.unesco.org/en/list/741/",
+      "scope": "Local timber-town reference; not a survey of Canada.",
+      "reviewed": "2026-11-01"
+    },
+    "valparaiso": {
+      "title": "UNESCO: Historic Quarter of Valparaiso",
+      "url": "https://whc.unesco.org/en/list/959/",
+      "scope": "Hillside urban fabric and port architecture; not a nationwide palette.",
+      "reviewed": "2026-11-01"
+    },
+    "djenne": {
+      "title": "UNESCO: Old Towns of Djenne",
+      "url": "https://whc.unesco.org/en/list/116",
+      "scope": "Local earthen architecture reference; not a generic African style.",
+      "reviewed": "2026-11-01"
+    },
+    "asmara": {
+      "title": "UNESCO: Asmara",
+      "url": "https://whc.unesco.org/en/list/1550",
+      "scope": "Modernist city reference; not a default for the Horn of Africa.",
+      "reviewed": "2026-11-01"
+    },
+    "shibam": {
+      "title": "UNESCO: Old Walled City of Shibam",
+      "url": "https://whc.unesco.org/en/list/192/",
+      "scope": "Local Hadrami tower-house reference; not general Gulf housing.",
+      "reviewed": "2026-11-01"
+    },
+    "yazd": {
+      "title": "UNESCO: Historic City of Yazd",
+      "url": "https://whc.unesco.org/en/list/1544/",
+      "scope": "Local desert-city research anchor; no material frequency inference.",
+      "reviewed": "2026-11-01"
+    },
+    "ahmedabad": {
+      "title": "Ministry of Culture: Historic City of Ahmedabad",
+      "url": "https://culture.gov.in/historic-city-ahmedabad2017",
+      "scope": "Local pol-house and urban heritage research anchor.",
+      "reviewed": "2026-11-01"
+    },
+    "hoi_an": {
+      "title": "UNESCO: Hoi An Ancient Town",
+      "url": "https://whc.unesco.org/en/list/948",
+      "scope": "Local timber trading-port reference; not all Southeast Asian housing.",
+      "reviewed": "2026-11-01"
+    },
+    "antarctic": {
+      "title": "Australian Antarctic Program: Buildings and structures",
+      "url": "https://www.antarctica.gov.au/antarctic-operations/stations-and-field-locations/amenities-and-operations/buildings-and-structures/",
+      "scope": "Station construction context; not residential settlement evidence.",
+      "reviewed": "2026-11-01"
+    }
+  }
+}

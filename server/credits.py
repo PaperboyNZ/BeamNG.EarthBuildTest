@@ -187,6 +187,8 @@ def feature_ids(conn):
     md = getattr(s, "mapdata", None)
     roads = getattr(conn, "roads", None)
     roads_on = md is not None and roads is not None and getattr(roads, "aid", None) == conn.active and roads.sent
+    from buildgen.ingest import enabled as buildings_v2
+    context_on = roads_on and buildings_v2()
     veg = getattr(conn, "veg", None)
     veg_on = getattr(s, "veg", None) is not None and veg is not None and getattr(veg, "aid", None) == conn.active \
         and veg.sent
@@ -195,6 +197,7 @@ def feature_ids(conn):
         dlon = FEATURE_NEAR_M / (111320.0 * max(0.1, math.cos(math.radians(lat))))
         for key in mapcells.cells_for_bbox(lat - dlat, lon - dlon, lat + dlat, lon + dlon):
             layers = (("roads", "buildings", "water") if roads_on else ()) \
+                + (("land_use",) if context_on else ()) \
                 + (("landcover",) if getattr(s, "surface", None) is not None else ()) \
                 + (("canopy",) if veg_on else ())
             for layer in layers:
@@ -237,7 +240,7 @@ def feature_ids(conn):
     grav = getattr(getattr(conn, "gravity", None), "msg", None)
     if isinstance(grav, dict) and grav.get("source") == "egm2008":
         ids.add("grav:egm2008")
-    if veg_on:                      # (the trees' tiles carry the forest ambience's set: climate.koppen_at)
+    if veg_on or context_on:        # forest ambience and v2 building roof priors both use this grid
         ids.add("climate:beck-kg")
     return ids
 

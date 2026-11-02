@@ -147,6 +147,12 @@ def pyinstaller(work, ico, onefile, ver=None, boot=None):
            "--distpath", os.path.join(work, "dist"), "--workpath", os.path.join(work, "build"),
            "--specpath", work, "--paths", server, "--paths", ROOT, "--icon", ico,
            "--collect-submodules", "fsspec",
+           "--collect-submodules", "buildgen",
+           "--collect-data", "buildgen",  # versioned preset recipes and normalized zone overlays
+           "--collect-submodules", "sitegen",
+           "--collect-data", "sitegen",  # shared site contracts and future versioned profiles
+           "--collect-all", "shapely",  # GEOS shared libraries used by the experimental building topology compiler
+           "--copy-metadata", "shapely",  # includes the Shapely and bundled GEOS licence notices
            "--hidden-import", "certifi", "--collect-data", "certifi",   # CA bundle fallback (launcher.ensure_ca_certs)
            "--hidden-import", "truststore",     # Windows: the native certificate store (netfetch.windows_ssl_context, PR #371)
            "--add-data", f"{os.path.join(ROOT, 'mod', 'beamng_earth')}{SEP}mod/beamng_earth",

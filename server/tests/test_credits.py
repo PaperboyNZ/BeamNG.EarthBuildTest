@@ -610,6 +610,20 @@ class FeatureSourcesTest(unittest.TestCase):
         ids = credits.tile_sources(None, (0, 0, 1, 1), None, None, {"usgs": 5, "leafon": 5})
         self.assertEqual(ids, frozenset({"img:usgs"}))
 
+    def test_v2_building_context_credits_climate_with_trees_disabled(self):
+        from unittest import mock
+        md = types.SimpleNamespace(layer_provenance=lambda key, layer:
+                                   {"id": "overture:base", "datasets": [{"dataset": "OpenStreetMap"}]}
+                                   if layer == "land_use" else None)
+        s = types.SimpleNamespace(anchors={1: types.SimpleNamespace(frame=geodesy.EnuFrame(45., 9.))},
+                                  mapdata=md, veg=None)
+        conn = types.SimpleNamespace(s=s, active=1, focus=(0., 0.), roads=types.SimpleNamespace(aid=1, sent={(0, 0)}))
+        with mock.patch.dict(os.environ, {"BNE_BUILDING_GENERATOR": "v2"}):
+            ids = credits.feature_ids(conn)
+        self.assertTrue({"climate:beck-kg", "map:Overture", "map:OpenStreetMap"} <= ids)
+        with mock.patch.dict(os.environ, {"BNE_BUILDING_GENERATOR": "legacy"}):
+            self.assertNotIn("climate:beck-kg", credits.feature_ids(conn))
+
     def test_short_names_ascii(self):
         for text in credits.SHORT.values():
             self.assertTrue(text.isascii(), text)

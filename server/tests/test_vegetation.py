@@ -87,7 +87,7 @@ class VegetationTest(unittest.TestCase):
         md = FakeMapData()
         it = veg.Vegetation(md, None).cell(KEY)
         trees = it.take(it.kind == veg.KIND_TREE)
-        self.assertEqual(len(trees), 2, "the building's crown is left out, the road's moves off the road")
+        self.assertEqual(len(trees), 2, "the building's crown is left out, the road's moves fully beyond pavement")
         lon, lat = md.lonlat(100, 100)
         free = np.argmin(abs(trees.lon - lon) * 85000 + abs(trees.lat - lat) * 111000)
         self.assertLess(abs(trees.lon[free] - lon) * 85000 + abs(trees.lat[free] - lat) * 111000, 4.0)
@@ -95,9 +95,8 @@ class VegetationTest(unittest.TestCase):
         rlon, rlat = md.lonlat(100, 400)                   # on the residential road's centreline
         street = 1 - free
         off = abs(trees.lat[street] - rlat) * 111000
-        curb = veg.ROAD_HALF_WIDTH_M["residential"] + veg.TREE_PIT_M + 0.6     # a tree pit just past the curb
-        self.assertGreater(off, curb - 1.0, "beside the road")
-        self.assertLess(off, curb + 3.0)                   # (whole CHM pixels, ~2 m here)
+        self.assertGreater(off-veg.footprint_radius(trees)[street],veg.ROAD_HALF_WIDTH_M['residential'],
+                           "the complete tree footprint clears the road; no inferred tree-pit exception")
 
     def test_a_wider_drawn_road_pushes_its_tree_further(self):
         md = FakeMapData()
@@ -110,8 +109,8 @@ class VegetationTest(unittest.TestCase):
         self.assertGreater(off, 8.0 + veg.TREE_PIT_M, "past the drawn curb, not the class's")
 
     def test_its_sidewalks_kept_clear_too(self):
-        # GitHub #424 / #425: the canopy's trees and the bushes stood on the sidewalks; a street tree (a top over the
-        # road) still lands in a pit at the curb
+        # Source crowns may move to a green verge, but no longer land in an
+        # inferred tree pit inside the complete walking corridor.
         import roads as roadsmod
         md = FakeMapData()
         v = veg.Vegetation(md, None)
@@ -123,18 +122,22 @@ class VegetationTest(unittest.TestCase):
         finally:
             roadsmod.has_sidewalks = orig
         trees = it.take(it.kind == veg.KIND_TREE)
-        self.assertEqual(len(trees), 2, "the street tree kept")
+        self.assertEqual(len(trees), 2, "a fully clear verge preserves the source tree")
         rlon, rlat = md.lonlat(100, 400)
-        off = np.hypot((trees.lon - rlon) * 85000, (trees.lat - rlat) * 111000).min()
-        self.assertLess(off, 4.0 + veg.TREE_PIT_M + 0.6 + 4.0, "in a pit by the curb (whole CHM pixels), not past it")
+        distances=np.hypot((trees.lon-rlon)*85000,(trees.lat-rlat)*111000)
+        nearest=int(np.argmin(distances))
+        self.assertGreater(distances[nearest]-veg.footprint_radius(trees)[nearest],4.+6.,
+                           "the whole footprint clears the drawn road and six-metre sidewalk")
 
-    def test_footway_keeps_its_tree(self):
+    def test_footway_keeps_full_tree_footprints_clear(self):
         md = FakeMapData()
-        md.cd.layers["roads"].attrs["class"][:] = "footway"   # a sidewalk mapped as a line: street trees stand on it
+        md.cd.layers["roads"].attrs["class"][:] = "footway"
         it = veg.Vegetation(md, None).cell(KEY)
         trees = it.take(it.kind == veg.KIND_TREE)
         rlon, rlat = md.lonlat(100, 400)
-        self.assertLess((np.hypot((trees.lon - rlon) * 85000, (trees.lat - rlat) * 111000)).min(), 4.0)
+        distances=np.hypot((trees.lon-rlon)*85000,(trees.lat-rlat)*111000)
+        nearest=int(np.argmin(distances))
+        self.assertGreater(distances[nearest]-veg.footprint_radius(trees)[nearest],veg.PATH_HALF_WIDTH_M)
 
     def test_deterministic(self):
         a = veg.Vegetation(FakeMapData(), None).cell(KEY)

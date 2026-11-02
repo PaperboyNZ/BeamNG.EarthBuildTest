@@ -115,7 +115,14 @@
           1
         ],
         "vertColor": true,
-        "roughnessFactor": 0.9
+        "roughnessFactor": 0.9,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -142,7 +149,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -168,7 +182,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -195,7 +216,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -246,7 +274,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -273,7 +308,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -298,7 +340,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -323,7 +372,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -375,7 +431,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -402,7 +465,14 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
       },
       {},
       {},
@@ -429,6 +499,111 @@
           1,
           1
         ],
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          1,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.32
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_lawn": {
+    "name": "bne_land_lawn",
+    "mapTo": "bne_land_lawn",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/terrain/grass/t_grass_01/t_grass_01_b.png",
+        "normalMap": "/assets/materials/terrain/grass/t_grass_01/t_grass_01_nm.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
+        "vertColor": true
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_soil": {
+    "name": "bne_land_soil",
+    "mapTo": "bne_land_soil",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/terrain/soil/dirt_crumbly/t_dirt_crumbly_b.png",
+        "normalMap": "/assets/materials/terrain/soil/dirt_crumbly/t_dirt_crumbly_nm.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
+        "vertColor": true
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_gravel": {
+    "name": "bne_land_gravel",
+    "mapTo": "bne_land_gravel",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/terrain/soil/t_gravel/t_gravel_b.png",
+        "normalMap": "/assets/materials/terrain/soil/t_gravel/t_gravel_nm.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
+        "vertColor": true
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_foliage": {
+    "name": "bne_land_foliage",
+    "mapTo": "bne_land_foliage",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
         "vertColor": true
       },
       {},

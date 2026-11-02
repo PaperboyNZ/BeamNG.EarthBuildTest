@@ -1,0 +1,1431 @@
+{
+  "schema": 1,
+  "version": "city-text-briefs-v1",
+  "regions": {
+    "us_northeast": {
+      "source": {
+        "label": "US Northeast",
+        "group": "North America",
+        "coverage": "New England and the Mid-Atlantic; NYC adapter footprint only at runtime",
+        "style_directions": [
+          "Federal and Georgian townhouses",
+          "brick rowhouses and brownstones",
+          "timber suburbs and contemporary infill"
+        ],
+        "detailing_goals": "Stoops, aligned sash bays, cornices and restrained shopfront insertion"
+      },
+      "geography": "New England and Mid-Atlantic; distinguish dense centres from other settlements",
+      "architecture": "Translate aligned masonry bays, strong bases and restrained cornices to masonry offices/hotels and tower street fronts. Keep contemporary upper towers independent of townhouse details.",
+      "public_realm": "Compact entry paving and contained beds; preserve existing street-wall and threshold conditions.",
+      "source_digest": "cea3336ea0981b40fdad3f6f14fd73bfb8bf75382694952c858d1444c8b396c6",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "us_southeast": {
+      "source": {
+        "label": "US Southeast and Gulf",
+        "group": "North America",
+        "coverage": "Southeastern states, Appalachia and the Gulf Coast",
+        "style_directions": [
+          "Porch houses and shotgun houses",
+          "Appalachian timber homes",
+          "brick ranch and contemporary suburban stock"
+        ],
+        "detailing_goals": "Porch depth, screened openings and climate-specific eaves"
+      },
+      "geography": "Southeastern states, Appalachia and Gulf Coast",
+      "architecture": "Explore screened or shaded hotel arrival and sheltered office entries; separate inland timber references from compatible urban masonry.",
+      "public_realm": "Covered arrival and planted edges only in supported extent; choose rain/shade response from locality.",
+      "source_digest": "e3a5099637805433da6785df2a3a266f10214bbbff5595307aa3f09c10562571",
+      "cues": [
+        "screen",
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "us_midwest": {
+      "source": {
+        "label": "US Midwest and Great Plains",
+        "group": "North America",
+        "coverage": "Great Lakes, central plains and interior US Rockies",
+        "style_directions": [
+          "Worker cottages and brick two-flats",
+          "Prairie and Craftsman houses",
+          "farmsteads and postwar ranches"
+        ],
+        "detailing_goals": "Broad eaves, masonry bases and distinct urban/rural frontage rhythms"
+      },
+      "geography": "Great Lakes, central plains and interior Rockies",
+      "architecture": "Use the prose's masonry bases and horizontal emphasis as options for offices/hotels; retain urban versus rural distinctions.",
+      "public_realm": "Clear entrance forecourts or tight street approaches, with planting fitted after circulation.",
+      "source_digest": "2adf978565508a35dcb625362feb7ee690912b257b7c7966182d7a0b941283cd",
+      "cues": [
+        "horizontal",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "us_southwest": {
+      "source": {
+        "label": "US Southwest",
+        "group": "North America",
+        "coverage": "Desert Southwest and inland southern California",
+        "style_directions": [
+          "Pueblo Revival",
+          "Spanish Colonial Revival",
+          "desert modern and ordinary stucco suburbs"
+        ],
+        "detailing_goals": "Recessed openings, shaded courts and separately evidenced parapets"
+      },
+      "geography": "Desert Southwest and inland southern California",
+      "architecture": "Explore deep reveals, solid rendered zones and contemporary shade systems; parapets only within the resolved roof.",
+      "public_realm": "Shaded arrival or an evidenced court; low-water planting intent requires actual local conditions and assets.",
+      "source_digest": "d6d2029367194bd7aba095e353a6148c3179001df259ae2c1d74e9b274466700",
+      "cues": [
+        "recess"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "us_pacific": {
+      "source": {
+        "label": "US Pacific Coast",
+        "group": "North America",
+        "coverage": "Coastal California, Oregon and Washington",
+        "style_directions": [
+          "Craftsman and timber vernacular",
+          "California Spanish Revival",
+          "mid-century and contemporary coastal infill"
+        ],
+        "detailing_goals": "Porches, projecting bays, siding and local flat/pitched roof variants"
+      },
+      "geography": "Coastal California, Oregon and Washington",
+      "architecture": "Keep California masonry/render references distinct from northern timber/coastal contemporary ones; use controlled accents at the public base.",
+      "public_realm": "Choose sun or rain shelter locally; fit compact planting to the accepted approach.",
+      "source_digest": "a912ac3d6b388acff23e728c4392d0502b48389c3afb7486745174ef679d3d44",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "canada_atlantic": {
+      "source": {
+        "label": "Atlantic Canada and Quebec",
+        "group": "North America",
+        "coverage": "Maritime provinces, Newfoundland, Quebec and eastern Ontario",
+        "style_directions": [
+          "Maritime timber houses",
+          "Quebec stone and brick streets",
+          "duplexes and contemporary infill"
+        ],
+        "detailing_goals": "Painted siding, dormers, exterior stairs only where evidenced"
+      },
+      "geography": "Maritime provinces, Newfoundland, Quebec and eastern Ontario",
+      "architecture": "Interpret urban stone/brick rhythm separately from maritime painted-timber references; use the latter sparingly at compatible hotel bases.",
+      "public_realm": "Sheltered thresholds and compact paved approaches; external stairs remain source-supported.",
+      "source_digest": "3322808e6a3c00455cc3f052d2454535edaffeb93aa385794ae9479a4be856bb",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "canada_prairie": {
+      "source": {
+        "label": "Canadian Prairies and interior",
+        "group": "North America",
+        "coverage": "Prairie provinces, inland British Columbia and northern Ontario",
+        "style_directions": [
+          "Prairie farmhouses",
+          "railway-town brick main streets",
+          "bungalows and modern infill"
+        ],
+        "detailing_goals": "Wind lobbies, compact envelopes and shopfront/parapet variation"
+      },
+      "geography": "Prairies, inland British Columbia and northern Ontario",
+      "architecture": "Explore railway-town masonry rhythm or restrained contemporary panels, with enclosed entrance emphasis.",
+      "public_realm": "Wind-sheltered arrival where supported, clear walking routes and modest residual planting.",
+      "source_digest": "e771dbd256dc12f3d9f712c9c1d593053c73430a1bd161e17bd4c1c878c0b60b",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "canada_pacific": {
+      "source": {
+        "label": "Coastal British Columbia",
+        "group": "North America",
+        "coverage": "Pacific Canadian settlements and coastal islands",
+        "style_directions": [
+          "Timber coastal vernacular",
+          "Arts and Crafts",
+          "West Coast modern and mixed-use infill"
+        ],
+        "detailing_goals": "Rain-sheltered entries, wood cladding and deep glazed bays"
+      },
+      "geography": "Pacific Canadian settlements and coastal islands",
+      "architecture": "Interpret West Coast modern and deep glazed-entry descriptions for office/hotel bases, with compatible limited timber accents.",
+      "public_realm": "Rain-sheltered approaches and contained planted margins; avoid timber-house roof inheritance.",
+      "source_digest": "408fe390613c57e1d855e4d6c6ab567b97471f79f776940905a36e4c864145a3",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "arctic_north_america": {
+      "source": {
+        "label": "Alaska, northern Canada and Greenland",
+        "group": "North America",
+        "coverage": "Arctic/subarctic settlements including Greenland; separate local communities",
+        "style_directions": [
+          "Painted timber settlements",
+          "compact insulated modular housing",
+          "contemporary Arctic civic buildings"
+        ],
+        "detailing_goals": "Wind vestibules, insulated panels and surveyed foundation clearances"
+      },
+      "geography": "Alaska, northern Canada and Greenland; community/locality distinctions",
+      "architecture": "Consider compact panelled envelopes and vestibule expression for evidenced city-scale buildings. Do not infer tower eligibility or raised foundations.",
+      "public_realm": "Small protected arrival areas; planting may be inappropriate and needs positive local support.",
+      "source_digest": "5b304fb1aafff44b136db9f8a30b857c189980b7e1e1b8e7f6dcfb4f35e12174",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "latin_american_local": {
+      "source": {
+        "label": "Mexico and northern Mesoamerica",
+        "group": "Latin America and Caribbean",
+        "coverage": "Mexico and adjoining highland settlement traditions; locality-specific",
+        "style_directions": [
+          "Courtyard and adobe traditions",
+          "colonial masonry streets",
+          "modernist and incremental urban housing"
+        ],
+        "detailing_goals": "Recessed entries, courtyard-facing galleries and separately mapped roof terraces"
+      },
+      "geography": "Mexico and adjoining highland traditions; locality-specific",
+      "architecture": "Translate masonry street fronts, recessed entries and modernist urban references to hotel/office bases; retain actual courtyard geometry.",
+      "public_realm": "Court-edge or street-edge arrival; roof terraces and galleries require evidenced assemblies.",
+      "source_digest": "0a78d8ea07bbf1ac6ff973712f716fcaf54a19a104fa96162bd6e3f8ffac05cd",
+      "cues": [
+        "recess",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "caribbean_creole": {
+      "source": {
+        "label": "Caribbean and Atlantic island towns",
+        "group": "Latin America and Caribbean",
+        "coverage": "Greater/Lesser Antilles, Bahamas, Bermuda and Caribbean coastal enclaves",
+        "style_directions": [
+          "Creole timber houses",
+          "Spanish courtyard streets",
+          "Art Deco and reinforced-concrete urban stock"
+        ],
+        "detailing_goals": "Louvres, shaded galleries, hurricane shutters and local roof profiles"
+      },
+      "geography": "Antilles, Bahamas, Bermuda and coastal enclaves",
+      "architecture": "Explore louvred shade, Art Deco-compatible banding or restrained concrete facades; keep island-specific interpretations separate.",
+      "public_realm": "Sheltered arrivals and small planted edges; storm-related detailing is not an engineering claim.",
+      "source_digest": "0fd614821439c58aca6bace17f11e9dfcd00ebb156db0848933a79df6961e2a1",
+      "cues": [
+        "screen",
+        "horizontal"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "central_america": {
+      "source": {
+        "label": "Central American isthmus",
+        "group": "Latin America and Caribbean",
+        "coverage": "Guatemala through Panama, including Belize and both coasts",
+        "style_directions": [
+          "Highland courtyard houses",
+          "Caribbean timber settlements",
+          "tropical modern and ordinary concrete housing"
+        ],
+        "detailing_goals": "Verandas, covered circulation and highland/coastal material separation"
+      },
+      "geography": "Guatemala to Panama, Belize and both coasts",
+      "architecture": "Separate highland masonry/court references from coastal covered-edge and tropical-modern descriptions.",
+      "public_realm": "Continuous covered approach where fitted, with planting chosen from local wet/dry context.",
+      "source_digest": "523ed39e5845c53bca59a9edad3e3a70bad36302f99ada67fabde506e52ccf9d",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "andean_highlands": {
+      "source": {
+        "label": "Andean highlands",
+        "group": "Latin America and Caribbean",
+        "coverage": "Colombia, Ecuador, Peru and Bolivia highland settlements",
+        "style_directions": [
+          "Adobe and stone courtyard houses",
+          "colonial urban blocks",
+          "brick and concrete self-built neighbourhoods"
+        ],
+        "detailing_goals": "Thick reveals, sheltered courts and local tile/metal roof choices"
+      },
+      "geography": "Highland localities of Colombia, Ecuador, Peru and Bolivia",
+      "architecture": "Explore deep masonry reveals and brick/concrete urban bays; do not transfer highland assumptions to all cities in those countries.",
+      "public_realm": "Sheltered entry/court treatment fitted to actual slope; no invented retaining works.",
+      "source_digest": "1d9a84399fbb3e7ba6adc547f8caeae9ae1595e40ef392c37ccd881390688982",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "brazil_coastal": {
+      "source": {
+        "label": "Coastal and southeastern Brazil",
+        "group": "Latin America and Caribbean",
+        "coverage": "Atlantic Brazil, including northeast, southeast and southern coastal cities",
+        "style_directions": [
+          "Portuguese-derived townhouses",
+          "Art Deco streets",
+          "Brazilian modernism and contemporary apartments"
+        ],
+        "detailing_goals": "Shaded balconies, cobogo-inspired screens and ordinary rendered facades"
+      },
+      "geography": "Atlantic Brazil, with northeast, southeast and southern distinctions",
+      "architecture": "Translate modernist shading, screened solid zones and restrained Art Deco rhythm to appropriate hotel/office compositions.",
+      "public_realm": "Shade-led arrival spaces and compatible planted margins; balconies need supported geometry.",
+      "source_digest": "8a95ab1e42f1b63de46fbd3d20cd058d4eb53c532413f77f00847ab2b0e4e40e",
+      "cues": [
+        "screen"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "amazon_guianas": {
+      "source": {
+        "label": "Amazon and Guianas",
+        "group": "Latin America and Caribbean",
+        "coverage": "Amazon basin, inland tropical lowlands, Guyana, Suriname and French Guiana",
+        "style_directions": [
+          "Riverine timber housing",
+          "Guianese veranda houses",
+          "contemporary lowland masonry settlements"
+        ],
+        "detailing_goals": "Ventilated eaves, rain protection and raised floors only with evidence"
+      },
+      "geography": "Amazon lowlands and Guianas; local settlement traditions",
+      "architecture": "Explore rain-protected entry and ventilating-screen expression for modern masonry office/hotel bases. Timber-house references do not determine tower structure.",
+      "public_realm": "Covered walking connections with evidenced planting areas; no automatic raised floor or river access.",
+      "source_digest": "d991f5e8c316570821e2e4d39f07cd2b2aeda5e3576513e3549aaceb82abfcbd",
+      "cues": [
+        "screen",
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "southern_cone": {
+      "source": {
+        "label": "Southern Cone plains and Patagonia",
+        "group": "Latin America and Caribbean",
+        "coverage": "Argentina, Uruguay, Paraguay and inland southern Brazil; Patagonian localities",
+        "style_directions": [
+          "Patio and chorizo houses",
+          "Italianate urban fronts",
+          "modernist blocks and Patagonian timber/metal homes"
+        ],
+        "detailing_goals": "Courtyard sequences, rhythmic cornices and cold/warm locality variants"
+      },
+      "geography": "Argentina, Uruguay, Paraguay, inland southern Brazil and Patagonia",
+      "architecture": "Explore rhythmic masonry/cornice street fronts and modernist upper volumes; retain warm/cold and Patagonian distinctions.",
+      "public_realm": "Use an evidenced patio or compact arrival court; choose shelter and planting locally.",
+      "source_digest": "36b5e0663b1e68def329fa10455154be60694888a585b4c24fe78241ab2519a6",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "chile_pacific": {
+      "source": {
+        "label": "Chilean Pacific settlements",
+        "group": "Latin America and Caribbean",
+        "coverage": "Chilean coast, central valleys, Chiloe and far-south settlements",
+        "style_directions": [
+          "Hillside port houses",
+          "Chilote timber and shingle traditions",
+          "contemporary seismic-frame housing"
+        ],
+        "detailing_goals": "Stepped fronts within measured envelopes and timber/metal cladding"
+      },
+      "geography": "Coast, central valleys, Chiloe and far south",
+      "architecture": "Explore stepped facade composition only within measured levels, with compatible timber/metal accents at hotel bases.",
+      "public_realm": "Slope-aware connections and locality-specific shelter; no seismic-performance claim from appearance.",
+      "source_digest": "048c3c28234805681a0fc649984db5998adb8660d7d31f946fd87a47964f6e4c",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "eu_atlantic": {
+      "source": {
+        "label": "Britain, Ireland and Atlantic islands",
+        "group": "Europe",
+        "coverage": "Britain, Ireland and locally verified Azores/Madeira traditions",
+        "style_directions": [
+          "Georgian and Victorian terraces",
+          "stone cottages",
+          "postwar estates and contemporary infill"
+        ],
+        "detailing_goals": "Sash-bay rhythm, brick/stone reveals and local slate/tile distinctions"
+      },
+      "geography": "Britain, Ireland and locally supported Atlantic-island variants",
+      "architecture": "Translate brick/stone reveals and aligned street bays to masonry offices/hotels; retain independent contemporary tower systems.",
+      "public_realm": "Compact paved arrivals, sheltered thresholds and restrained planting where space exists.",
+      "source_digest": "c46932fd067f497695db685a0a99b60af961f30486a877253163f0f8736ba950",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "eu_mediterranean": {
+      "source": {
+        "label": "Iberian Mediterranean and interior",
+        "group": "Europe",
+        "coverage": "Spain, Portugal and Balearic settlements; local Atlantic variants",
+        "style_directions": [
+          "Patio houses",
+          "whitewashed and tiled urban fronts",
+          "modern apartment and suburban stock"
+        ],
+        "detailing_goals": "Shutters, balconies, shaded courts and ceramic accents"
+      },
+      "geography": "Spain, Portugal, Balearics and distinct Atlantic variants",
+      "architecture": "Explore rendered/tiled frontage accents, shutter-compatible masonry and shaded solid zones; do not force balconies or patio voids.",
+      "public_realm": "Shaded entry and evidenced court planting; resolve regional material accents separately from paving performance.",
+      "source_digest": "eabeff95b8950ff3b0bddb56db07eb62a354438ee8fe8e483e01ffbbebd4176f",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "nordic_cold": {
+      "source": {
+        "label": "Nordic countries and North Atlantic",
+        "group": "Europe",
+        "coverage": "Scandinavia, Finland, Iceland, Faroe Islands and Svalbard",
+        "style_directions": [
+          "Painted timber towns",
+          "Nordic classicism",
+          "functionalist housing and contemporary timber"
+        ],
+        "detailing_goals": "Weather-protected entries, restrained trim and locality-specific roof systems"
+      },
+      "geography": "Scandinavia, Finland, Iceland, Faroes and Svalbard",
+      "architecture": "Explore functionalist restraint, compatible timber accents and weather-protected bases, with local material distinctions.",
+      "public_realm": "Protected entrances and compact beds where appropriate; avoid one planting/roof rule across all latitudes.",
+      "source_digest": "726cf2f32b844e90cdb4c83a75a1d2e080b57e11563aadb6cae1ae53545d3b2f",
+      "cues": [
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "france_regional": {
+      "source": {
+        "label": "France and regional traditions",
+        "group": "Europe",
+        "coverage": "French mainland and Corsica; regional and urban/rural subdivisions",
+        "style_directions": [
+          "Haussmannian streets",
+          "half-timber and stone regional houses",
+          "modernist estates and contemporary infill"
+        ],
+        "detailing_goals": "Mansard details only with roof support, shutters and rhythmic stone bays"
+      },
+      "geography": "Mainland France and Corsica; urban and regional subdivisions",
+      "architecture": "Explore rhythmic stone masonry for compatible offices/hotels, alongside neutral modernist/contemporary options. Mansards need supported roofs.",
+      "public_realm": "Clear street thresholds or evidenced courts; use restrained paving/edge coordination.",
+      "source_digest": "6ca84e1a005a2ce5c947d52c4b050288d127d8ef61fb7cdbfadb1e3e6b8dfc3d",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "low_countries": {
+      "source": {
+        "label": "Low Countries",
+        "group": "Europe",
+        "coverage": "Netherlands, Belgium and Luxembourg",
+        "style_directions": [
+          "Brick canal and merchant houses",
+          "Flemish terraces",
+          "modernist and contemporary brick housing"
+        ],
+        "detailing_goals": "Narrow bay rhythms, gable variations and recessed entrances"
+      },
+      "geography": "Netherlands, Belgium and Luxembourg",
+      "architecture": "Translate narrow merchant-front rhythms and recessed brick entries to street bases; allow broader contemporary office grids above.",
+      "public_realm": "Compact shared frontage paving and fitted planting without obstructing narrow approaches.",
+      "source_digest": "46050fa2d7792021cc48f22553d3d6bbe96e544ea8d236f632c0a92e9d8f73ff",
+      "cues": [
+        "recess",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "central_europe": {
+      "source": {
+        "label": "German-speaking and central Europe",
+        "group": "Europe",
+        "coverage": "Germany, Czechia, Poland, Slovakia and non-Alpine Austria/Switzerland",
+        "style_directions": [
+          "Half-timber and masonry townhouses",
+          "perimeter blocks",
+          "postwar estates and contemporary housing"
+        ],
+        "detailing_goals": "Rendered panels, brick trim, regular street walls and local roof pitches"
+      },
+      "geography": "Germany, Czechia, Poland, Slovakia and non-Alpine Austria/Switzerland",
+      "architecture": "Explore regular street-wall bays, masonry/render zones and restrained contemporary panels; keep half-timber references off generic towers.",
+      "public_realm": "Ordered entrance walks and contained court beds where evidenced.",
+      "source_digest": "c821182bbaffffda8314f76fcad7f2dc92d0d04afe080ad0d6df638d341d36a9",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "alpine": {
+      "source": {
+        "label": "Alpine settlements",
+        "group": "Europe",
+        "coverage": "Alpine valleys and uplands across national borders",
+        "style_directions": [
+          "Timber chalet traditions",
+          "stone valley houses",
+          "contemporary Alpine apartments"
+        ],
+        "detailing_goals": "Deep eaves, timber galleries and snow details only where validated"
+      },
+      "geography": "Cross-border valleys and uplands",
+      "architecture": "Explore sheltered hotel bases and controlled timber/stone accents; preserve contemporary office structure and actual roof support.",
+      "public_realm": "Slope-aware, protected arrival; snow-related features require validated locality and geometry.",
+      "source_digest": "78f3df72e7c523684600c6baf2b5c81ac6b2181c221aab0f9f2964e1dcc8de3e",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "italy_regional": {
+      "source": {
+        "label": "Italian peninsula and islands",
+        "group": "Europe",
+        "coverage": "Italy, Sicily, Sardinia and Malta; separate local palettes",
+        "style_directions": [
+          "Palazzo and courtyard blocks",
+          "stone/stucco vernacular",
+          "rationalist and contemporary apartment buildings"
+        ],
+        "detailing_goals": "Shutters, loggias, restrained cornices and island-specific stonework"
+      },
+      "geography": "Peninsula, Sicily, Sardinia and Malta",
+      "architecture": "Translate palazzo bay rhythm, rationalist restraint and locality-specific stone/render to compatible city families.",
+      "public_realm": "Evidenced court/loggia relationships and compact planted edges; no invented occupied loggia.",
+      "source_digest": "80cbd6714b2d868f2323034d931084454b4bccc84f71f611a997e6bf2c7df054",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "adriatic_balkans": {
+      "source": {
+        "label": "Adriatic and Balkan interior",
+        "group": "Europe",
+        "coverage": "Slovenia, Croatia, Bosnia and Herzegovina, Serbia, Montenegro, Kosovo, Albania and North Macedonia",
+        "style_directions": [
+          "Adriatic stone streets",
+          "Ottoman-influenced timber/masonry houses",
+          "Yugoslav modernism and infill"
+        ],
+        "detailing_goals": "Balconies, shaded loggias and coastal/interior roof differentiation"
+      },
+      "geography": "Adriatic coast and Balkan interior",
+      "architecture": "Distinguish coastal stone-front interpretations from interior masonry and modernist concrete compositions.",
+      "public_realm": "Shaded arrival where appropriate, with coast/interior paving and planting considered separately.",
+      "source_digest": "15ddd0738eb6dce4addf026ba7d42b4552374854e5bc1ddff897049babc72544",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "aegean": {
+      "source": {
+        "label": "Greece and Cyprus",
+        "group": "Europe",
+        "coverage": "Mainland Greece, Aegean islands and Cyprus",
+        "style_directions": [
+          "Island courtyard houses",
+          "neoclassical townhouses",
+          "polykatoikia apartment blocks"
+        ],
+        "detailing_goals": "Shutters, balcony bands and locality-specific whitewash/stone treatment"
+      },
+      "geography": "Mainland Greece, Aegean islands and Cyprus",
+      "architecture": "Explore neoclassical masonry rhythm or horizontal concrete bands; apply whitewash/stone references only to compatible local interpretations.",
+      "public_realm": "Shaded compact entry or supported court; balcony bands are not automatically traversable balconies.",
+      "source_digest": "93e13eb91ee4258e531d170c4abd231d4856471433d90f89901033fc68abe8a5",
+      "cues": [
+        "horizontal",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "eastern_europe": {
+      "source": {
+        "label": "Eastern Europe and Baltic",
+        "group": "Europe",
+        "coverage": "Estonia, Latvia, Lithuania, Belarus, Ukraine, Moldova, Romania, Bulgaria and Hungary",
+        "style_directions": [
+          "Timber and masonry vernacular",
+          "eclectic and Art Nouveau streets",
+          "socialist-era blocks and contemporary infill"
+        ],
+        "detailing_goals": "Bay/cornice variation and explicit rural/urban distinctions"
+      },
+      "geography": "Baltic states and eastern/central European localities listed in the catalogue",
+      "architecture": "Explore eclectic masonry bay/cornice rhythm, regular panel offices and contemporary alternatives without assigning an era from region.",
+      "public_realm": "Distinguish tight urban frontage from evidenced courts; fit planting to real residual space.",
+      "source_digest": "c304daec919a76b8aafc204b025db6124a84e14948f89405377efb3d8ac330ee",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "russia_north": {
+      "source": {
+        "label": "Russia and northern Eurasia",
+        "group": "Europe",
+        "coverage": "European Russia, Siberia and Russian Far East; local traditions required",
+        "style_directions": [
+          "Timber izba houses",
+          "classical and eclectic urban blocks",
+          "constructivist and panel housing"
+        ],
+        "detailing_goals": "Carved trim only with support, panel rhythms and climate-specific entries"
+      },
+      "geography": "European Russia, Siberia and Russian Far East",
+      "architecture": "Explore classical/constructivist urban rhythms or coherent panel systems; timber/carved-house references need separate applicability.",
+      "public_realm": "Locally appropriate protected entry, with compact paved access and optional planting.",
+      "source_digest": "dc436051db98429d02a86ee2ad3b3fc378f71826bdfaece53fe52b0ee451cdb6",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "african_local": {
+      "source": {
+        "label": "West African Atlantic and Gulf of Guinea",
+        "group": "Africa",
+        "coverage": "Coastal West Africa from Senegal to Nigeria; separate city/community variants",
+        "style_directions": [
+          "Compound houses",
+          "Afro-Brazilian urban fronts",
+          "tropical modern and contemporary masonry housing"
+        ],
+        "detailing_goals": "Shaded galleries, ventilation screens and courtyard-facing openings"
+      },
+      "geography": "Coastal West Africa, Senegal to Nigeria; city/community distinctions",
+      "architecture": "Explore tropical-modern shading and compatible urban masonry rhythm; use Afro-Brazilian references only as a scoped frontage interpretation.",
+      "public_realm": "Shaded arrivals and existing court edges; planting and covered paths require local/site support.",
+      "source_digest": "21dc47de459770d6e77e56271700c88ad46ce95ee86ec98eb889893f5c9516ff",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "maghreb": {
+      "source": {
+        "label": "Maghreb and northwest Africa",
+        "group": "Africa",
+        "coverage": "Morocco, Algeria, Tunisia, Libya and locally verified Saharan/Canary settlements",
+        "style_directions": [
+          "Medina courtyard houses",
+          "Amazigh earthen and stone traditions",
+          "modern Mediterranean urban stock"
+        ],
+        "detailing_goals": "Deep reveals, shaded courts and local tile/plaster detailing"
+      },
+      "geography": "Northwest Africa, with distinct Saharan and island localities",
+      "architecture": "Explore deep rendered/masonry reveals and modern Mediterranean solid zones; avoid assigning traditional compounds to towers.",
+      "public_realm": "Shaded entry/court relationships, with suitable restrained planting after access fitting.",
+      "source_digest": "e7bd04c66ccaf9a87eee1b2af9c47c56abd6e33c3e073259c5decd6ea29b6304",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "sahel": {
+      "source": {
+        "label": "Sahel and western Sudanian belt",
+        "group": "Africa",
+        "coverage": "Mauritania, Mali, Burkina Faso, Niger, Chad and inland West African localities",
+        "style_directions": [
+          "Sudano-Sahelian earthen compounds",
+          "courtyard trading towns",
+          "contemporary masonry housing"
+        ],
+        "detailing_goals": "Buttressed forms only with footprint support and shaded recessed openings"
+      },
+      "geography": "Sahel and western Sudanian belt",
+      "architecture": "Use recessed shade and solid masonry expression for compatible city buildings; earthen or buttressed forms require supported materials and source geometry.",
+      "public_realm": "Sheltered arrival and locally justified planting; do not turn every site into a generic desert garden.",
+      "source_digest": "f7467b42405d717fa17c154248c2aaa7b977fd4381d82d03049499715934f719",
+      "cues": [
+        "recess",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "nile_valley": {
+      "source": {
+        "label": "Nile Valley and northeast desert",
+        "group": "Africa",
+        "coverage": "Egypt and Sudan; river, delta, Nubian and desert localities",
+        "style_directions": [
+          "Nubian courtyard traditions",
+          "urban masonry apartment blocks",
+          "modern concrete housing"
+        ],
+        "detailing_goals": "Shading, deep reveals and separately evidenced vault/dome forms"
+      },
+      "geography": "Egypt and Sudan; river, delta, Nubian and desert contexts",
+      "architecture": "Explore shaded masonry/concrete bays; keep locality-specific heritage forms separate from ordinary offices/hotels.",
+      "public_realm": "Fit entry shade and court edges; no regional default dome, vault or irrigation provision.",
+      "source_digest": "abc817e38afda835e3b565472665d57679a184af1fb909f6c01d2637de54a65e",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "horn_africa": {
+      "source": {
+        "label": "Horn of Africa and Ethiopian highlands",
+        "group": "Africa",
+        "coverage": "Ethiopia, Eritrea, Djibouti and Somalia with highland/coastal distinctions",
+        "style_directions": [
+          "Highland stone compounds",
+          "Asmara modernism",
+          "coastal and contemporary urban masonry"
+        ],
+        "detailing_goals": "Local stone/render treatment, verandas and modernist horizontal bands"
+      },
+      "geography": "Ethiopian/Eritrean highlands and Djibouti/Somali coastal contexts",
+      "architecture": "Explore local stone/render or modernist horizontal composition; the Asmara reference cannot classify the whole region.",
+      "public_realm": "Choose sheltered or shaded arrival from actual locality; fit paving to terrain and accepted interfaces.",
+      "source_digest": "1d9a21f0db96c63d4ac1a15264c4f86705427fc9c1e66c63ac4e3c2981bb08b5",
+      "cues": [
+        "horizontal",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "swahili_east_africa": {
+      "source": {
+        "label": "Swahili coast and East African interior",
+        "group": "Africa",
+        "coverage": "Kenya, Tanzania, Uganda, Rwanda and Burundi; coast and lake/highland variants",
+        "style_directions": [
+          "Swahili courtyard townhouses",
+          "inland masonry and timber housing",
+          "tropical modern urban buildings"
+        ],
+        "detailing_goals": "Carved-entry references, shaded verandas and coast/interior differentiation"
+      },
+      "geography": "Coast, inland lakes and highlands of the listed East African countries",
+      "architecture": "Explore tropical-modern screens or masonry bases with distinct coast/interior scope; carved-entry references need specific support.",
+      "public_realm": "Covered or shaded connections where fitted, with planting based on local conditions.",
+      "source_digest": "61f245a59b0bc590896bdad826a544a33c6b566e65adc1a230c0d0df2aa481a7",
+      "cues": [
+        "screen",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "central_africa": {
+      "source": {
+        "label": "Central African forest and plateau",
+        "group": "Africa",
+        "coverage": "Cameroon, Central African Republic, South Sudan, Equatorial Guinea, Gabon and both Congos",
+        "style_directions": [
+          "Forest timber compounds",
+          "veranda houses",
+          "contemporary blockwork and concrete cities"
+        ],
+        "detailing_goals": "Rain-shedding eaves, ventilated screens and timber/masonry alternatives"
+      },
+      "geography": "Forest and plateau localities across the listed central African countries",
+      "architecture": "Explore contemporary concrete/masonry composition with rain-protected entry and compatible screen accents.",
+      "public_realm": "Covered approach and controlled planted margins; no forest-wide planting or timber-structure assumption.",
+      "source_digest": "d2e095fd208190cd943edf2f60a4cae49a3b14c0093746371f3e45f45bcb7e75",
+      "cues": [
+        "screen",
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "southern_africa": {
+      "source": {
+        "label": "Southern African plateau and coasts",
+        "group": "Africa",
+        "coverage": "Angola, Zambia, Malawi, Mozambique, Zimbabwe, Botswana, Namibia, South Africa, Lesotho and Eswatini",
+        "style_directions": [
+          "Cape and veranda traditions",
+          "courtyard homesteads",
+          "modernist, township and contemporary suburban stock"
+        ],
+        "detailing_goals": "Stoep/porch treatments, shade devices and separate highland/arid/coastal variants"
+      },
+      "geography": "Broad plateau/coastal region with highland, arid and urban distinctions",
+      "architecture": "Explore modernist shade, restrained masonry and veranda-derived entrance shelter at compatible bases.",
+      "public_realm": "Keep highland/arid/coastal arrival and planting options separate; preserve compact urban/service constraints.",
+      "source_digest": "de12f920723552865f7d63751cb5de887ac8cc2b3f9e2e67b32bde056236f7ee",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "indian_ocean_africa": {
+      "source": {
+        "label": "Madagascar and western Indian Ocean",
+        "group": "Africa",
+        "coverage": "Madagascar, Comoros, Mauritius, Reunion, Seychelles and nearby islands",
+        "style_directions": [
+          "Malagasy highland brick houses",
+          "coastal timber traditions",
+          "Creole veranda and contemporary concrete housing"
+        ],
+        "detailing_goals": "Steep local roof variants, timber galleries and cyclone-conscious detailing"
+      },
+      "geography": "Madagascar, Comoros, Mauritius, Reunion, Seychelles and nearby islands",
+      "architecture": "Distinguish highland masonry from coastal/Creole shelter references in hotel/office bases; preserve actual roof and structure.",
+      "public_realm": "Protected arrival and planted edges where locally appropriate; no claimed cyclone certification.",
+      "source_digest": "391e9d9d54f92b9285351e31e559f19d40f19c7a7aea129979b417647ef891d2",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "arid_warm": {
+      "source": {
+        "label": "Arabian Peninsula and Gulf",
+        "group": "West and Central Asia",
+        "coverage": "Gulf states, Saudi Arabia, Oman and Yemen; distinct coastal/highland/desert variants",
+        "style_directions": [
+          "Courtyard and wind-tower traditions",
+          "Yemeni tower houses",
+          "contemporary villas and urban blocks"
+        ],
+        "detailing_goals": "Screened openings, shaded courts and locally evidenced tower/roof forms"
+      },
+      "geography": "Gulf states, Saudi Arabia, Oman and Yemen; coast/highland/desert distinctions",
+      "architecture": "Explore contemporary screen/recess systems and solid podium treatment. Yemeni tower-house and wind-tower prose is not a glass-skyscraper template.",
+      "public_realm": "Shaded lobby/drop-off interfaces and evidenced courts; planting scale follows site and local support.",
+      "source_digest": "dcbc41259f84a9b9e7ceceba16d7464d149cc5f897a45e40eadb694ffe052f04",
+      "cues": [
+        "recess",
+        "screen"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "levant": {
+      "source": {
+        "label": "Levant and eastern Mediterranean",
+        "group": "West and Central Asia",
+        "coverage": "Lebanon, Syria, Jordan, Israel and Palestinian localities",
+        "style_directions": [
+          "Stone courtyard houses",
+          "arcaded urban fronts",
+          "modern apartment and suburban buildings"
+        ],
+        "detailing_goals": "Limestone-like palettes, balconies and deep window reveals"
+      },
+      "geography": "Eastern Mediterranean and distinct localities",
+      "architecture": "Explore stone-like masonry articulation, deep reveals and restrained contemporary bases, subject to actual asset/material support.",
+      "public_realm": "Shaded or sheltered entry courts and small planted margins where fitted.",
+      "source_digest": "21729f40b9ed948d74a97c285c3be1d4bb4e2f4456c14c7ec5e75fa1113b8962",
+      "cues": [
+        "recess",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "anatolia_caucasus": {
+      "source": {
+        "label": "Anatolia and Caucasus",
+        "group": "West and Central Asia",
+        "coverage": "Turkiye, Armenia, Georgia and Azerbaijan; coastal/highland subdivisions",
+        "style_directions": [
+          "Timber Ottoman houses",
+          "Caucasian stone and balcony houses",
+          "modern apartment neighbourhoods"
+        ],
+        "detailing_goals": "Projecting upper bays, shaded galleries and regional masonry details"
+      },
+      "geography": "Turkiye, Armenia, Georgia and Azerbaijan; coast/highland subdivisions",
+      "architecture": "Explore urban masonry rhythm and compatible upper-bay articulation; projecting volumes require supported envelopes.",
+      "public_realm": "Distinct local arrival/shelter options and residual beds, without automatic galleries.",
+      "source_digest": "e1ab1633d00b9bed4cdd902488a0c0df539a400f8e48dd3c7466da3e9e1bd27a",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "iran_plateau": {
+      "source": {
+        "label": "Iranian plateau and Afghan uplands",
+        "group": "West and Central Asia",
+        "coverage": "Iran and Afghanistan; desert, mountain and Caspian localities",
+        "style_directions": [
+          "Courtyard and earthen traditions",
+          "Caspian timber houses",
+          "brick/concrete urban apartments"
+        ],
+        "detailing_goals": "Recessed courts, local brick patterns and evidenced windcatchers"
+      },
+      "geography": "Iran and Afghanistan; desert, mountain and Caspian localities",
+      "architecture": "Explore brick pattern/recess composition for masonry city families; contemporary towers retain appropriate structural systems.",
+      "public_realm": "Court-oriented arrival only where evidenced; local shelter/planting choices, no automatic windcatcher.",
+      "source_digest": "cf90f20a35492265336f858fd51fd404e09dc58a4da3843afe3fd5e19ced8add",
+      "cues": [
+        "recess",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "mesopotamia": {
+      "source": {
+        "label": "Mesopotamian plains",
+        "group": "West and Central Asia",
+        "coverage": "Iraq and adjoining river plain localities",
+        "style_directions": [
+          "Courtyard brick houses",
+          "shanashil timber-front traditions",
+          "contemporary masonry and concrete blocks"
+        ],
+        "detailing_goals": "Screened projecting bays, recessed entries and shaded passage fronts"
+      },
+      "geography": "Iraq and adjoining river plains",
+      "architecture": "Explore brick urban bases and screen-inspired facade depth; projecting timber bays need explicit compatibility.",
+      "public_realm": "Shaded entry fronts and accepted passage/court edges, with restrained fitted planting.",
+      "source_digest": "473f9057ee60adb14d1a009c9db3983a4efdd08e23aab9fd8629aa9ea87a051e",
+      "cues": [
+        "screen",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "central_asia_oases": {
+      "source": {
+        "label": "Central Asian oasis towns",
+        "group": "West and Central Asia",
+        "coverage": "Uzbekistan, Turkmenistan, Tajikistan and oasis settlements of neighbouring states",
+        "style_directions": [
+          "Earthen courtyard houses",
+          "brick merchant streets",
+          "Soviet-era and contemporary apartment stock"
+        ],
+        "detailing_goals": "Courtyard orientation, restrained brick patterns and local timber galleries"
+      },
+      "geography": "Uzbekistan, Turkmenistan, Tajikistan and adjoining oasis towns",
+      "architecture": "Explore brick merchant-front rhythm and regular modern urban volumes; ornamental references remain locally scoped.",
+      "public_realm": "Evidenced court-edge arrival and sheltered approaches; no implied new water or irrigation infrastructure.",
+      "source_digest": "cfa8491d56f96d9c3389f01d31661e778e7c6dfff6161861ab4cdab33b755079",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "central_asia_steppe": {
+      "source": {
+        "label": "Central Asian steppe and mountain towns",
+        "group": "West and Central Asia",
+        "coverage": "Kazakhstan, Kyrgyzstan and Mongolia; permanent settlements",
+        "style_directions": [
+          "Timber and masonry townhouses",
+          "Soviet-era apartment blocks",
+          "contemporary low-rise and urban infill"
+        ],
+        "detailing_goals": "Wind-sheltered entries and permanent-building treatment of settlement edges"
+      },
+      "geography": "Kazakhstan, Kyrgyzstan and Mongolia; permanent settlements",
+      "architecture": "Explore regular panel/masonry office and hotel envelopes with sheltered entry emphasis.",
+      "public_realm": "Compact wind-sheltered arrival where supported; avoid applying temporary dwelling imagery to city buildings.",
+      "source_digest": "e082efde8b80874b3412b1aec71c4d39d73b50d9e8b478808026688a37376f58",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "indus_gangetic": {
+      "source": {
+        "label": "Indus, Gangetic plains and western India",
+        "group": "South Asia",
+        "coverage": "Pakistan, northern India, Rajasthan and Gujarat; explicit local subvariants",
+        "style_directions": [
+          "Haveli and pol courtyard houses",
+          "brick bazaar fronts",
+          "modern concrete and mixed-use neighbourhoods"
+        ],
+        "detailing_goals": "Jali-inspired screens, shaded balconies and local timber/brick detail"
+      },
+      "geography": "Pakistan, northern India, Rajasthan and Gujarat; local subvariants",
+      "architecture": "Explore shaded solid zones, screened glazing and masonry frontage rhythm alongside contemporary frame systems.",
+      "public_realm": "Bazaar/street or evidenced court approaches; local screen motifs and planting need scoped support.",
+      "source_digest": "a091fed37570ec25f678facaf840cc772dfd53e6f788ec0a9354486e649bb8df",
+      "cues": [
+        "screen",
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "india_peninsular": {
+      "source": {
+        "label": "Peninsular India and Deccan",
+        "group": "South Asia",
+        "coverage": "Central, western and southern Indian peninsula",
+        "style_directions": [
+          "Deccan courtyard houses",
+          "Kerala/Malabar timber and tile traditions",
+          "modernist and contemporary concrete housing"
+        ],
+        "detailing_goals": "Deep verandas, rain eaves and dry/wet locality distinction"
+      },
+      "geography": "Central, western and southern peninsula; dry/wet distinctions",
+      "architecture": "Explore modernist concrete shade and compatible rain-protected hotel bases, distinct from domestic pavilion/tile roof traditions.",
+      "public_realm": "Covered or shaded arrival by locality, with connected walks and residual planting.",
+      "source_digest": "2c0fc64cec0099a1b27cc3b470aee98c9495ae4a3b66baf5ffd07d1de5452dc2",
+      "cues": [
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "bengal_delta": {
+      "source": {
+        "label": "Bengal and northeast South Asia",
+        "group": "South Asia",
+        "coverage": "Bangladesh, eastern India, Assam and northeast Indian localities",
+        "style_directions": [
+          "Bengal courtyard and curved-roof traditions",
+          "raised timber/bamboo houses",
+          "brick and concrete urban stock"
+        ],
+        "detailing_goals": "Monsoon eaves, shaded openings and mapped floor-height constraints"
+      },
+      "geography": "Bangladesh, eastern/northeast India and Assam localities",
+      "architecture": "Explore brick/concrete city envelopes with rain shelter and screened openings; do not transfer raised-house or curved-roof forms to towers.",
+      "public_realm": "Protected pedestrian arrival; preserve observed levels and drainage constraints before fitting beds.",
+      "source_digest": "928223bbffa507141a72bc00dd2293e0aedc865683dbe1ca132a852776898b19",
+      "cues": [
+        "screen",
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "himalayan": {
+      "source": {
+        "label": "Himalayan foothills and valleys",
+        "group": "South Asia",
+        "coverage": "Nepal, Bhutan and Indian/Pakistani Himalayan localities",
+        "style_directions": [
+          "Newar brick and timber houses",
+          "Bhutanese timber/masonry traditions",
+          "contemporary hill-town buildings"
+        ],
+        "detailing_goals": "Timber bands, deep eaves and slope-aware fronts within source geometry"
+      },
+      "geography": "Nepal, Bhutan and Indian/Pakistani Himalayan localities",
+      "architecture": "Explore restrained masonry and timber-band accents for compatible hotel bases; retain slope-aware measured volumes.",
+      "public_realm": "Sheltered graded approaches and tightly fitted planting; no inferred terraces or retaining structures.",
+      "source_digest": "07929706fdb853e6afae87f30c874a26cf4c59aa7b95a5259ac194b4d22675c7",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "sri_lanka_maldives": {
+      "source": {
+        "label": "Sri Lanka and Maldives",
+        "group": "South Asia",
+        "coverage": "Sri Lankan wet/dry zones and Maldivian islands",
+        "style_directions": [
+          "Courtyard and veranda houses",
+          "tropical modernism",
+          "island masonry and contemporary urban housing"
+        ],
+        "detailing_goals": "Shaded colonnades, ventilation and tile/metal alternatives"
+      },
+      "geography": "Sri Lankan wet/dry zones and Maldivian islands",
+      "architecture": "Explore tropical-modern shade, recessed entries and compatible solid/glass composition; preserve island/local distinctions.",
+      "public_realm": "Covered or shaded arrival and supported court edges; no automatic resort or beach-site layout.",
+      "source_digest": "3a29f690f010b04b9dc64309587dcecaa1ab747f915e594bbd5f48e86d056ad5",
+      "cues": [
+        "recess"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "jp_temperate": {
+      "source": {
+        "label": "Japan and Ryukyu islands",
+        "group": "East Asia",
+        "coverage": "Japanese archipelago; Hokkaido, mainland and Okinawan subvariants",
+        "style_directions": [
+          "Machiya and minka traditions",
+          "postwar compact houses",
+          "contemporary narrow urban infill"
+        ],
+        "detailing_goals": "Layered eaves, screened fronts and local tile/metal roof distinctions"
+      },
+      "geography": "Hokkaido, mainland Japan and Ryukyu/Okinawan variants",
+      "architecture": "Explore compact urban frontage rhythm and restrained screen/layered-entry ideas; keep towers separate from domestic traditional roof systems.",
+      "public_realm": "Tight, clear entrance paving and locally justified rain/sun shelter with small fitted beds.",
+      "source_digest": "623244048c4894be5225c86d8b19c73988cfcc7c86c0f5c5d16dc6b1e853bc36",
+      "cues": [
+        "screen"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "china_north": {
+      "source": {
+        "label": "Northern and inland China",
+        "group": "East Asia",
+        "coverage": "Northern plains, northeast China and northwestern inland towns",
+        "style_directions": [
+          "Siheyuan courtyard houses",
+          "brick hutong fronts",
+          "danwei and contemporary apartment stock"
+        ],
+        "detailing_goals": "Courtyard gates, brick bays and cold-region enclosure"
+      },
+      "geography": "Northern plains, northeast and northwest inland localities",
+      "architecture": "Explore brick-base rhythm, regular contemporary city volumes and locally appropriate enclosed entries.",
+      "public_realm": "Existing court/street approaches and compact planting; courtyard-house prose cannot create new voids.",
+      "source_digest": "666e12e7e02a3c1554054255d030878c546223313e9d8fa23cdfa8853a2febf9",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "china_south": {
+      "source": {
+        "label": "Southern China, Taiwan and coastal cities",
+        "group": "East Asia",
+        "coverage": "Southern/southwestern China, Hong Kong, Macao and Taiwan; local subvariants",
+        "style_directions": [
+          "Jiangnan courtyard houses",
+          "Lingnan qilou and Taiwanese shophouses",
+          "modern high-density and village stock"
+        ],
+        "detailing_goals": "Arcaded fronts, rain eaves and separate hill/coast urban forms"
+      },
+      "geography": "Southern/southwestern China, Hong Kong, Macao and Taiwan",
+      "architecture": "Explore dense urban bases and supported arcade-inspired frontage relationships; distinguish hill, coast and individual city contexts.",
+      "public_realm": "Rain-protected public approach where geometry allows; preserve independent frontage/vehicle routes.",
+      "source_digest": "ee811c1f3e3450cb6fe162419685591000ac791e872473b6e9578de77cbb28d6",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "korea": {
+      "source": {
+        "label": "Korean peninsula",
+        "group": "East Asia",
+        "coverage": "North and South Korean localities, including Jeju",
+        "style_directions": [
+          "Hanok courtyard traditions",
+          "brick urban houses",
+          "modern apartment and mixed-use blocks"
+        ],
+        "detailing_goals": "Courtyard-facing eaves, timber accents and ordinary contemporary facades"
+      },
+      "geography": "North/South Korean localities and Jeju",
+      "architecture": "Explore ordinary contemporary panel/masonry rhythm with restrained entry accents; courtyard/timber traditions require compatible local scope.",
+      "public_realm": "Compact paved arrival and contained beds; no blanket traditional eaves on office towers.",
+      "source_digest": "ee0ea1c3581fe171cf7358b697b5a2bcbe5c1a4904a87ed43af675385429a361",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "tibetan_plateau": {
+      "source": {
+        "label": "Tibetan plateau and high mountain settlements",
+        "group": "East Asia",
+        "coverage": "Tibetan cultural plateau and adjoining high-altitude localities",
+        "style_directions": [
+          "Stone and rammed-earth courtyard houses",
+          "timber-trimmed highland homes",
+          "contemporary masonry town buildings"
+        ],
+        "detailing_goals": "Deep reveals, local parapets and climate-specific compact openings"
+      },
+      "geography": "Tibetan plateau and adjoining high-altitude localities",
+      "architecture": "Explore deep masonry reveals and compact compatible envelopes for evidenced office/hotel forms; unsupported earth materials remain an asset gap.",
+      "public_realm": "Protected thresholds and site-supported planting only; avoid inventing high-rise or ceremonial forms.",
+      "source_digest": "86077b0d592276b65338eef82c5f3dea3eca33f176b727439d7e8ab113584fe2",
+      "cues": [
+        "masonry"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "tropical_humid": {
+      "source": {
+        "label": "Malay Peninsula and equatorial trading towns",
+        "group": "Southeast Asia",
+        "coverage": "Malaysia, Singapore and Brunei; local urban/rural variants",
+        "style_directions": [
+          "Malay timber houses",
+          "Straits shophouses",
+          "tropical modern and contemporary urban housing"
+        ],
+        "detailing_goals": "Five-foot-way-inspired frontage, ventilated screens and rain eaves"
+      },
+      "geography": "Malaysia, Singapore and Brunei; urban/local distinctions",
+      "architecture": "Explore tropical-modern screens and shophouse-informed street-base rhythm, with independent contemporary tower grids.",
+      "public_realm": "Connected covered frontage where supported; fit planting around clear public and service routes.",
+      "source_digest": "4039c17432bd729d96644e171d1223f41feca2361b6643205f9aee623b6d3dbb",
+      "cues": [
+        "screen"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "mainland_southeast_asia": {
+      "source": {
+        "label": "Mainland Southeast Asia",
+        "group": "Southeast Asia",
+        "coverage": "Myanmar, Thailand, Laos, Cambodia and Vietnam",
+        "style_directions": [
+          "Timber stilt-house traditions",
+          "trading-port shophouses",
+          "tube houses and modern concrete neighbourhoods"
+        ],
+        "detailing_goals": "Narrow frontage rhythms, shaded galleries and mapped raised floors"
+      },
+      "geography": "Myanmar, Thailand, Laos, Cambodia and Vietnam",
+      "architecture": "Explore narrow urban frontage, shade and trading-port references at compatible bases; country/city differences remain explicit.",
+      "public_realm": "Covered or shaded walking arrival, compact beds and source-supported levels; no automatic stilts.",
+      "source_digest": "6b298b8a5e91b6258ee431ef4150e105e836f06a6897742664648a6bef9e5d8c",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "indonesian_archipelago": {
+      "source": {
+        "label": "Indonesia and Timor",
+        "group": "Southeast Asia",
+        "coverage": "Indonesian islands and Timor-Leste; separate island/community variants",
+        "style_directions": [
+          "Javanese courtyard and pavilion traditions",
+          "Sumatran and Sulawesi timber forms",
+          "contemporary kampung masonry"
+        ],
+        "detailing_goals": "Ventilated roof edges and distinctive roof silhouettes only with evidence"
+      },
+      "geography": "Indonesia and Timor-Leste; island/community variants",
+      "architecture": "Explore ventilated edge and shaded pavilion-entry ideas for compatible city bases; roof silhouettes require separate evidence.",
+      "public_realm": "Supported covered arrival and local planting, without assigning one island's form to the whole region.",
+      "source_digest": "9c1849bceeb464e44e7e4d0f9d3834ea43a059d4c3693e14cfab1123830015ab",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "philippines": {
+      "source": {
+        "label": "Philippine archipelago",
+        "group": "Southeast Asia",
+        "coverage": "Luzon, Visayas and Mindanao; local settlement variants",
+        "style_directions": [
+          "Bahay kubo and bahay na bato traditions",
+          "Art Deco town fronts",
+          "contemporary concrete and mixed-use buildings"
+        ],
+        "detailing_goals": "Shaded upper galleries, vent panels and local roof/eave systems"
+      },
+      "geography": "Luzon, Visayas and Mindanao; settlement variants",
+      "architecture": "Explore Art Deco-compatible frontage rhythm, contemporary concrete and shaded upper facade zones.",
+      "public_realm": "Sheltered arrival and contained planting; galleries and special roof forms require supported geometry.",
+      "source_digest": "9ee48d036e0fae4569c81657ebb13affe9c6e52589b5f3b6a14868bb20e5727a",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "nz_temperate": {
+      "source": {
+        "label": "New Zealand and temperate southern Pacific",
+        "group": "Oceania",
+        "coverage": "New Zealand settlements including Chatham Islands; Christchurch pilot only at runtime",
+        "style_directions": [
+          "Timber villas and bungalows",
+          "brick/render suburban houses",
+          "contemporary infill and locally evidenced Maori civic traditions"
+        ],
+        "detailing_goals": "Weatherboards, sheltered porches and metal/tile roof distinctions"
+      },
+      "geography": "New Zealand including Chatham Islands; locality distinctions",
+      "architecture": "Explore contemporary masonry/render and restrained sheltered city bases; domestic weatherboards are optional compatible accents, not tower cladding defaults.",
+      "public_realm": "Connected weather-protected approaches and fitted native/other supported planting from actual local context. Maori civic traditions require specific evidence.",
+      "source_digest": "f95a58222cda7cce00415f93625b4757e02a30304fabd06cec77692a1e1f5e40",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "au_southeast": {
+      "source": {
+        "label": "Southeastern and temperate Australia",
+        "group": "Oceania",
+        "coverage": "Southeastern Australia, Tasmania and temperate southwest settlements",
+        "style_directions": [
+          "Victorian terraces and Federation houses",
+          "brick veneer suburbs",
+          "contemporary coastal and urban infill"
+        ],
+        "detailing_goals": "Verandas, ironwork references, local brick/render and metal/tile roofs"
+      },
+      "geography": "Southeastern Australia, Tasmania and temperate southwest",
+      "architecture": "Explore urban masonry rhythm, restrained veranda-derived arrival shelter and contemporary city infill; domestic terrace decoration is not mandatory.",
+      "public_realm": "Compact street or evidenced plaza arrival with locally supported shade/planting.",
+      "source_digest": "53f68724458c3e8258ecb2da5ff8bfbd8d7331e0a24dd6d2cb4e99b1d6bef325",
+      "cues": [
+        "masonry",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "au_tropical_arid": {
+      "source": {
+        "label": "Northern and inland Australia",
+        "group": "Oceania",
+        "coverage": "Tropical north, Queensland, inland arid regions and remote settlements",
+        "style_directions": [
+          "Queenslander timber houses",
+          "arid-region veranda buildings",
+          "tropical modern and contemporary modular housing"
+        ],
+        "detailing_goals": "Deep shade, ventilation and separately evidenced elevated floors"
+      },
+      "geography": "Tropical north, Queensland, inland arid and remote localities",
+      "architecture": "Separate rain/ventilation interpretations from dry-region shade; use restrained screens and sheltered modern city bases.",
+      "public_realm": "Distinct wet/dry arrival and planting options; never infer elevated floors from the regional label.",
+      "source_digest": "451464d5a01e9de8bcd2131a695b97b57cfdd873e8e1b386b217c3617b85e836",
+      "cues": [
+        "screen",
+        "shelter"
+      ],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "pacific_islands": {
+      "source": {
+        "label": "Melanesia, Micronesia and Polynesia",
+        "group": "Oceania",
+        "coverage": "Papua New Guinea, Pacific island states/territories and Hawaii; local subvariants",
+        "style_directions": [
+          "Community-specific timber/pavilion traditions",
+          "Pacific bungalow and plantation-era forms",
+          "contemporary island masonry housing"
+        ],
+        "detailing_goals": "Open shaded edges, rain protection and cyclone-aware local roof profiles"
+      },
+      "geography": "Melanesia, Micronesia, Polynesia, Papua New Guinea and Hawaii; local variants",
+      "architecture": "Explore compatible shaded/open-edge entry expression for evidenced city buildings; community-specific pavilion forms remain separate.",
+      "public_realm": "Covered arrival and locally supported planting; no inferred resort, sacred motif or cyclone-performance claim.",
+      "source_digest": "1a166d124dbade2175caaf1e73ea2250f0fb54edfae2d1693f00d2db62fd9240",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": true
+    },
+    "antarctic_stations": {
+      "source": {
+        "label": "Antarctic and subantarctic stations",
+        "group": "Antarctica and subantarctic",
+        "coverage": "Mapped research stations and field infrastructure, including southern ocean islands",
+        "style_directions": [
+          "Historic expedition timber huts",
+          "insulated modular stations",
+          "contemporary research and service buildings"
+        ],
+        "detailing_goals": "Panel joints, wind vestibules and surveyed raised foundations"
+      },
+      "geography": "Mapped Antarctic/subantarctic stations and field infrastructure",
+      "architecture": "Normally inapplicable to city office/hotel generation. Preserve specialist station treatment; use a neutral city family only if actual building evidence warrants it.",
+      "public_realm": "Preserve station/service access; no default ornamental landscaping, urban plaza or hotel drop-off.",
+      "source_digest": "ce1d38b4e3023a62deef19a08f99264b63b406caeb0229b1dd69771edc64c5c8",
+      "cues": [],
+      "status": "text_based_proposal",
+      "city_applicable": false
+    }
+  },
+  "source_fields": [
+    "label",
+    "group",
+    "coverage",
+    "style_directions",
+    "detailing_goals"
+  ],
+  "note": "City text/geographic interpretations only; no existing regional style parameters."
+}

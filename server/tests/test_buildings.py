@@ -270,11 +270,12 @@ class ParkingDeckTest(unittest.TestCase):
         self.assertGreater(P[:, 2].max(), 9.0 + bld.STAIR_TOWER_UP - 0.2, "a stair tower over the top deck")
         # a road 8 m south of the garage's south edge (y = 0), running east-west
         road = (np.array([[-50.0, -12.0], [120.0, -12.0]]), 4.0)
-        drives = bld.garage_drives([(spec, 0.0, 0.0)], [road], 0.0, 0.0)
+        drives = bld.garage_drives([(spec, 0.0, 0.0)], [road], 0.0, 0.0,ground=lambda p:np.zeros(len(p)))
         self.assertEqual(len(drives), 1)
         n = np.array(drives[0]["n"])[:, :2]
         self.assertGreater(n[:, 1].max(), 0.0, "into the ground deck")
-        self.assertAlmostEqual(n[:, 1].min(), -12.0 + 4.1, places=1, msg="to the road's edge")
+        self.assertAlmostEqual(n[:, 1].min(), -12.0 + 4., places=6, msg="to the exact road contact edge")
+        self.assertTrue(drives[0]['bne_access_only'], 'the building collider owns the apron')
 
     def test_a_big_garage_is_open_decks_with_a_ramp_well(self):
         # the user, 2026-10-14: "garage buildings ... are solid"
@@ -536,6 +537,12 @@ class PartsTest(unittest.TestCase):
         self.assertEqual(len(items), 3, "the parts, not the footprint")
         tops = sorted(round(s.height + s.min_h) for s, _, _ in items)
         self.assertEqual(tops, [15, 30, 90], "the podium, a floating part, the tower at the building's height")
+        observed = {s.evidence.source_id: s.evidence for s, _, _ in items}
+        self.assertEqual(set(observed), {"p1", "p2", "p3"})
+        self.assertEqual(observed["p3"].parent_id, "B")
+        self.assertEqual(observed["p3"].get("height").value, 30, "mapped top retained before thickness conversion")
+        self.assertEqual(observed["p3"].get("min_height").value, 20)
+        self.assertEqual(observed["p2"].get("height").status, "unknown", "fallback height is an estimate")
         self.assertEqual(len({s.seed for s, _, _ in items}), 1, "one look")
         P = bld.build(items)[0]
         self.assertAlmostEqual(P[:, 2][P[:, 2] < 90.5].max(), 90.0, delta=0.01)
@@ -558,7 +565,7 @@ class OverRoadTest(unittest.TestCase):
         items = bld.tile_buildings(self.f, 0, 0, 256, 256, [b], lambda la, lo: np.zeros(np.shape(la)))
         self.assertEqual(len(items), 1)
 
-    def test_a_footprint_over_a_street_is_lifted_over_it(self):
+    def test_ground_street_overlap_is_trimmed_without_inventing_an_elevated_part(self):
         b = Feats(["O", "H"], [self.ll(10, 10, 80, 60), self.ll(150, 10, 30, 30)],
                   **{"class": ["", ""], "height": [16.0, 9.0]})
         street = np.array([[0.0, 40.0], [256.0, 40.0]])         # through the first, past the second
@@ -566,10 +573,15 @@ class OverRoadTest(unittest.TestCase):
                                    roads_xy=[street])
         by_area = sorted(items, key=lambda it: -bld._area2(it[0].ring))
         over, house = by_area[0][0], by_area[1][0]
-        self.assertEqual(over.min_h, bld.OVER_ROAD_CLEAR_M)
-        self.assertAlmostEqual(over.min_h + over.height, 16.0, delta=0.01, msg="its top where it was")
-        self.assertEqual(house.min_h, 0.0)
-        self.assertAlmostEqual(bld.road_through(over.ring, [street - 0]), 80.0, delta=2.5)
+        self.assertEqual(over.min_h, 0.)
+        self.assertAlmostEqual(over.height,16.,delta=.01)
+        self.assertEqual(house.min_h,0.)
+        from buildgen.road_conflicts import source_items
+        clipped=source_items(items,[(street,4.,'residential',True)],lambda p:np.zeros(len(p)))
+        self.assertEqual(len(clipped),2)
+        self.assertTrue(all(s.min_h==0 for s,_,_ in clipped))
+        self.assertTrue(all(bld.road_through(s.ring,[street],footprint=s.footprint)<.01 for s,_,_ in clipped))
+        self.assertTrue(any('footprint_clipped_clear_of_street' in s.diagnostics for s,_,_ in clipped))
 
 
 class PhotoFillTest(unittest.TestCase):

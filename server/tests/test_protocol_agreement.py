@@ -100,6 +100,9 @@ MOD_TO_SERVER = {
               "geoTiles": F(int, OPT),
               # ... the road tiles too (roads.lua ROAD_GEO: content kept, a skin per anchor; roads.GeoTracker)
               "roadGeo": F(int, OPT),
+              "buildingProgress": F(int, OPT),
+              "buildingChunks": F(int, OPT),  # complete v2 building visual/collision sets
+              "sectorManifest": F(int, OPT),
               # ... and the far buildings, skyline and far bridges (roads.lua FAR_GEO: blockworker.far_geo)
               "farGeo": F(int, OPT),
               # ... and the far field from level 3 up as global tiles (farfield.lua GLOBAL_FAR: select_global)
@@ -222,6 +225,9 @@ SERVER_TO_MOD = {
               "horizon": F(bool, OPT),          # v1.4 M1h: true with --horizon only
               "geoTiles": F(int, OPT),          # geotiles: the zoom of the tiles it sends (hello.geoTiles, --geo-tiles on)
               "roadGeo": F(int, OPT),           # road tiles as geotiles (hello.roadGeo, the road processes on)
+              "buildingProgress": F(int, OPT),
+              "buildingChunks": F(int, OPT),    # negotiated complete building chunk lists
+              "sectorManifest": F(int, OPT),
               "farGeo": F(int, OPT),            # far buildings / skyline / far bridges as geotiles (hello.farGeo)
               "globalFar": F(int, OPT),         # far levels >= 3 as global tiles (hello.globalFar, --global-far)
               "deshadow": F(str, OPT),          # --deshadow lambert|full only (the settings page shows it)
@@ -284,7 +290,10 @@ SERVER_TO_MOD = {
     # the loading line's counts (Connection.send_progress, the mod's loadprogress.lua): [done, wanted] each
     "load_progress": {"anchorId": F(int), "ground": F(list), "roads": F(list), "trees": F(list), "far": F(list)},
     # road tiles near the player (roads.py; additive, with map data only): a JSON file of DecalRoad chunks
-    "roads_tile": {"anchorId": F(int), "key": F(str), "path": F(str), "n": F(int),
+    "building_progress": {"anchorId": F(int), "key": F(str), "token": F(str),
+                          "frame": F(list, OPT), "group": F(str, OPT), "stage": F(int, OPT), "total": F(int, OPT),
+                          "parts": F(dict, OPT), "slots": F(dict, OPT), "cancel": F(bool, OPT)},
+    "roads_tile": {"buildingProgressToken": F(str, OPT), "anchorId": F(int), "key": F(str), "path": F(str), "n": F(int),
                    "data": F(dict, OPT),       # the file's JSON, so the game need not open it (staging.inline_json)
                    "slots": F(dict, OPT),      # {what: [pooled shape path, serial]} (matslots.py; pose.slotsGone)
                    # a road geotile (key "g17_x_y", hello.roadGeo): its content in the frame [lat, lon] of its centre,
@@ -294,7 +303,7 @@ SERVER_TO_MOD = {
     # a road geotile's draped surfaces for an anchor (road mesh, plazas, sidewalks; their colliders), a JSON file
     "roads_skin": {"anchorId": F(int), "key": F(str), "path": F(str), "data": F(dict, OPT), "slots": F(dict, OPT)},
     # a road geotile's parts shown as their exact variant for an anchor ({what: shape}; false: the base shape again)
-    "roads_exact": {"anchorId": F(int), "key": F(str), "parts": F(dict), "slots": F(dict, OPT)},
+    "roads_exact": {"anchorId": F(int), "key": F(str), "parts": F(dict), "slots": F(dict, OPT), "contentHash": F((str,type(None)), OPT)},
     "roads_drop": {"anchorId": F(int), "key": F(str)},
     # trees, bushes and rocks of a tile (vegetation.py, --trees on): a JSON file of items
     # (a geotile, key "g17_x_y": frame [lat, lon] of its centre and pivot, m in that frame: the mod places it,
@@ -333,7 +342,7 @@ SERVER_TO_MOD = {
 WEATHER_NESTED = {"cover": {"total", "low", "mid", "high"}, "wind": {"ms", "fromDeg", "gustMs"},
                   "aloft": {"ms", "fromDeg"}}
 # message types the plain session cannot produce (each has its own session test below)
-EXERCISED_ELSEWHERE = {"far_retex", "roads_tile", "roads_drop",   # roads: needs map data (roads tests)
+EXERCISED_ELSEWHERE = {"building_progress", "far_retex", "roads_tile", "roads_drop",   # roads: needs map data (roads tests)
                        "roads_skin", "roads_exact",                  # road geotiles (test_roadgeo)
                        "terrain_refresh",                            # a provisional first block: --grading (map data)
                        "update_status",                              # the player's "Update now" (test_selfupdate)
@@ -481,9 +490,10 @@ class SessionsAgreementTest(test_server.ServerHarness):
         for kind in ("hello", "pose"):
             t = next(lua_tables(core, m.end() - 1) for m in re.finditer(r"net\.send\(\{", core)
                      if f"type = '{kind}'" in lua_tables(core, m.end() - 1))
-            self.assertIn("sessions = roads.allHeldSessions()", t, kind)
-        # (the far field's folders and the road tiles' kept across a server restart: their buildings, 2026-10-31)
-        self.assertIn("require('beamngEarth/farfield').heldSessions(), M.heldSessions()", roads_lua)
+            self.assertIn("sessions = M.heldSessions()", t, kind)
+        held=lua_function(core,'M.heldSessions')
+        self.assertIn('farfield.heldSessions()',held)
+        self.assertIn('roads.heldSessions()',held)
         self.assertIn("'^/temp/beamngEarth/([^/]+)/'", far)
         self.assertEqual(self.server.vfs_dir, f"/temp/beamngEarth/{self.server.sid}")
         self.assertEqual(modsim.folder_of(self.server.vfs_dir + "/far_1_0_0_0.cdae"), self.server.sid)
@@ -1059,6 +1069,22 @@ class ServerMessagesTest(test_server.ServerHarness):
         self.assertEqual((w, h, fourcc), (self.server.tex_size(m["level"]),) * 2 + (b"DXT1",))
         self.assertEqual(mips, w.bit_length())                 # full chain down to 1 x 1
         self.assertEqual(len(data), imagery.DDS_HEADER + sum(sizes))
+
+
+class SectorManifestHelloTest(test_server.ServerHarness):
+    def test_sector_manifest_requires_matching_capability_and_road_geotiles(self):
+        from unittest.mock import patch
+        self.server.geo_tiles=True
+        base=dict(type='hello',protocol=4,format=self.MOD_FORMAT,modVersion='test',
+                  geoTiles=17,roadGeo=1,buildingChunks=1)
+        with patch.object(self.server,'roads_geo_ok',return_value=True):
+            for requested,expected in ((None,None),(1,1),(2,None),(True,None)):
+                self.c.send(dict(base,sectorManifest=requested))
+                msg,_=self.c.until(lambda m:m['type']=='hello',10)
+                self.assertEqual(msg.get('sectorManifest'),expected)
+            self.c.send(dict(base,roadGeo=0,sectorManifest=1))
+            msg,_=self.c.until(lambda m:m['type']=='hello',10)
+            self.assertNotIn('sectorManifest',msg)
 
 
 class DeshadowHelloTest(test_server.ServerHarness):

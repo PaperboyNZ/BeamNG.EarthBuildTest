@@ -88,14 +88,14 @@ _ROOT = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.dirname(os.pat
 
 
 def source_id(server_dir=None):
-    """A fingerprint of the server's Python sources (server/*.py): written into a packaged app as CODE_ID at its
+    """A fingerprint of server sources and building catalogues: written into a packaged app as CODE_ID at its
     build (tools/build_app.py), whose modules are bytecode only."""
     here = server_dir or os.path.dirname(os.path.abspath(__file__))
+    from codefiles import source_files
     h = hashlib.sha256()
-    for name in sorted(os.listdir(here)):
-        if name.endswith(".py"):
-            with open(os.path.join(here, name), "rb") as f:
-                h.update(name.encode() + b"\0" + f.read())
+    for name in source_files(here):
+        with open(os.path.join(here, name), "rb") as f:
+            h.update(name.encode() + b"\0" + f.read())
     return h.hexdigest()[:16]
 
 

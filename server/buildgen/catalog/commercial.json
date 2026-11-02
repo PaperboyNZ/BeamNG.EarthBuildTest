@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "presets": [
+    {"id":"ci_logistics_hall","use":"industrial","classes":["warehouse"],"min_area":50,"max_area":1000000,"min_floors":1,"max_floors":2,"window_width":1.8,"bay":6.5,"windows":false,"shop":false,"service":true,"garage":false,"shading":false},
+    {"id":"ci_supermarket","use":"commercial","classes":["supermarket"],"min_area":150,"max_area":1000000,"min_floors":1,"max_floors":2,"window_width":2.4,"bay":3.5,"windows":true,"shop":true,"service":false,"garage":false,"shading":false},
+    {"id":"ci_trade_units","use":"industrial","classes":["workshop"],"min_area":300,"max_area":1000000,"min_floors":1,"max_floors":2,"window_width":1.2,"bay":8.5,"windows":true,"shop":false,"service":true,"garage":false,"shading":false},
+    {"id":"ci_strip_shops","use":"commercial","classes":["retail","shop"],"min_area":300,"max_area":6000,"min_floors":1,"max_floors":1,"window_width":2.4,"bay":8.5,"windows":true,"shop":true,"service":false,"garage":false,"shading":false}
+  ]
+}

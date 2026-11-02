@@ -1,0 +1,44 @@
+{
+  "bne_bld_shutter": {
+    "name": "bne_bld_shutter",
+    "mapTo": "bne_bld_shutter",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_bld_shutter.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.55,
+        "metallicFactor": 0,
+        "vertColor": true
+      }
+    ],
+    "translucent": false
+  },
+  "bne_bld_paving": {
+    "name": "bne_bld_paving",
+    "mapTo": "bne_bld_paving",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_bld_paving.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.9,
+        "metallicFactor": 0,
+        "vertColor": true
+      }
+    ],
+    "translucent": false
+  }
+}

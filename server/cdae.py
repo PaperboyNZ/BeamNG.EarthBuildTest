@@ -424,7 +424,8 @@ def _sorted_tris(tris, tri_materials, nmat):
     TM = np.asarray(tri_materials, np.int64).reshape(-1)
     if len(TM) != len(T) or TM.min() < 0 or TM.max() >= nmat:
         raise CdaeError("tri_materials: one index into material per triangle")
-    return T[np.argsort(TM, kind="stable")], np.sort(TM, kind="stable")
+    order = np.argsort(TM, kind="stable")
+    return T[order], TM[order]
 
 
 LOD_TOP_SIZE = 2.0          # px: the size of the one (or the last, coarsest) detail level, as the engine's own files
@@ -433,7 +434,7 @@ LOD_TOP_SIZE = 2.0          # px: the size of the one (or the last, coarsest) de
 @profile_step('Native shape encoding')
 def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2=None,
            tangent_uvs=None, object_name="tile", tri_materials=None, colors=None, collision_only=False, lods=None,
-           collisions=None):
+           collisions=None, shape_bounds=None):
     """Shape bytes for one static mesh, laid out exactly as the engine writes a compiled
     Collada file with the same geometry.
 
@@ -451,14 +452,17 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
     2026-10-16: cars drove through every building since 2026-10-15).
     lods: coarser detail levels of the same object, the engine's own camera LOD (TSShapeInstance picks the finest
     detail whose size is at most the shape's projected size in pixels): a list of (size_px, dict of positions, tris
-    and optional uvs / tri_materials / colors, same material list), sizes falling, the last one drawn down to
+    and optional normals / uvs / uvs2 / tangent_uvs / tri_materials / colors, same material list), sizes falling,
+    the last one drawn down to
     LOD_TOP_SIZE px. The main mesh is drawn from lods[0]'s size up: lods=[(300, lite)] draws the full mesh while the
     shape spans 300 px or more, the lite one below.
     collisions: the shape's collision as separate meshes beside the drawn one, [(positions, tris, tri_materials or
     None)] (the same material list): objects "Colmesh<k>" in a "Collision-1" detail (each a null mesh in the drawn
     detail), for a TSStatic with collisionType "Collision Mesh". Windows builds each collision mesh in time ~quadratic
     in its triangles (collision-engine-facts: 51.2k tris 3.8 s, as 16 meshes 0.09 s): a big piece's collision in small
-    meshes. Not with collision_only or lods."""
+    meshes. Not with collision_only or lods.
+    shape_bounds: optional conservative (lo, hi) for parts of one logical shape
+    to share projected-size LOD selection. Mesh bounds remain local to each part."""
     if collision_only:
         object_name = "Colmesh"
         lods = None
@@ -490,8 +494,15 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
     levels = [(None, body0, ntri)]
     for size, d in (lods or []):
         Pl = np.asarray(d["positions"], np.float64).reshape(-1, 3)
+        if not len(d['tris']):
+            # A detail-only chunk disappears at distance while its neighbours
+            # carry the disjoint coarse shell. Native null mesh, as used by
+            # collision-only shapes; never fabricate a degenerate triangle.
+            levels.append((float(size), packb(4), 0))
+            continue
         Tl, TMl = _sorted_tris(d["tris"], d.get("tri_materials"), nmat)
-        bl, lol, hil, ntl = _mesh_data(Pl, Tl, TMl, nmat, None, d.get("uvs"), None, None, d.get("colors"))
+        bl, lol, hil, ntl = _mesh_data(Pl, Tl, TMl, nmat, d.get("normals"), d.get("uvs"), d.get("uvs2"),
+                                     d.get("tangent_uvs"), d.get("colors"))
         lo, hi = np.minimum(lo, lol), np.maximum(hi, hil)
         levels.append((float(size), bl, ntl))
     cols = []
@@ -505,6 +516,12 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
         raise CdaeError("collisions: not with collision_only or lods")
     # each level is drawn from the next coarser level's size up: the finest from lods[0]'s size, the last from 2 px
     sizes = [float(lv[0]) for lv in levels[1:]] + [LOD_TOP_SIZE]
+
+    if shape_bounds is not None:
+        shared=np.asarray(shape_bounds,np.float32)
+        if shared.shape!=(2,3) or not np.isfinite(shared).all() or (shared[0]>shared[1]).any():
+            raise ValueError('invalid shared shape bounds')
+        lo,hi=np.minimum(lo,shared[0]),np.maximum(hi,shared[1])
 
     center = ((lo + hi) * np.float32(0.5)).astype(np.float32)
     half = ((hi - lo) * np.float32(0.5)).astype(np.float32)
@@ -584,12 +601,14 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
 
 def _primitives(TM, nmat):
     """One indexed-triangle primitive per material present (start, count in indices, matIndex)."""
-    out, n = b"", 0
-    for k in range(nmat):
-        idx = np.nonzero(TM == k)[0]
-        if len(idx):
-            out += struct.pack("<3i", int(idx[0]) * 3, len(idx) * 3, PRIM_TRIANGLES | PRIM_INDEXED | k)
+    # _sorted_tris already groups the triangles. Count once instead of scanning
+    # the complete index stream separately for every material.
+    out, n, start = b"", 0, 0
+    for k, count in enumerate(np.bincount(TM, minlength=nmat)):
+        if count:
+            out += struct.pack("<3i", start * 3, int(count) * 3, PRIM_TRIANGLES | PRIM_INDEXED | k)
             n += 1
+            start += int(count)
     return _vec(out, n, 12)
 
 

@@ -1,0 +1,420 @@
+{
+  "schema": 1,
+  "scope": "User-authored regional associations, 2 November 2026. Chances are art direction, not prevalence statistics. Mapped facts and geometric clearance take priority. Selection chances apply before shape/material/access suitability and are not guaranteed final spawn fractions.",
+  "modifiers": {
+    "dormers": {
+      "label": "Dormers",
+      "regions": [
+        "alpine",
+        "au_southeast",
+        "canada_atlantic",
+        "canada_pacific",
+        "canada_prairie",
+        "central_europe",
+        "eastern_europe",
+        "eu_atlantic",
+        "france_regional",
+        "low_countries",
+        "nordic_cold",
+        "nz_temperate",
+        "russia_north",
+        "us_midwest",
+        "us_northeast",
+        "us_pacific",
+        "us_southeast"
+      ],
+      "chance": 0.45,
+      "note": "European associations plus the previously implemented North American and ANZ dormer recipes; all use the same chance gate."
+    },
+    "mansard": {
+      "label": "Mansard roof",
+      "regions": [
+        "france_regional",
+        "low_countries"
+      ],
+      "chance": 0.18,
+      "countries": [
+        "FRA",
+        "BEL"
+      ]
+    },
+    "stepped_gable": {
+      "label": "Stepped gable",
+      "regions": [
+        "low_countries"
+      ],
+      "chance": 0.15,
+      "countries": [
+        "NLD",
+        "BEL"
+      ]
+    },
+    "half_timber": {
+      "label": "Half-timbering",
+      "regions": [
+        "central_europe",
+        "eu_atlantic"
+      ],
+      "chance": 0.18,
+      "countries": [
+        "DEU",
+        "CZE",
+        "POL",
+        "SVK",
+        "AUT",
+        "CHE",
+        "GBR"
+      ],
+      "localities_excluded": [
+        "Scotland",
+        "Wales",
+        "Northern Ireland"
+      ]
+    },
+    "shutters": {
+      "label": "Exterior shutters",
+      "regions": [
+        "adriatic_balkans",
+        "aegean",
+        "eu_mediterranean",
+        "france_regional",
+        "italy_regional"
+      ],
+      "chance": 0.65
+    },
+    "awnings": {
+      "label": "Awnings",
+      "regions": [
+        "adriatic_balkans",
+        "aegean",
+        "eu_mediterranean",
+        "italy_regional"
+      ],
+      "chance": 0.35
+    },
+    "bay_windows": {
+      "label": "Bay windows",
+      "regions": [
+        "au_southeast",
+        "au_tropical_arid",
+        "canada_atlantic",
+        "canada_pacific",
+        "canada_prairie",
+        "eu_atlantic",
+        "nz_temperate",
+        "us_midwest",
+        "us_northeast",
+        "us_pacific",
+        "us_southeast",
+        "us_southwest"
+      ],
+      "chance": 0.28,
+      "countries": [
+        "GBR",
+        "IRL",
+        "USA",
+        "CAN",
+        "AUS",
+        "NZL"
+      ]
+    },
+    "iron_balconies": {
+      "label": "Iron balconies",
+      "regions": [
+        "adriatic_balkans",
+        "aegean",
+        "amazon_guianas",
+        "andean_highlands",
+        "brazil_coastal",
+        "caribbean_creole",
+        "central_america",
+        "chile_pacific",
+        "eu_mediterranean",
+        "italy_regional",
+        "latin_american_local",
+        "southern_cone"
+      ],
+      "chance": 0.35
+    },
+    "timber_balconies": {
+      "label": "Timber balconies",
+      "regions": [
+        "alpine"
+      ],
+      "chance": 0.55
+    },
+    "front_porch": {
+      "label": "Front porch",
+      "regions": [
+        "canada_atlantic",
+        "canada_pacific",
+        "canada_prairie",
+        "us_midwest",
+        "us_northeast",
+        "us_pacific",
+        "us_southeast",
+        "us_southwest"
+      ],
+      "chance": 0.5
+    },
+    "veranda": {
+      "label": "Veranda",
+      "regions": [
+        "au_southeast",
+        "au_tropical_arid",
+        "caribbean_creole",
+        "nz_temperate",
+        "southern_africa",
+        "us_southeast"
+      ],
+      "chance": 0.45
+    },
+    "deep_eaves": {
+      "label": "Deep eaves",
+      "regions": [
+        "alpine",
+        "china_north",
+        "china_south",
+        "indonesian_archipelago",
+        "jp_temperate",
+        "korea",
+        "mainland_southeast_asia",
+        "philippines",
+        "tropical_humid"
+      ],
+      "chance": 0.7
+    },
+    "stilts": {
+      "label": "Stilts / raised building",
+      "regions": [
+        "indonesian_archipelago",
+        "mainland_southeast_asia",
+        "philippines",
+        "tropical_humid"
+      ],
+      "chance": 0.18
+    },
+    "roof_terrace": {
+      "label": "Roof parapet / roof terrace",
+      "regions": [
+        "anatolia_caucasus",
+        "arid_warm",
+        "bengal_delta",
+        "india_peninsular",
+        "indus_gangetic",
+        "iran_plateau",
+        "levant",
+        "maghreb",
+        "mesopotamia",
+        "nile_valley",
+        "sri_lanka_maldives"
+      ],
+      "chance": 0.55
+    },
+    "large_chimneys": {
+      "label": "Large chimneys",
+      "regions": [
+        "eastern_europe",
+        "eu_atlantic",
+        "nordic_cold",
+        "russia_north"
+      ],
+      "chance": 0.35,
+      "countries": [
+        "GBR",
+        "IRL",
+        "NOR",
+        "SWE",
+        "FIN",
+        "DNK",
+        "ISL",
+        "EST",
+        "LVA",
+        "LTU",
+        "RUS",
+        "BLR",
+        "UKR"
+      ]
+    },
+    "terracotta": {
+      "label": "Terracotta roofing",
+      "regions": [
+        "adriatic_balkans",
+        "aegean",
+        "amazon_guianas",
+        "andean_highlands",
+        "brazil_coastal",
+        "caribbean_creole",
+        "central_america",
+        "chile_pacific",
+        "eu_mediterranean",
+        "italy_regional",
+        "latin_american_local",
+        "southern_cone"
+      ],
+      "chance": 0.65,
+      "family": "roof",
+      "material": "tile"
+    },
+    "slate": {
+      "label": "Slate roofing",
+      "regions": [
+        "eastern_europe",
+        "eu_atlantic",
+        "france_regional",
+        "low_countries",
+        "nordic_cold",
+        "russia_north"
+      ],
+      "chance": 0.45,
+      "family": "roof",
+      "material": "slate"
+    },
+    "metal_roof": {
+      "label": "Metal roofing",
+      "regions": [
+        "au_southeast",
+        "au_tropical_arid",
+        "eastern_europe",
+        "nordic_cold",
+        "nz_temperate",
+        "russia_north"
+      ],
+      "chance": 0.6,
+      "family": "roof",
+      "material": "metal"
+    },
+    "asphalt_shingles": {
+      "label": "Asphalt shingles",
+      "regions": [
+        "canada_atlantic",
+        "canada_pacific",
+        "canada_prairie",
+        "us_midwest",
+        "us_northeast",
+        "us_pacific",
+        "us_southeast",
+        "us_southwest"
+      ],
+      "chance": 0.65,
+      "family": "roof",
+      "material": "shingle"
+    },
+    "thatch": {
+      "label": "Thatch roofing",
+      "regions": [
+        "adriatic_balkans",
+        "aegean",
+        "african_local",
+        "alpine",
+        "central_africa",
+        "central_europe",
+        "eastern_europe",
+        "eu_atlantic",
+        "eu_mediterranean",
+        "france_regional",
+        "horn_africa",
+        "indian_ocean_africa",
+        "indonesian_archipelago",
+        "italy_regional",
+        "low_countries",
+        "mainland_southeast_asia",
+        "nordic_cold",
+        "philippines",
+        "russia_north",
+        "sahel",
+        "southern_africa",
+        "swahili_east_africa",
+        "tropical_humid"
+      ],
+      "chance": 0.12,
+      "family": "roof",
+      "material": "thatch",
+      "rural_only": true
+    },
+    "weatherboard": {
+      "label": "Weatherboard / clapboard",
+      "regions": [
+        "au_southeast",
+        "au_tropical_arid",
+        "canada_atlantic",
+        "canada_pacific",
+        "canada_prairie",
+        "nz_temperate",
+        "us_midwest",
+        "us_northeast",
+        "us_pacific",
+        "us_southeast",
+        "us_southwest"
+      ],
+      "chance": 0.55,
+      "family": "facade",
+      "material": "wood"
+    },
+    "red_brick": {
+      "label": "Exposed red brick",
+      "regions": [
+        "eastern_europe",
+        "eu_atlantic",
+        "low_countries",
+        "nordic_cold"
+      ],
+      "chance": 0.5,
+      "family": "facade",
+      "material": "brick",
+      "countries": [
+        "GBR",
+        "NLD",
+        "BEL",
+        "LUX",
+        "NOR",
+        "SWE",
+        "FIN",
+        "DNK",
+        "ISL",
+        "EST",
+        "LVA",
+        "LTU"
+      ]
+    },
+    "white_stucco": {
+      "label": "White stucco",
+      "regions": [
+        "adriatic_balkans",
+        "aegean",
+        "eu_mediterranean",
+        "italy_regional",
+        "maghreb",
+        "nile_valley"
+      ],
+      "chance": 0.65,
+      "family": "facade",
+      "material": "render"
+    },
+    "timber_exterior": {
+      "label": "Timber exterior",
+      "regions": [
+        "nordic_cold"
+      ],
+      "chance": 0.65,
+      "family": "facade",
+      "material": "wood"
+    },
+    "water_tanks": {
+      "label": "Rooftop water tanks",
+      "regions": [
+        "anatolia_caucasus",
+        "arid_warm",
+        "bengal_delta",
+        "india_peninsular",
+        "indus_gangetic",
+        "iran_plateau",
+        "latin_american_local",
+        "levant",
+        "mesopotamia",
+        "sri_lanka_maldives"
+      ],
+      "chance": 0.4
+    }
+  }
+}

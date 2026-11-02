@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "source": "us_nyc_mappluto",
+  "region": "us_northeast",
+  "codes": {
+    "01": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "low_density_residential"
+    },
+    "02": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "medium_density_residential"
+    },
+    "03": {
+      "uses": [
+        "residential"
+      ],
+      "environment": "high_density_residential"
+    },
+    "04": {
+      "uses": [
+        "mixed"
+      ],
+      "environment": "mixed_use"
+    },
+    "05": {
+      "uses": [
+        "commercial"
+      ],
+      "environment": "commercial_unspecified"
+    },
+    "06": {
+      "uses": [
+        "industrial"
+      ],
+      "environment": "industrial_unspecified"
+    },
+    "07": {
+      "uses": [
+        "transport"
+      ],
+      "environment": "transport"
+    },
+    "08": {
+      "uses": [
+        "civic"
+      ],
+      "environment": "special_purpose"
+    },
+    "09": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "open_space"
+    },
+    "10": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "transport"
+    },
+    "11": {
+      "uses": [
+        "unknown"
+      ],
+      "environment": "vacant"
+    }
+  },
+  "source_url": "https://s-media.nyc.gov/agencies/dcp/assets/files/pdf/data-tools/bytes/pluto_datadictionary.pdf"
+}

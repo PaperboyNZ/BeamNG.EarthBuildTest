@@ -108,6 +108,13 @@ local mpsession = require('beamngEarth/mpsession')     -- BeamMP sessions (the p
 local mpanchor = require('beamngEarth/mpanchor')       -- BeamMP: other players' positions into our frame (PR #88)
 local seasonlook = require('beamngEarth/seasonlook')   -- the trees' leaves in the season (hello.season) -- the AI road graph for the stock traffic and AI (map.reset)
 local perflog = require('beamngEarth/perflog')         -- hitches and frame-rate drops into server.log (perflog.lua)
+function M.heldSessions()
+  local seen={}
+  for _,list in ipairs({farfield.heldSessions(),roads.heldSessions()}) do
+    for _,s in ipairs(list) do seen[s]=true end
+  end
+  local out={};for s in pairs(seen) do out[#out+1]=s end;table.sort(out);return out
+end
 
 local LEVEL_ID = 'beamng_earth'
 local MOD_VERSION = '0.4.0'
@@ -890,10 +897,13 @@ local function onMessage(msg)
     end
     -- vegFlat: the vegetation tiles may come as one flat array of numbers (trees.lua onTile), no table per tree
     net.send({ type = 'hello', protocol = PROTOCOL, format = FORMAT, modVersion = MOD_VERSION,
-      sessions = roads.allHeldSessions(), slotSession = farfield.session(), slotsHeld = held, vegFlat = true,
+      sessions = M.heldSessions(), slotSession = farfield.session(), slotsHeld = held, vegFlat = true,
       geoTiles = require('beamngEarth/geotile').Z,
       -- (geotiles: vegetation in the global tiles' frames: trees.lua)
       roadGeo = roads.ROAD_GEO,        -- (road tiles as geotiles too: roads.lua)
+      buildingChunks = roads.BUILDING_CHUNKS,
+      buildingProgress = roads.BUILDING_PROGRESS,
+      sectorManifest = roads.SECTOR_MANIFEST,
       farGeo = roads.FAR_GEO,          -- (and the far buildings, skyline and far bridges: roads.lua)
       globalFar = farfield.GLOBAL_FAR,    -- (and the far field from level 3 up as global tiles: farfield.lua)
       readySet = 1 })      -- (it takes a built block near its target: follow.preferReady, 'terrain_ready_set')
@@ -923,6 +933,7 @@ local function onMessage(msg)
     -- at 1) never drops the old session's tiles, so they stayed forever (2026-10-11: meshes of four
     -- sessions in the scene, some built by older code)
     roads.setGeo(msg.roadGeo == roads.ROAD_GEO)     -- (road tiles as geotiles: roads.lua)
+    roads.setSectorManifest(msg.sectorManifest)
     roads.setFarGeo(msg.farGeo == roads.FAR_GEO)    -- (... and the far buildings, skyline and far bridges)
     if roadsSession ~= msg.sessionId then
       -- (road geotiles stay: the new session's content with the same hash keeps them, the rest go once far or old)
@@ -1067,6 +1078,8 @@ local function onMessage(msg)
     st.terrainPending, st.terrainRetryAt = nil, st.clock + follow.RETRY_S
     st.terrainErrorAt = st.clock -- the edge guard holds the car meanwhile
     setStatus('Terrain request failed: ' .. tostring(msg.error))
+  elseif t == 'building_progress' then
+    roads.onBuildingProgress(msg, st.anchorId)
   elseif t == 'roads_tile' then
     roads.onTile(msg, st.anchorId, st.anchor)
   elseif t == 'roads_skin' then           -- a road geotile's draped surfaces for this anchor (roads.lua)
@@ -1453,7 +1466,7 @@ local function updateWorld(dt)
     net.send({ type = 'pose', anchorId = st.anchorId, x = pl.x, y = pl.y, z = pl.z, vx = pl.vx, vy = pl.vy,
       lat = pl.lat, lon = pl.lon, speed = pl.speed, follow = not st.followHeld,
       held = (farfield.session() == st.sessionId) and farfield.heldAnchors() or {},
-      sessions = roads.allHeldSessions(),
+      sessions = M.heldSessions(),
       slotsGone = slotsGoneNow(), -- pooled shape slots let go (server/matslots.py)
       foci = poseFoci(),          -- other vehicles' collision islands (collisionfoci.lua; earthd parse_foci)
       cam = c and { x = c.x, y = c.y, z = c.z, fx = c.fx, fy = c.fy, fz = c.fz, fovDeg = c.fovDeg, h = c.h } or nil })
@@ -2117,6 +2130,7 @@ local function onUpdate(dtReal, dtSim)
     -- teleport the far field's hundreds of tiles took it frame after frame and the road meshes under the car
     -- came after it had passed (Brasov, Sinaia 2026-10-15: the car drove bare ground)
     roads.update(gov, st.anchorId, st.player, M.viewAway(), st.anchor)
+    if roads.takeResync() then net.send({type='roads_reset'}) end
     gasstations.update(gov)
     t = mark('roads', t)
     farfield.update(gov, (gov.w1 or dtReal * 1000) / 1000, st.cam, st.player)
@@ -2522,7 +2536,7 @@ function M.status()
     cells = crossover.cells(), blockSize = blockSize, anchorLatency = st.anchorLatency,
     terrainLatency = st.terrainLatency, horizon = horizonOn, farRadius = farRadius,
     visibleDistance = st.visibleDistance or VISIBLE_DISTANCE, banner = banner.current().id, guard = st.guard.mode,
-    sessions = roads.allHeldSessions(), tileSession = farfield.session(), sea = sea.status(), trees = trees.status(), ambience = ambience.status() })
+    sessions = M.heldSessions(), tileSession = farfield.session(), sea = sea.status(), trees = trees.status(), ambience = ambience.status() })
 end
 
 -- The connection state line (the settings page shows it): the banner's { id, level, text } (text

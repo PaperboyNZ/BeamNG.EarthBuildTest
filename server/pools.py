@@ -9,7 +9,7 @@ import logging
 import runtimeprofiler
 import threading
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor,Future
 from concurrent.futures.process import BrokenProcessPool
 
 log = logging.getLogger("earthd.pools")
@@ -21,6 +21,8 @@ class RespawningPool:
     """ProcessPoolExecutor(*args, **kwargs) made again when broken. submit / shutdown as the executor's."""
 
     def __init__(self, name, *args, **kwargs):
+        self.admission=kwargs.pop('admission',None)
+        self.work_class=kwargs.pop('work_class','essential')
         self.name, self._args, self._kwargs = name, args, kwargs
         self._lock = threading.Lock()
         self._pool = ProcessPoolExecutor(*args, **kwargs)
@@ -31,15 +33,28 @@ class RespawningPool:
         self._count_lock = threading.Lock()
 
     def submit(self, fn, *args, **kwargs):
+        lease=None
+        if self.admission is not None:
+            kind='optional' if getattr(fn,'__name__','').startswith('prebuild') else self.work_class
+            lease=self.admission.acquire(self.name,kind)
+            if lease is None:
+                import budget
+                fut=Future();fut.set_exception(budget.Backpressure(self.name+' aggregate worker budget busy'))
+                return fut
         with self._lock:
             pool = self._pool
         try:
-            fut = runtimeprofiler.collector.submit(pool.submit, self.name, fn, args, kwargs)
-        except BrokenProcessPool:
-            fut = runtimeprofiler.collector.submit(self._renew(pool).submit, self.name, fn, args, kwargs)
+            try:
+                fut = runtimeprofiler.collector.submit(pool.submit, self.name, fn, args, kwargs)
+            except BrokenProcessPool:
+                fut = runtimeprofiler.collector.submit(self._renew(pool).submit, self.name, fn, args, kwargs)
+        except BaseException:
+            if lease is not None:self.admission.release(lease)
+            raise
         with self._count_lock:
             self.inflight += 1
         fut.add_done_callback(self._done)
+        if lease is not None:fut.add_done_callback(lambda _:self.admission.release(lease))
         return fut
 
     def _done(self, _fut):
