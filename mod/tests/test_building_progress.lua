@@ -113,7 +113,7 @@ roads.enabled=false
 T.check(not roads.onBuildingProgress(a,1),'disabled roads reject progressive imports')
 roads.enabled=true;roads.clear()
 
--- Fast producers must not replace queued cheap coverage with a costly import.
+-- Fast producers supersede queued shells; only already-shown coverage survives.
 P:clear();farVisible=false
 local first=msg(0,{p0=part('queued-shell')});first.token='queue';first.total=2
 P:receive(first,1)
@@ -121,11 +121,10 @@ local detailMsg=msg(2,{bld=part('queued-detail')});detailMsg.token='queue';detai
 P:receive(detailMsg,1)
 local second=msg(0,{p0=part('second-shell')});second.token='queue';second.total=2;second.group='1'
 P:receive(second,1);P:step(anchor)
-T.check(shown('queued-shell') and not shown('queued-detail'),'cheap queued coverage survives later detail')
+T.check(not shown('queued-shell'),'obsolete queued shell is skipped')
 P:step(anchor)
-T.check(shown('second-shell') and not shown('queued-detail'),'missing group covered before existing group refines')
-P:step(anchor)
-T.check(shown('queued-detail') and not shown('queued-shell'),'refinement resumes after coverage')
+T.check(shown('second-shell') and shown('queued-detail'),'latest versions cover both groups without an intermediate shell')
+T.check(P:diagnostics().pendingParts==0 and P.queuedParts==0,'superseded queue accounting drains')
 P:clear()
 
 -- Price optional imports using shape bytes, stored primitives and measured cost.

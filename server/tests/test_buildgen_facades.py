@@ -9,7 +9,7 @@ import unittest
 from unittest import mock
 
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -33,6 +33,47 @@ def road(y=-12.):
 
 
 class FacadesTest(unittest.TestCase):
+    def test_front_door_face_is_clear_in_every_facade_lod(self):
+        from buildgen import progressive, quality
+
+        spec = building(8., 10., seed_id="off-centre")
+        rows = b.doors([(spec, 0., 0.)], road(-6.), 0., 0.)
+        self.assertEqual(sum(row[0] == "door" for row in rows), 1)
+        spec = freeze_items([(spec, 0., 0.)])[0][0]
+        elevation = next(e for e in spec.facades.elevations
+                         if e.boundary == 0 and e.edge == spec.door[0])
+        door = next(op for op in elevation.openings if op.kind == "door")
+        ring = np.asarray(spec.footprint.outer)
+        origin = ring[elevation.edge]
+        along = (ring[(elevation.edge + 1) % len(ring)] - origin) / elevation.length
+        outward = np.array([along[1], -along[0]])
+        base = b.base_z(spec, 0., 0.)
+        # The stock prop's panel sits 6.9 cm behind its origin. A facade
+        # surrogate at 2.5 cm can cover or fight it after placement rounding.
+        panel_depth = b.DOOR_OUT_M - .069
+        for name in quality.NAMES:
+            token = progressive.DETAIL.set(name)
+            try:
+                for lite in (False, True):
+                    with self.subTest(quality=name, lite=lite):
+                        mesh = b.Mesh()
+                        facades.draw(mesh, spec, 0., 0., -b.SKIRT_M, lite)
+                        positions, _, triangles, _, _ = mesh.arrays()
+                        local = positions[:, :2] - origin
+                        projected = np.column_stack((local @ along, positions[:, 2] - base))
+                        depths = local @ outward
+                        for height in (.75, 1.25):
+                            sample = Point((door.left + door.right) / 2., door.bottom + height)
+                            backing = [tri for tri in triangles
+                                       if Polygon(projected[tri]).area > 1e-8
+                                       and Polygon(projected[tri]).covers(sample)
+                                       and np.ptp(depths[tri]) < 1e-5]
+                            self.assertTrue(backing, "Door needs an opaque wall behind the prop")
+                            self.assertLess(max(float(depths[tri].max()) for tri in backing),
+                                            panel_depth - .005)
+            finally:
+                progressive.DETAIL.reset(token)
+
     def test_off_centre_door_reserves_its_actual_window_interval(self):
         spec = building(8., 10., seed_id="off-centre")
         props = b.doors([(spec, 0., 0.)], road(-6.), 0., 0.)

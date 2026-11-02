@@ -424,6 +424,10 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False, textured=False):
                       ((run + s1) / su, z1 / sv), ((run + s0) / su, z1 / sv))
             mesh.quad(at(s0, z0, depth), at(s1, z0, depth), at(s1, z1, depth), at(s0, z1, depth), *uv, material)
 
+        # Front doors belong to the persistent stock props in every LOD.
+        # Keep their opaque wall backing, but never add a lite-only panel:
+        # a 2.5 cm overlay intersects the prop's roughly 2.1 cm door face
+        # and replaces its material as the building changes representation.
         openings = [op for op in elevation.openings if op.kind != "door"]
         zbottom = bottom - base
         # The generic path must not become dramatically dearer just outside a
@@ -501,11 +505,6 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False, textured=False):
                               (0,0),(1,0),(1,.1),(0,.1),material)
         for component in components:
             if not component.overlay and not (lite and component.near_only):detail(component)
-        if lite:
-            for op in elevation.openings:
-                if op.kind == "door":
-                    quad(op.left + .125, op.right - .125, op.bottom, op.top - .05,
-                         mats[b.custom_look(b.PANEL, (.25, .28, .29))], .025)
         for op in openings:
             x0, x1, z0, z1 = op.left, op.right, op.bottom, op.top
             opening_lite=lite or (quality.rank == 2 and op.floor >= 2 and op not in structural_set)

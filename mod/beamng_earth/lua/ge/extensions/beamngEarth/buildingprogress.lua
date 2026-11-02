@@ -50,6 +50,10 @@ function M.new(api)
       api.release(p.slot)
     end
   end
+  local function minimumStage(key)
+    if api.minimumStage then return api.minimumStage(key) end
+    return api.farVisible and api.farVisible(key) and 1 or 0
+  end
   function self:drop(key)
     local e = self.entries[key]
     if not e then return end
@@ -107,20 +111,30 @@ function M.new(api)
     self.serial=self.serial+1
     local incoming={stage=msg.stage,parts=parts,next=1,order=self.serial,at=clock()}
     g.latest=msg.stage
-    if not g.shown and g.pending then
-      -- Preserve the first cheap coverage even when the producer outruns imports.
-      discard(g.queued,true);g.queued=incoming
-    else discard(g.pending,true);g.pending=incoming end
+    -- Keep the last *visible* version, not an obsolete queued stand-in. A
+    -- producer that has already supplied a facade makes its shell unnecessary.
+    discard(g.pending,true);discard(g.queued,true);g.queued=nil
+    g.pending=incoming
     self.queuedParts=self.queuedParts+#parts
+    if msg.stage<minimumStage(msg.key) then discard(g.pending,true);g.pending=nil end
     self.stats.queuePeak=math.max(self.stats.queuePeak,self.queuedParts)
     e.at=clock(); return true
   end
-  function self:covers(key)
+  function self:covers(key, stage)
     local e=self.entries[key]
     if not e or e.total<=0 then return false end
     local n=e.done
-    for _,g in pairs(e.groups) do if g.shown then n=n+1 end end
+    -- Far buildings already have roofs and facades. Shell coverage alone must
+    -- never retire them (or a skyline's complete coverage).
+    for _,g in pairs(e.groups) do if g.shown and g.shown.stage>=(stage or 1) then n=n+1 end end
     return n>=e.total
+  end
+  function self:hasDetail(key)
+    local e=self.entries[key]
+    if not e then return false end
+    if #e.finished>0 then return true end
+    for _,g in pairs(e.groups) do if g.shown and g.shown.stage>=1 then return true end end
+    return false
   end
   function self:visibility(key, coordinated)
     if api.reconcile and not coordinated then api.reconcile(key); return end
@@ -181,6 +195,11 @@ function M.new(api)
     for key,e in pairs(self.entries) do
       if not e.attached and at-(e.at or 0)>120 then self:drop(key)
       else for _,g in pairs(e.groups) do
+        -- Coverage may have arrived after the preview message, including while
+        -- a multi-part shell was only partly imported. Release it before work.
+        if g.pending and g.pending.stage<minimumStage(key) then
+          discard(g.pending,true);g.pending=g.queued;g.queued=nil
+        end
         if g.pending then
           local missing=not g.shown and 0 or 1
           local distance=0;local approach=0;local facing=1

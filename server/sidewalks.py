@@ -275,8 +275,9 @@ class Builder:
     (earthfast.sidewalk_mesh: the profile, ramps, tactile pads, caps and corner slabs, in the old Python's arithmetic
     and order) when its arrays are asked for; collision: the lean collision mesh beside it (self.col.arrays())."""
 
-    def __init__(self, origin, collision=False):
+    def __init__(self, origin, collision=False, ground=None):
         self.origin = np.asarray(origin, np.float64)
+        self.ground = ground
         self.pieces = []            # (kind, points, dirs, outer, ramps, width, height, caps, slab)
         self.surface_paths = []     # original run retained across driveway/verge splits
         self._built = None          # the Rust meshes once built (full, lean)
@@ -327,8 +328,9 @@ class Builder:
         the curb top to the outer corner points [(x, y, z) ...] (from the second sidewalk's end round
         to the first's), and the back faces along the outer edges. ramps: [(s0, s1)] arc lengths
         where the curb is lowered (the slab then slopes up from it toward the outer corner)."""
+        outer = clean_corner_outer(outer)
         self.pieces.append((1, np.asarray(arc, np.float64)[:, :3], np.asarray(inward, np.float64)[:, :2],
-                            np.asarray(outer, np.float64).reshape(-1, 3), list(ramps), 2.5, float(h), (False, False),
+                            outer, list(ramps), 2.5, float(h), (False, False),
                             int(slab)))
         self.surface_paths.append((self.pieces[-1][1], self.pieces[-1][2]))
         self._built = None
@@ -346,6 +348,10 @@ class Builder:
             for piece, path in zip(ps, self.surface_paths):
                 finish = piece[8]
                 visual, collision = native_mesh([piece], self.origin, self.col is not None)
+                if piece[0] == 1:
+                    visual = complete_corner_slab(visual)
+                    if self.col is not None:
+                        collision = complete_corner_slab(collision)
                 visual = (run_uvs(visual, self.origin, piece, path) if piece[0] == 0
                           else corner_uvs(visual, self.origin, path))
                 P, T, UV, M = visual
@@ -379,6 +385,15 @@ class Builder:
             if not self._defer_surface_uvs:
                 visual, collision = self._built
                 self._built = surface_uvs(visual), collision
+            if self.ground is not None:
+                visual, collision = self._built
+                corrected = clear_terrain(visual, self.origin, self.ground)
+                if corrected is not visual:
+                    # Corrected pavement must have the exact same driving
+                    # surface. Keep decorative utility covers out of physics.
+                    p, t, uv, m = corrected
+                    collision = (p, t[m != 5], uv, np.zeros(np.count_nonzero(m != 5), np.int64))
+                self._built = corrected, collision
         return self._built
 
     def arrays(self):
@@ -407,6 +422,142 @@ class _Lean:
 
     def empty(self):
         return self.b.empty()
+
+
+def clear_terrain(mesh, origin, ground):
+    """Keep pavement above the drawn 1 m terrain without lifting its curb.
+
+    Split with the existing native terrain kernel, then at the intersection of
+    the pavement and terrain planes. Their upper envelope is continuous across
+    shared edges. Unaffected triangles retain their original geometry and UVs.
+    """
+    import fast
+    from vehicle_crossings import combine
+    P, T, UV, M = mesh
+    selected = np.flatnonzero(np.isin(M, (1, 2, BRICK, GRASS, STONE, 5)))
+    if not len(selected):
+        return mesh
+    absolute = P + np.asarray(origin)
+    xy = absolute[np.unique(T[selected]), :2]
+    low = np.floor(xy.min(axis=0)).astype(int)-1
+    high = np.ceil(xy.max(axis=0)).astype(int)+1
+    xx, yy = np.meshgrid(np.arange(low[0],high[0]+1), np.arange(low[1],high[1]+1))
+    grid = np.asarray(ground(xx.ravel(), yy.ravel()), np.float64).reshape(xx.shape)
+    if not np.isfinite(grid).all():
+        raise ValueError('non-finite terrain beneath sidewalk')
+    p, uv, t, src = fast._ef.follow_tris(
+        np.ascontiguousarray(absolute[:, :2]), np.ascontiguousarray(UV),
+        np.ascontiguousarray(T[selected]), 1., np.ascontiguousarray(grid),
+        int(low[0]), int(low[1]), 1e-8)
+    p, uv, t, src = map(np.asarray, (p, uv, t, src))
+    if not len(t):
+        return mesh
+    # Native output vertices are not shared, but polygons can fan into several
+    # triangles; expand once so source-plane interpolation stays unambiguous.
+    q = p[t]
+    tex = uv[t]
+    original = absolute[T[selected[src]]]
+    ab, ac = original[:, 1, :2]-original[:, 0, :2], original[:, 2, :2]-original[:, 0, :2]
+    det = ab[:, 0]*ac[:, 1]-ab[:, 1]*ac[:, 0]
+    rel = q[:, :, :2]-original[:, :1, :2]
+    s = (rel[:, :, 0]*ac[:, None, 1]-rel[:, :, 1]*ac[:, None, 0])/det[:, None]
+    v = (ab[:, None, 0]*rel[:, :, 1]-ab[:, None, 1]*rel[:, :, 0])/det[:, None]
+    z = original[:, :1, 2]+s*(original[:, 1:2, 2]-original[:, :1, 2])+v*(original[:, 2:3, 2]-original[:, :1, 2])
+    # 1 cm covers roundoff without changing an ordinary 15 cm curb or ramp.
+    delta = q[:, :, 2]+.01-z
+    affected = np.unique(src[np.any(delta > 1e-7, axis=1)])
+    if not len(affected):
+        return mesh
+    positions, textures, faces, materials = [], [], [], []
+    for i in np.flatnonzero(np.isin(src, affected)):
+        # [x,y,original z,u,v,terrain-original difference]. Clip at delta=0,
+        # so adjoining triangles describe the same max(surface, terrain) edge.
+        poly = np.c_[q[i, :, :2], z[i], tex[i], delta[i]]
+        for positive in (False, True):
+            if positive and np.all(poly[:, -1] == 0):
+                continue
+            out = []
+            for a,b in zip(poly, np.roll(poly,-1,axis=0)):
+                inside_a = a[-1] >= 0 if positive else a[-1] <= 0
+                inside_b = b[-1] >= 0 if positive else b[-1] <= 0
+                if inside_a:
+                    out.append(a.copy())
+                if inside_a != inside_b:
+                    out.append(a+(b-a)*(a[-1]/(a[-1]-b[-1])))
+            if len(out)<3:
+                continue
+            out = np.asarray(out)
+            base = len(positions)
+            coords = out[:, :3].copy()
+            if positive:
+                coords[:, 2] += out[:, -1]
+            positions.extend(coords-np.asarray(origin))
+            textures.extend(out[:, 3:5])
+            for j in range(1,len(out)-1):
+                faces.append([base,base+j,base+j+1])
+                materials.append(M[selected[src[i]]])
+    keep = np.ones(len(T),bool)
+    keep[selected[affected]] = False
+    return combine((P,T[keep],UV,M[keep]), [(np.asarray(positions), np.asarray(faces,np.int64),
+                                           np.asarray(textures), np.asarray(materials,np.int64))])
+
+
+def clean_corner_outer(outer):
+    """Remove zero-length rear edges before native ear clipping.
+
+    Coincident XY may carry slightly different draped heights. Retain the higher
+    datum rather than leave a vertical seam through the pavement.
+    """
+    result = []
+    for point in np.asarray(outer, np.float64).reshape(-1, 3):
+        if result and np.linalg.norm(point[:2] - result[-1][:2]) < 1e-8:
+            result[-1][2] = max(result[-1][2], point[2])
+        else:
+            result.append(point.copy())
+    return np.asarray(result, np.float64).reshape(-1, 3)
+
+
+def complete_corner_slab(mesh):
+    """Check native corner coverage; repair incomplete clipping as one surface.
+
+    The slab's contiguous vertex block precedes the rear skins. Preserve its
+    original XYZ/UVs, including ramp heights, in both visible and collision meshes.
+    """
+    P, T, UV, M = mesh
+    rows = np.flatnonzero(M == 1)
+    if not len(rows):
+        raise ValueError('corner triangulation produced no pavement')
+    # Native corner appends slab vertices directly after the curb-strip vertices.
+    # Incomplete clipping can leave vertices unused, so infer its end from the
+    # following back-strip triangles, never from the slab triangles alone.
+    start = int(T[:rows[0]].max()) + 1 if rows[0] else 0
+    end = int(T[rows[-1]+1:].min()) if rows[-1]+1 < len(T) else len(P)
+    xy = P[start:end, :2]
+    from shapely.geometry import Polygon
+    shape = Polygon(xy)
+    if not shape.is_valid or shape.area <= 1e-10:
+        return mesh  # Degenerate legacy inputs are outside polygon repair.
+    triangles = P[T[rows], :2]
+    edges = triangles[:, 1:] - triangles[:, :1]
+    area = np.abs(edges[:, 0, 0]*edges[:, 1, 1] - edges[:, 0, 1]*edges[:, 1, 0]).sum()/2
+    if abs(area-shape.area) <= max(1e-8, shape.area*1e-8):
+        return mesh
+    from shapely import constrained_delaunay_triangles
+    lookup = {tuple(p): i+start for i, p in enumerate(xy)}
+    faces = []
+    covered = 0.
+    for triangle in constrained_delaunay_triangles(shape).geoms:
+        coords = np.asarray(triangle.exterior.coords)[:3]
+        face = [lookup[tuple(p)] for p in coords]
+        a, b = coords[1:] - coords[0]
+        if a[0]*b[1]-a[1]*b[0] < 0:
+            face.reverse()
+        faces.append(face)
+        covered += triangle.area
+    if abs(covered-shape.area) > max(1e-8, shape.area*1e-8):
+        raise ValueError('corner triangulation does not cover the pavement')
+    keep = M != 1
+    return P, np.vstack((T[keep], np.asarray(faces, np.int64))), UV, np.r_[M[keep], np.ones(len(faces), np.int64)]
 
 
 def corner_outer(corner):

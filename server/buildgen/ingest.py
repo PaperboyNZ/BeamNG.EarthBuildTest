@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 import mapgeom
-from .topology import Footprint, InvalidFootprint, component_key
+from .topology import Footprint, InvalidFootprint
 
 log = logging.getLogger(__name__)
 
@@ -25,10 +25,9 @@ def components(f, i):
         if not rings:
             continue
         try:
-            key = component_key(rings)
             # Source coordinate validation also rejects overlapping/outside holes.
             fp = Footprint(rings[0], tuple(rings[1:]))
-            out[key] = (fp.outer, *fp.holes)
+            out[fp.component_key()] = (fp.outer, *fp.holes)
         except InvalidFootprint as exc:
             ids = getattr(f, "ids", None)
             log.warning("Skipping invalid building component %s: %s", ids[i] if ids is not None else i, exc)

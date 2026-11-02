@@ -8836,7 +8836,7 @@ def sound_boxes(chunks):
 def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None, deck_mesh=None, bld=None,
                props=None, wires=None, park=None, tunnel_mesh=None, fuel=None,
                rail_mesh=None, garage_sound=(), wells=(), guardrail_rows=None, decals=True,
-               vegetation_exclusions=None):
+               vegetation_exclusions=None, sidewalk_ground=None):
     """Write a tile's chunks (atomically), its sidewalk mesh (walks: build_tile's runs, if any:
     `walks_<a>_<tx>_<ty>.cdae`, announced in the tile as "walk": {shape, pos}) and its road mesh
     (road_mesh: roadmesh.build's result: `road_<a>_<tx>_<ty>.cdae`, "road": {shape, pos}; the mod then
@@ -8890,7 +8890,7 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
             data["railcol"] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
     if walks:
         x0, y0, _, _ = tile_bbox(tx, ty)
-        b = sidewalks.Builder((x0, y0, 0.0), collision=True)
+        b = sidewalks.Builder((x0, y0, 0.0), collision=True, ground=sidewalk_ground)
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]

@@ -84,6 +84,10 @@ class Footprint:
     def vertex_count(self):
         return len(self.outer) + sum(map(len, self.holes))
 
+    def component_key(self):
+        """Hash already validated canonical rings without validating them twice."""
+        return _component_digest((self.outer, self.holes))
+
     def translated(self, dx, dy):
         return Footprint(tuple((x + dx, y + dy) for x, y in self.outer),
                          tuple(tuple((x + dx, y + dy) for x, y in h) for h in self.holes))
@@ -155,4 +159,8 @@ def component_key(rings):
     Do not use it as a cross-dataset building identity.
     """
     canonical = (canonical_ring(rings[0]), tuple(sorted(canonical_ring(h, False) for h in rings[1:])))
+    return _component_digest(canonical)
+
+
+def _component_digest(canonical):
     return hashlib.sha256(json.dumps(canonical, separators=(",", ":"), allow_nan=False).encode()).hexdigest()[:24]

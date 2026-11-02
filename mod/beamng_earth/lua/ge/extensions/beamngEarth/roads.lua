@@ -709,6 +709,14 @@ buildingProgress = require('beamngEarth/buildingprogress').new({
   delete = function(id) deleteQ[#deleteQ+1]=id end,
   made = slotMade, release = slotDrop, slot = msgSlot,
   reconcile = function(key) M.refreshBuildingCoverage(key) end,
+  minimumStage = function(key)
+    local t=tiles['g:'..key]
+    if t and (t.buildingFallback or ownBuildingsReady(t)) then return 2 end
+    local f=far['F:'..key]
+    if f and f.previous then f=f.previous end
+    if f then for _,p in pairs(f.parts or {}) do if p.id then return 1 end end end
+    return M.skyBlocksBuildings(key) and 1 or 0
+  end,
   blocked = function(key)
     local t=tiles['g:'..key]
     local e=buildingProgress.entries[key]
@@ -1720,6 +1728,15 @@ local function farReady(f)
   return true
 end
 
+local function finishFarReplacement(f)
+  if f.kind=='S' and f.previous then
+    -- Children may complete/drop while a parent revision waits for import.
+    -- Inherit the old parent's current decision, not its receipt-time state.
+    f.skyOwned=f.previous.skyOwned;f.skyYielded=f.previous.skyYielded;f.covered=nil
+  end
+  retireFar(f.previous);f.previous=nil
+end
+
 function M.dropFarGeo(key)
   local f = far[key]
   if not f or not f.geo then return false end
@@ -1809,7 +1826,7 @@ function M.onFarGeo(msg, currentAnchor, kind)
   release(used)
   M._fileSessions(f)
   far[key] = f
-  if farReady(f) then retireFar(f.previous);f.previous=nil end
+  if farReady(f) then finishFarReplacement(f) end
   if k=='F' then farSeen[key]=(farReady(f) or f.previous~=nil) or nil end
   if k~='B' then M.refreshBuildingCoverage(f.gkey) end
   M.geoStats.far = (M.geoStats.far or 0) + 1
@@ -1839,7 +1856,22 @@ function M.nearShowsDeck(gkey, tk)
   return t.skin ~= nil and t.skin.road == nil and (t.skin.pending or 0) <= 0
 end
 
--- Pure-ish: is far geotile f's part sub hidden now (the ownership rule above)?
+local function finerBuildingsReady(key)
+  local f=far[farGeoKey('F',key)]
+  if f and f.previous then f=f.previous end
+  if f then for _,p in pairs(f.parts) do if p.id then return true end end end
+  if buildingProgress:hasDetail(key) then return true end
+  local t=tiles[geoKey(key)]
+  if t and t.buildingFallback then
+    for what in pairs(t.buildingFallback.parts) do if t.buildingFallback[what] then return true end end
+  end
+  if t and ownBuildingsReady(t) then
+    for what in pairs(t.parts) do if buildingVisual(what) and t[what] then return true end end
+  end
+  return false
+end
+
+-- Is far geotile f's part sub hidden now (the ownership rule above)?
 function M.farGeoHidden(f, sub)
   if f.kind == 'S' then
     if f.covered~=nil then return f.covered end
@@ -1852,11 +1884,21 @@ function M.farGeoHidden(f, sub)
         for i = 0, n - 1 do f.skyKeys[#f.skyKeys + 1] = farGeoKey('F', geotile.key(x * n + i, y * n + j, geotile.Z)) end
       end
     end
+    local complete,finer=true,false
     for _, k in ipairs(f.skyKeys) do
-      if not farSeen[k] and not M.nearShowsBuildings(k:sub(3)) then f.covered=false;return false end
+      if not farSeen[k] and not M.nearShowsBuildings(k:sub(3)) then complete=false end
+      if finerBuildingsReady(k:sub(3)) then finer=true end
     end
-    f.covered=true
-    return true
+    -- A skyline is indivisible. If it arrived first, keep its atomic 16-child
+    -- handoff. If finer children arrived first (or this parent already yielded),
+    -- never cover them again just because a sibling is still missing/dropped.
+    if complete or (finer and (f.skyYielded or not f.skyOwned)) then
+      f.skyYielded=true;f.skyOwned=nil;f.covered=true
+    else
+      f.skyYielded=nil;f.covered=false
+      if farReady(f) then f.skyOwned=true end
+    end
+    return f.covered
   end
   local p = f.parts[sub]
   if not p or not p.near then return false end
@@ -1999,7 +2041,7 @@ local function updateFar(gov, importOnly)
       if ok and id then
         p.id = id
         slotMade(id, p.shape)
-        if farReady(f) then retireFar(f.previous);f.previous=nil end
+        if farReady(f) then finishFarReplacement(f) end
         p.hidden = M.farGeoHidden(f, sub)
         hideBuilding(id,p.hidden)
         if f.kind=='F' then farSeen[gk]=true end

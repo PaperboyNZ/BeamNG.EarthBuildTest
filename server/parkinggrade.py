@@ -54,15 +54,26 @@ def _smooth(z):
     return out
 
 
+def patch_bounds(frame, shape):
+    """The same conservative geographic envelope used by corrections."""
+    x0, y0, x1, y1 = shape.bounds
+    pad = FALLOFF_M + 1.
+    a, b, _ = frame.enu_to_geodetic(np.array([x0-pad, x1+pad, x0-pad, x1+pad]),
+                                   np.array([y0-pad, y0-pad, y1+pad, y1+pad]), 0.)
+    return float(np.min(a)), float(np.min(b)), float(np.max(a)), float(np.max(b))
+
+
+def affects_samples(bounds, lat, lon):
+    a0, b0, a1, b1 = bounds
+    return np.any((lat >= a0) & (lat <= a1) & (lon >= b0) & (lon <= b1))
+
+
 class Patch:
     def __init__(self, frame, shape, elev, protected=None):
         self.frame, self.shape, self.protected = frame, shape, protected
         x0, y0, x1, y1 = shape.bounds
         # Coarse geographic rejection before converting potentially millions of block samples.
-        pad = FALLOFF_M + 1.
-        a, b, _ = frame.enu_to_geodetic(np.array([x0-pad, x1+pad, x0-pad, x1+pad]),
-                                       np.array([y0-pad, y0-pad, y1+pad, y1+pad]), 0.)
-        self.bounds_ll = (float(np.min(a)), float(np.min(b)), float(np.max(a)), float(np.max(b)))
+        self.bounds_ll = patch_bounds(frame, shape)
         halo = FALLOFF_M + 3 * SIGMA_M + STEP_M
         self.x0, self.y0 = np.floor((np.array([x0, y0]) - halo) / STEP_M) * STEP_M
         nx, ny = np.ceil((np.array([x1, y1]) + halo - [self.x0, self.y0]) / STEP_M).astype(int) + 1
@@ -328,6 +339,11 @@ class ParkingGrader:
                         self.road_features.pop(old, None)
                 for ident, frame, footprint in cell:
                     if ident in patches:
+                        continue
+                    # Reject before road protection and DEM-grid construction.
+                    # This is exactly corrections' first test, including its
+                    # falloff margin; query shape/order never changes a patch.
+                    if not affects_samples(patch_bounds(frame, footprint), la, lo):
                         continue
                     patch = self.cache.get(ident)
                     if patch is None:

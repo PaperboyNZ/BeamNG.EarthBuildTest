@@ -977,7 +977,8 @@ def _roads_tile(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks, lift, 
     out = roadsmod.write_tile(out_dir, vfs_dir, aid, tx, ty, P.chunks, P.walks if sidewalks else None, mesh, P.dmesh,
                               P.bld, P.props, P.wires, P.park, tunnel_mesh=P.tmesh, fuel=P.fuel, rail_mesh=P.rmesh,
                               guardrail_rows=P.guardrail_rows, garage_sound=P.garage_sound,
-                              wells=P.wells,vegetation_exclusions=P.vegetation_exclusions) + (P.fuel_pads,)
+                              wells=P.wells,vegetation_exclusions=P.vegetation_exclusions,
+                              sidewalk_ground=lambda x,y: roadmeshmod.drawn_ground(frame, P.drawn, np.c_[x,y], q)) + (P.fuel_pads,)
     mark("write")
     return out
 
@@ -1452,7 +1453,8 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
         roadsmod.drape_walks(frame, elev, walks,
                              lambda x, y: roadmeshmod.drawn_ground(frame, drawn, np.c_[x, y], q))
         mark("drape")
-        b = sidewalksmod.Builder(origin, collision=True)
+        b = sidewalksmod.Builder(origin, collision=True,
+            ground=lambda x,y: roadmeshmod.drawn_ground(frame, drawn, np.c_[x,y], q))
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]

@@ -31,7 +31,7 @@ def main():
            'test_buildgen_far_plan','test_far_plan_lifecycle','test_fargeo.TrackerTest','test_buildgen_sky_plan']
     result=unittest.TextTestRunner(verbosity=1).run(unittest.defaultTestLoader.loadTestsFromNames(names))
     ok=result.wasSuccessful()
-    for name in ('building_fade','building_progress','building_staging','building_streaming','fargeo','roadgeo','roads','settings','engine_debt','sector_manifest','occupied_resources','collisionfoci','physical_handover','resource_patches','governor','progress_budget'):
+    for name in ('building_fade','building_progress','building_staging','building_streaming','building_quality_handoff','fargeo','roadgeo','roads','settings','engine_debt','sector_manifest','occupied_resources','collisionfoci','physical_handover','resource_patches','governor','progress_budget'):
         code=("import sys;sys.path.insert(0,'build/lua-runtime');from lupa.luajit21 import LuaRuntime;"
               f"LuaRuntime().execute(\"arg={{[0]='mod/tests/test_{name}.lua'}};dofile(arg[0])\")")
         proc=subprocess.run([sys.executable,'-B','-c',code])

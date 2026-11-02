@@ -136,10 +136,16 @@ for i=1,160 do
   P:receive(message(name,2,2),1)
 end
 local d=P:diagnostics()
-T.check(d.pendingGroups==320 and d.pendingParts==480 and d.queuePeak==480,'saturated queue coalesces to cheap coverage plus latest stage')
+T.check(d.pendingGroups==160 and d.pendingParts==320 and d.queuePeak==320,'saturated queue keeps only the latest stage per group')
 for _=1,160 do P:step(anchor) end
-T.check(P:diagnostics().pendingParts==320,'every group receives cheap coverage before refinement')
-for i=1,160 do T.check(shown(string.format('group%03d-0-1',i)),'cheap coverage remains complete') end
+T.check(P:diagnostics().pendingParts==160,'import budget is spent directly on latest coverage')
+local completed=0
+for i=1,160 do
+  local name=string.format('group%03d',i)
+  T.check(not shown(name..'-0-1') and not shown(name..'-1-1'),'obsolete shells and facades never surface')
+  if shown(name..'-2-1') and shown(name..'-2-2') then completed=completed+1 end
+end
+T.check(completed==80,'multi-part latest coverage is exposed only in complete groups')
 P:step(anchor)
 local pending=P:prepare(anchor)
 T.check(pending and pending.version.next==2,'a multi-part replacement remains partially imported')
