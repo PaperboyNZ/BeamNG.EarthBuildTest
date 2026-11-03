@@ -104,7 +104,7 @@ def corner_uvs(mesh, origin, path):
     P, T, UV, M = mesh
     vertices = np.unique(T[M == 1])
     UV = UV.copy()
-    curb, outward = path
+    curb, outward = path[:2]
     if len(vertices) and len(curb) >= 2:
         normal = outward[0] / max(np.linalg.norm(outward[0]), 1e-12)
         tangent = np.array([normal[1], -normal[0]])
@@ -324,17 +324,21 @@ class Builder:
         self.surface_paths.append(texture_path)
         self._built = None
 
-    def add_corner(self, arc, inward, outer, h=CURB_H, ramps=(), slab=1):
+    def add_corner(self, arc, inward, outer, h=CURB_H, ramps=(), slab=1, outer_stations=None):
         """A corner piece: the curb along the polyline arc (k, 3) (a curb return, with the straight
         runs and tapers of curb extensions; inward: unit vectors toward the sidewalk), the slab from
         the curb top to the outer corner points [(x, y, z) ...] (from the second sidewalk's end round
         to the first's), and the back faces along the outer edges. ramps: [(s0, s1)] arc lengths
         where the curb is lowered (the slab then slopes up from it toward the outer corner)."""
         outer = clean_corner_outer(outer)
+        if outer_stations is not None:
+            outer_stations = np.asarray(outer_stations, np.float64).copy()
+            if outer_stations.shape != (len(outer),):
+                raise ValueError('corner rear stations do not match its boundary')
         self.pieces.append((1, np.asarray(arc, np.float64)[:, :3], np.asarray(inward, np.float64)[:, :2],
                             outer, list(ramps), 2.5, float(h), (False, False),
                             int(slab)))
-        self.surface_paths.append((self.pieces[-1][1], self.pieces[-1][2]))
+        self.surface_paths.append((self.pieces[-1][1], self.pieces[-1][2], outer_stations))
         self._built = None
 
     def empty(self):
@@ -347,15 +351,34 @@ class Builder:
             # native ABI has no per-piece vertex offsets, so map before combining.
             from vehicle_crossings import combine
             batches = []
+            back_regions = ([], [])
             for piece, path in zip(ps, self.surface_paths):
                 finish = piece[8]
                 visual, collision = native_mesh([piece], self.origin, self.col is not None)
-                if piece[0] == 1:
+                curved = piece[0] == 1 and path[2] is not None
+                if curved:
+                    from walk_surfaces import curved_corner
+                    from walk_back import continuous_back
+                    phase = path_station(piece[1][0], path)
+                    args = (self.origin, piece[1], piece[2], piece[3], path[2], phase)
+                    native_visual = visual
+                    visual = curved_corner(native_visual, *args)
+                    back_args = (self.origin, piece[1], piece[2], piece[3], path[2], piece[6])
+                    visual = continuous_back(visual, native_visual, *back_args,
+                                             overlap_regions=back_regions[0])
+                    if self.col is not None:
+                        native_collision = collision
+                        collision = curved_corner(native_collision, *args)
+                        collision = continuous_back(collision, native_collision, *back_args,
+                                                    overlap_regions=back_regions[1])
+                elif piece[0] == 1:
                     visual = complete_corner_slab(visual)
                     if self.col is not None:
                         collision = complete_corner_slab(collision)
-                visual = (run_uvs(visual, self.origin, piece, path) if piece[0] == 0
-                          else corner_uvs(visual, self.origin, path))
+                if piece[0] == 0:
+                    visual = run_uvs(visual, self.origin, piece, path)
+                elif not curved:
+                    visual = corner_uvs(visual, self.origin, path)
                 P, T, UV, M = visual
                 if finish != 1:
                     M = np.where((M == 1) | (M == BRICK), finish, M)
@@ -384,9 +407,16 @@ class Builder:
                 visual, collision = self._built
                 self._built=(combine(visual,extra),
                              combine(collision,collision_extra) if self.col is not None else collision)
+            if any(back_regions):
+                from walk_overlap import upper_back_envelope
+                visual, collision = self._built
+                if back_regions[0]:
+                    visual = upper_back_envelope(visual, back_regions[0])
+                self._built = visual, collision
             if not self._defer_surface_uvs:
                 visual, collision = self._built
                 self._built = surface_uvs(visual), collision
+            collision_replaced = False
             if self.ground is not None:
                 visual, collision = self._built
                 corrected = clear_terrain(visual, self.origin, self.ground)
@@ -395,7 +425,12 @@ class Builder:
                     # surface. Keep decorative utility covers out of physics.
                     p, t, uv, m = corrected
                     collision = (p, t[m != 5], uv, np.zeros(np.count_nonzero(m != 5), np.int64))
+                    collision_replaced = True
                 self._built = corrected, collision
+            if self.col is not None and back_regions[1] and not collision_replaced:
+                from walk_overlap import upper_back_envelope
+                visual, collision = self._built
+                self._built = visual, upper_back_envelope(collision, back_regions[1])
             if self.tree_gardens:
                 from garden_cutouts import cut
                 visual,collision=self._built
@@ -432,14 +467,16 @@ class _Lean:
 
 
 def clear_terrain(mesh, origin, ground):
-    """Keep pavement above the drawn 1 m terrain without lifting its curb.
+    """Keep pavement above the drawn 1 m terrain with continuous side faces.
 
     Split with the existing native terrain kernel, then at the intersection of
     the pavement and terrain planes. Their upper envelope is continuous across
-    shared edges. Unaffected triangles retain their original geometry and UVs.
+    shared edges. Existing rear slopes and caps follow each corrected boundary;
+    their buried bottoms stay fixed. Unaffected triangles keep their XYZ and UVs.
     """
     import fast
     from vehicle_crossings import combine
+    from walk_skin import BoundarySkin
     P, T, UV, M = mesh
     selected = np.flatnonzero(np.isin(M, (1, 2, BRICK, GRASS, STONE, 5)))
     if not len(selected):
@@ -475,6 +512,7 @@ def clear_terrain(mesh, origin, ground):
     affected = np.unique(src[np.any(delta > 1e-7, axis=1)])
     if not len(affected):
         return mesh
+    skin = BoundarySkin(absolute, T, UV, M, selected[affected])
     positions, textures, faces, materials = [], [], [], []
     for i in np.flatnonzero(np.isin(src, affected)):
         # [x,y,original z,u,v,terrain-original difference]. Clip at delta=0,
@@ -498,6 +536,7 @@ def clear_terrain(mesh, origin, ground):
             coords = out[:, :3].copy()
             if positive:
                 coords[:, 2] += out[:, -1]
+            skin.collect(selected[src[i]], out[:, :3], coords)
             positions.extend(coords-np.asarray(origin))
             textures.extend(out[:, 3:5])
             for j in range(1,len(out)-1):
@@ -508,8 +547,14 @@ def clear_terrain(mesh, origin, ground):
                 materials.append(M[selected[src[i]]])
     keep = np.ones(len(T),bool)
     keep[selected[affected]] = False
-    return combine((P,T[keep],UV,M[keep]), [(np.asarray(positions), np.asarray(faces,np.int64),
-                                           np.asarray(textures), np.asarray(materials,np.int64))])
+    changed_skin, skin_mesh = skin.rebuild()
+    keep[changed_skin] = False
+    patches = [(np.asarray(positions), np.asarray(faces,np.int64),
+                np.asarray(textures), np.asarray(materials,np.int64))]
+    if skin_mesh is not None:
+        sp, st, su, sm = skin_mesh
+        patches.append((sp-np.asarray(origin), st, su, sm))
+    return combine((P,T[keep],UV,M[keep]), patches)
 
 
 def extend_collider_heights(boxes, mesh, origin):

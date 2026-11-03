@@ -51,6 +51,7 @@ SESSION_ORPHAN_S after nobody claimed them. The mod resyncs at its current origi
 tiles on screen never lose their files.
 """
 import os
+from buildgen import font_bootstrap  # Load FriBidi before Pillow initializes.
 
 # Heavy numpy work must not compete with the game's physics threads (§4.5): one BLAS/OpenMP
 # thread per worker. Set before numpy is imported.

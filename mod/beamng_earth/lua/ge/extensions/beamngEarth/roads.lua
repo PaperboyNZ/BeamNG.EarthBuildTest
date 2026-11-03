@@ -153,6 +153,35 @@ local function meshWhats(base, data)
   end
   return out
 end
+local propertyLoaded = {} -- material name -> source session; released after visuals retire
+local propertyPending = {}
+local PROPERTY_MATERIAL_LIMIT = 2048
+local function loadPropertyMaterials(manifest)
+  if manifest == nil then return true end
+  if type(manifest) ~= 'table' or type(manifest.path) ~= 'string' or
+     not manifest.path:match('^/temp/beamngEarth/[^/]+/property_[a-f0-9]+%.materials%.json$') or
+     type(manifest.names) ~= 'table' or #manifest.names > 40 then return false end
+  local session = manifest.path:match('^/temp/beamngEarth/([^/]+)/')
+  local count, added, seen = 0, 0, {}
+  for _ in pairs(propertyLoaded) do count=count+1 end
+  for _, name in ipairs(manifest.names) do
+    if type(name) ~= 'string' or not (name:match('^bne_fascia_[%w_]+_face$') or
+       name:match('^bne_directory_[%w_]+_face$')) or seen[name] then return false end
+    seen[name]=true
+    if not propertyLoaded[name] then added=added+1 end
+  end
+  if count+added > PROPERTY_MATERIAL_LIMIT then return false end
+  if FS and FS.fileExists and not FS:fileExists(manifest.path) then return false end
+  local ok, result = pcall(loadJsonMaterialsFile, manifest.path)
+  -- Even a failed loader may have registered some objects; track them for cleanup.
+  if not ok or result == false then
+    for name in pairs(seen) do if not propertyLoaded[name] then propertyLoaded[name]=session end end
+    return false
+  end
+  for name in pairs(seen) do propertyLoaded[name]=session;propertyPending[name]=true end
+  return true
+end
+
 local tiles = {}            -- key "a:tx_ty" -> { anchor, objs = { DecalRoad ids }, queued = n, walk = TSStatic id,
                             --   road = TSStatic id }
 local walkQ = {}            -- { key, walk = {shape, pos}, what = 'walk' | 'road' } FIFO
@@ -402,6 +431,7 @@ function M.heldSessions()
   for _,ref in pairs(slotRefs) do if ref[3] then held[ref[3]]=true end end
   for _,ref in pairs(slotDropped) do if ref[3] then held[ref[3]]=true end end
   for _,s in pairs(objectSessions) do held[s]=true end
+  for _,s in pairs(propertyLoaded) do held[s]=true end
   for key in pairs(engineDebt.pending) do local s=type(key)=='string' and key:match('^folder:(.+)$');if s then held[s]=true end end
   for _,t in pairs(tiles) do
     for s in pairs(t.fileSessions or {}) do held[s]=true end
@@ -433,6 +463,19 @@ end
 
 local function releaseSurfaceOwners()
   if #deleteQ>0 then return end
+  local used={}
+  for name in pairs(propertyPending) do used[name]=true end
+  for _,tile in pairs(tiles) do
+    for _,name in ipairs(tile.propertyMaterials or {}) do used[name]=true end
+    for _,name in ipairs(tile.buildingFallback and tile.buildingFallback.propertyMaterials or {}) do used[name]=true end
+  end
+  for name in pairs(propertyLoaded) do
+    if not used[name] then
+      local object=scenetree.findObject(name)
+      local ok=not object or pcall(function() object:delete() end)
+      if ok then propertyLoaded[name]=nil end
+    end
+  end
   local trees=require('beamngEarth/trees')
   for key,slots in pairs(retiringSurfaceOwners) do
     local held=false
@@ -991,6 +1034,64 @@ function M.geoWalk(t, what)
   return { shape = partShape(t, what), pos = { x, y, z }, rot = pp.q }
 end
 
+-- Validate the render-only parts before permitting a material failure to remove
+-- them. Physical parts and the base building must never be dropped here.
+local function propertyParts(data)
+  local m=data.propertyMaterials
+  if m==nil then return {} end
+  local parts=type(m)=='table' and m.parts
+  local chunks=type(data.buildingChunks)=='table' and data.buildingChunks.visual
+  if type(parts)~='table' or #parts<1 or #parts>40 or type(chunks)~='table' or not data.bldcol then return nil end
+  local available={};for _,what in ipairs(chunks) do available[what]=true end
+  local out={}
+  for _,what in ipairs(parts) do
+    if type(what)~='string' or not what:match('^bld%d+$') or not available[what] or out[what] then return nil end
+    out[what]=true
+  end
+  local n=0;for k in pairs(parts) do if type(k)~='number' or k<1 or k>#parts or k%1~=0 then return nil end;n=n+1 end
+  if n~=#parts or #parts>=#chunks then return nil end
+  return out
+end
+
+local function omitPropertyVisuals(data,msg,removed)
+  local function copy(t) local out={};for k,v in pairs(t or {}) do out[k]=v end;return out end
+  local function filter(rows)
+    local out={};for _,v in ipairs(rows or {}) do if not removed[v] then out[#out+1]=v end end;return out
+  end
+  local out=copy(data);out.propertyMaterials=nil;out.propertyRenderOmitted=true
+  out.buildingChunks=copy(data.buildingChunks)
+  out.buildingChunks.visual=filter(data.buildingChunks.visual)
+  if data.buildingGroups then
+    out.buildingGroups={}
+    for _,row in ipairs(data.buildingGroups) do
+      local group=copy(row);group.visual=filter(row.visual)
+      if #group.visual>0 then out.buildingGroups[#out.buildingGroups+1]=group end
+    end
+  end
+  out.shapeHashes=copy(data.shapeHashes)
+  if data.colliders then out.colliders=copy(data.colliders) end
+  for what in pairs(removed) do
+    out[what]=nil;out.shapeHashes[what]=nil
+    if out.colliders then out.colliders[what]=nil end
+  end
+  if data.sectorManifest then
+    out.sectorManifest=copy(data.sectorManifest)
+    out.sectorManifest.visual=copy(data.sectorManifest.visual)
+    out.sectorManifest.visual.parts={}
+    for _,part in ipairs(data.sectorManifest.visual.parts) do
+      if not removed[part.part] then out.sectorManifest.visual.parts[#out.sectorManifest.visual.parts+1]=part end
+    end
+    -- This is a degraded local view, never the producer's visual revision.
+    out.sectorManifest.visual.revision=string.rep('0',64)
+  end
+  local message=copy(msg);message.slots=copy(msg.slots);message.exact=copy(msg.exact)
+  for what in pairs(removed) do
+    slotDrop(msgSlot(msg,what));slotDrop(msgSlot(msg,'x:'..what))
+    message.slots[what]=nil;message.slots['x:'..what]=nil;message.exact[what]=nil
+  end
+  return out,message
+end
+
 -- Server message `roads_tile` for a geotile key: its content (data: the JSON; frame, h, slots, exact).
 function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
   if not admitted then return M._admit(M.onGeoTile,msg,currentAnchor,a,staged,true) end
@@ -1004,6 +1105,8 @@ function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
     lastError = 'unreadable road geotile ' .. tostring(msg.path)
     return false
   end
+  local optionalParts=propertyParts(data)
+  if not optionalParts then lastError='invalid property visual inventory'; return false end
   local key = staged and staged.key or geoKey(msg.key)
   local old = tiles[key]
   if not staged and not old and not sharedSites.compatible(data,tiles,key) then
@@ -1043,11 +1146,17 @@ function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
   end
   local frame = geotile.frameOf({ frame = msg.frame or data.frame, key = msg.key })
   if not frame then lastError = 'road geotile without a frame: ' .. tostring(msg.key); return false end
+  if not loadPropertyMaterials(data.propertyMaterials) then
+    data,msg=omitPropertyVisuals(data,msg,optionalParts)
+    h=tostring(h or '')..':property-omitted'
+    lastError='property visuals omitted: materials unavailable or resident limit reached'
+    if not validBuildingChunks(data) or not sectorManifest.valid(data,msg.key,sectorManifestRequired) then return false end
+  end
   -- A quality-only replacement can keep every physical object, skin and prop.
   -- The server hashes the actual nonvisual bytes, not just their bounds.
   local fallback=old and old.buildingFallback
   if old and not fallback and ownBuildingsReady(old) then
-    fallback={frame=old.frame,parts={},slots={},exactShape={},exactOf={}}
+    fallback={frame=old.frame,parts={},slots={},exactShape={},exactOf={},propertyMaterials=old.propertyMaterials}
     for what,p in pairs(old.parts) do if buildingVisual(what) then
       fallback.parts[what]=p;fallback[what]=old[what];old[what]=nil
       fallback.exactShape[what]=old.exactShape[what];fallback.exactOf[what]=old.exactOf[what]
@@ -1073,6 +1182,7 @@ function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
   local t = reuse and old or { anchor = currentAnchor, geo = true, gkey = msg.key, frame = frame, h = h, objs = {}, queued = 0,
     colliders = {}, slots = {}, at = now(), colWant = {}, parts = {}, exactShape = {}, exactOf = {} }
   t.h=h;t.anchor=currentAnchor;t.buildingFallback=fallback
+  t.propertyMaterials=data.propertyMaterials and data.propertyMaterials.names or {}
   t.staged=staged
   if staged then staged.tile=t end
   local cols = type(data.colliders) == 'table' and data.colliders or {}
@@ -1118,6 +1228,7 @@ function M.onGeoTile(msg, currentAnchor, a, staged, admitted)
   M._fileSessions(t)
   M.placeGeoTile(t, a)
   tiles[key] = t
+  propertyPending={}
   if not staged then buildingProgress:attach(t,msg) end
   sinceChange = stopwatch.new()
   if not reuse and not staged then geoRows(key, t, data) end

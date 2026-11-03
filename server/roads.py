@@ -4682,7 +4682,14 @@ def drape_walks(frame, elev, walks, ground=None):
             # the outer corners: the ends at the ends of the arc (where the runs' slabs end), the rest between
             zo = 0.5 * (z[0] + z[-1])
             outer = [tuple(q) for q in c["outer"]]
-            outer = [(*outer[0][:2], z[-1])] + [(*q[:2], zo) for q in outer[1:-1]] + [(*outer[-1][:2], z[0])]
+            if c.get('outer_stations') is not None:
+                stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(arc[:, :2], axis=0), axis=1))]
+                heights = np.interp(c['outer_stations'], stations, z)
+                outer = [(*q[:2], height) for q, height in zip(outer, heights)]
+            elif len(outer) == 1:
+                outer = [(*outer[0][:2], zo)]
+            else:
+                outer = [(*outer[0][:2], z[-1])] + [(*q[:2], zo) for q in outer[1:-1]] + [(*outer[-1][:2], z[0])]
             wk["corner"] = {**c, "arc": arc, "outer": outer}
             continue
         pts = pts.copy()
@@ -9128,7 +9135,7 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]
-                b.add_corner(c["arc"], c["inward"], sidewalks.corner_outer(c), h=wk.get("curb_h", sidewalks.CURB_H), ramps=c.get("ramps", ()), slab=sidewalks.slab_material(wk))
+                b.add_corner(c["arc"], c["inward"], sidewalks.corner_outer(c), h=wk.get("curb_h", sidewalks.CURB_H), ramps=c.get("ramps", ()), slab=sidewalks.slab_material(wk), outer_stations=c.get('outer_stations'))
                 continue
             ww = wk.get("w", SIDEWALK["w"])
             curb, out = sidewalks.run_geometry(wk["pts"], wk["side"], ww)

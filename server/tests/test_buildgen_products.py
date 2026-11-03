@@ -70,6 +70,104 @@ class IndependentProductsTests(unittest.TestCase):
         with patch.object(b,'visual_products',side_effect=AssertionError('recompiled cached visuals')):
             self.assertIsNotNone(products.refine(bw,self.tile,self.key,str(again),'/again','full'))
 
+    def test_named_assets_survive_visual_refinement_and_relocation(self):
+        from buildgen import property_assets
+        class Board:
+            material='bne_fascia_123_face'
+            filename='bne_fascia_123.png'
+            png=b'fixture-image'
+            def material_definition(self, directory):
+                return {'name':self.material, 'mapTo':self.material,
+                        'Stages':[{'baseColorMap':directory+'/'+self.filename}]}
+        extra=b.visual_products(self.plans)[0][0]
+        with patch.object(property_assets,'visuals',return_value=((extra,),(Board(),))):
+            before_dir,before=self.retain_lite()
+            out=self.root/'named-full';out.mkdir()
+            self.assertIsNotNone(products.refine(bw,self.tile,self.key,str(out),'/full','full'))
+            after=json.loads((out/bw.geo_names(self.tile.key)['json']).read_text())
+            self.assertEqual(before['physicalHash'],after['physicalHash'])
+            self.assertGreaterEqual(len(after['buildingChunks']['visual']),2)
+            self.assertEqual(after['propertyMaterials']['names'],['bne_fascia_123_face'])
+            self.assertEqual((out/'bne_fascia_123.png').read_bytes(),b'fixture-image')
+            self.assertIn('/full/bne_fascia_123.png', (out/Path(after['propertyMaterials']['path']).name).read_text())
+            again=self.root/'named-again';again.mkdir()
+            with patch.object(property_assets,'visuals',side_effect=AssertionError('visual cache missed')):
+                self.assertIsNotNone(products.refine(bw,self.tile,self.key,str(again),'/again','full'))
+            restored=json.loads((again/bw.geo_names(self.tile.key)['json']).read_text())
+            material=(again/Path(restored['propertyMaterials']['path']).name).read_text()
+            self.assertIn('/again/bne_fascia_123.png',material)
+            self.assertNotIn('/full/',material)
+
+    def test_normal_revisit_restores_named_assets_in_new_session(self):
+        from buildgen import property_assets
+        import revisit
+        self.addCleanup(revisit.close, str(self.cache))
+        class Board:
+            material='bne_fascia_789_face'; filename='bne_fascia_789.png'; png=b'revisit-image'
+            def material_definition(self, directory):
+                return {'name':self.material, 'mapTo':self.material,
+                        'Stages':[{'baseColorMap':directory+'/'+self.filename}]}
+        extra=b.visual_products(self.plans)[0][0]
+        parts=self.parts('lite')
+        first=self.root/'revisit-first';first.mkdir()
+        second=self.root/'revisit-second';second.mkdir()
+        with patch.object(property_assets,'visuals',return_value=((extra,),(Board(),))), \
+             patch.object(bw,'_frame_grader',return_value=None), \
+             patch.object(bw,'_tile_parts',return_value=parts), \
+             patch('revisit.ON',True):
+            token=DETAIL.set('lite')
+            try:
+                bw._geo_content(self.gx,self.gy,15,str(first),'/first',True,False,False,False,0.,None,None)
+                with patch.object(bw,'_tile_parts',side_effect=AssertionError('revisit cache missed')), \
+                     patch('buildgen.products.refine',side_effect=AssertionError('not a revisit hit')):
+                    bw._geo_content(self.gx,self.gy,15,str(second),'/second',True,False,False,False,0.,None,None)
+            finally:DETAIL.reset(token)
+        data=json.loads((second/bw.geo_names(self.tile.key)['json']).read_text())
+        self.assertEqual((second/'bne_fascia_789.png').read_bytes(),b'revisit-image')
+        definition=(second/Path(data['propertyMaterials']['path']).name).read_text()
+        self.assertIn('/second/bne_fascia_789.png',definition)
+        self.assertNotIn('/first/',definition)
+
+    def test_optional_chunk_joins_existing_progress_group(self):
+        from buildgen import property_assets
+        class Board:
+            material='bne_fascia_789_face'; filename='bne_fascia_789.png'; png=b'fixture'
+            def material_definition(self,directory):
+                return {'name':self.material,'Stages':[{'baseColorMap':directory+'/'+self.filename}]}
+        parts=self.parts('lite')
+        original=parts.bld[0] if isinstance(parts.bld[0],list) else [parts.bld[0]]
+        names=['bld' if n==0 else f'bld{n+1}' for n in range(len(original))]
+        parts.bld=(original,parts.bld[1],parts.bld[2],[{'group':'0','visual':names}],{})
+        out=self.root/'grouped';out.mkdir()
+        with patch.object(property_assets,'visuals',return_value=((original[0],),(Board(),))):
+            bw._write_geo_content(str(out),'/grouped',self.tile,parts)
+        data=json.loads((out/bw.geo_names(self.tile.key)['json']).read_text())
+        extra='bld' if not original else f'bld{len(original)+1}'
+        self.assertIn(extra,data['buildingGroups'][0]['visual'])
+        self.assertEqual(data['propertyMaterials']['parts'],[extra])
+
+    def test_directory_catalogue_content_changes_revisit_key(self):
+        import revisit
+        from sitegen import property_directories
+        source=self.root/'directories.json'
+        source.write_text('{"version":1,"sites":[]}')
+        property_directories.catalogue.cache_clear()
+        self.addCleanup(property_directories.catalogue.cache_clear)
+        with patch.dict(os.environ, {'BNE_PROPERTY_IDENTITIES':str(source)}):
+            first=revisit.key('roadsg', 'fixture')
+            source.write_text('{"version":1,"sites":[],"revision":2}')
+            # A new worker loads the changed pinned catalogue; simulate its cache.
+            property_directories.catalogue.cache_clear()
+            second=revisit.key('roadsg', 'fixture')
+        self.assertNotEqual(first,second)
+
+    def test_optional_property_failure_does_not_block_building_tile(self):
+        from buildgen import property_assets
+        with patch.object(property_assets,'visuals',side_effect=ValueError('bad optional text')):
+            _,data=self.retain_lite()
+        self.assertTrue(data['buildingChunks']['visual'])
+        self.assertNotIn('propertyMaterials',data)
+
     def test_changed_terrain_or_street_source_invalidates_the_plan(self):
         self.retain_lite();self.source.write_text('new source revision')
         self.assertIsNone(products.refine(bw,self.tile,self.key,str(self.root),'/test','full'))

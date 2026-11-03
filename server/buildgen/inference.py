@@ -20,8 +20,8 @@ from . import house_styles
 USE_CLASSES = {
     "residential": "house detached semidetached_house bungalow residential apartments terrace dormitory "
                    "static_caravan cabin town_house",
-    "commercial": "commercial retail supermarket kiosk office hotel restaurant shop mall cafe motel hostel",
-    "industrial": "industrial warehouse manufacture manufacturing factory hangar workshop freight_terminal cargo_terminal freight_station",
+    "commercial": "commercial retail supermarket grocery_store convenience convenience_store strip_shops shopping_parade kiosk office hotel restaurant shop mall cafe motel hostel",
+    "industrial": "industrial warehouse manufacture manufacturing factory hangar workshop trade_units freight_terminal cargo_terminal freight_station",
     "agricultural": "agricultural farm barn farm_auxiliary stable cowshed greenhouse",
     "civic": "civic public school university college kindergarten hospital clinic government fire_station "
              "ambulance_station community_centre townhall sports_hall",
@@ -436,7 +436,7 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
                             "resolved_facade_system", facade.strength)
     selection = presets.select(use.value, (cls, _text(observed(ev, "subtype"))), footprint,
                                fd.value, context.climate, identity, context.zones, context.land_use, environment,
-                               context=context, body_height=body)
+                               context=context, body_height=body, property_identity=attrs.get("_property_identity"))
     if selection.preset.id == "unresolved_shell":
         diagnostics.append("preset_unresolved_shell")
     for zone in context.zones:

@@ -300,6 +300,8 @@ def build_tile(tile, frame, elev, *, items=(), obstacles=(), origin=(0., 0., 0.)
     import inputwatch
     path = os.environ.get('BNE_SHARED_SITE_RECORDS')
     if path: inputwatch.paths((path,))
+    from . import property_directories
+    property_directories.watch()
     if not hasattr(tile, 'key'): return (), ()
     digest, entries, _ = catalogue()
     if path:

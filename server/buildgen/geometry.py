@@ -93,6 +93,8 @@ def draw(mesh, spec, gmin, gmax, collision=False, lite=False, texture_facades=Fa
     from . import commercial_roofs
     if not collision:
         commercial_roofs.draw(mesh, spec, top, mats, lite=lite)
+        from . import property_geometry
+        property_geometry.draw(mesh, spec, gmin, gmax, lite=lite)
     # The legacy rooftop clutter and cornices assume a simple solid outline.
     # Use them only on rectangles, where none can bridge a courtyard or recess.
     if not collision and not lite and fp.is_rectangle() and getattr(spec, 'city', None) is None:
@@ -109,7 +111,7 @@ def draw(mesh, spec, gmin, gmax, collision=False, lite=False, texture_facades=Fa
             b._porch(mesh, spec, gmax, mats)
         if spec.steeple:
             b._steeple(mesh, spec, top, mats)
-        if spec.sign is not None and spec.roof == "flat":
+        if spec.sign is not None and spec.roof == "flat" and property_geometry.property_programme.for_spec(spec) is None:
             z = (min(gmax + b.GROUND_FLOOR_SHOP_M + 1.15, top) if spec.windows is False else
                  top - (spec.floors - 1) * spec.floor_h if spec.floors > 1 else top)
             b._signs(mesh, spec, ring, z, mats)

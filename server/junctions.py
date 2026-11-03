@@ -21,6 +21,7 @@ import math
 import numpy as np
 
 import fast     # Rust kernels (earthfast)
+from walk_geometry import corner_rear, MergedCornerRequired
 
 RADIUS = 5.0                    # m, curb return radius when the class is not listed in RADII
 # by the larger road's class (street-view study of Fells Point, 2026-10-11: city corners are tight)
@@ -270,7 +271,16 @@ def _across(roads, bi, bj, cr, X, walk_w, debug=None):
     mids = [Oj] if len(a1) == 0 else [Oi] if len(a2) == 0 else [Oj, Oi]
     outer = [(*(Pj + uj * tj - nj * (wj + wkj)), zj)] + [(*o, zo) for o in mids] + \
         [(*(Pi + ui * ti + ni * (wi + wki)), zi)]
-    probe = np.vstack([curb2 + nrm * 0.8, curb2 + nrm * 2.0, mids])
+    nrm[0],nrm[-1] = ni,-nj
+    try:
+        rear = corner_rear(curb, nrm, wki, wkj, outer[-1], outer[0])
+    except MergedCornerRequired as error:
+        if debug is not None:
+            debug.append(('across: rear offset merge', str(error), X.round(1).tolist()))
+        return None  # The caller retains its ordinary junction fallback.
+    outer = rear.outer
+    probe = np.vstack([curb2 + nrm * 0.8, curb2 + nrm * 2.0, outer[:, :2],
+                       (outer[:-1, :2]+outer[1:, :2])/2])
     hit = _on_carriageway(probe, roads, (X, 60.0), half={roads[ri][0]: wi, roads[rj][0]: wj, roads[cr][0]: wc})
     if hit is not None:
         if debug is not None:
@@ -280,9 +290,9 @@ def _across(roads, bi, bj, cr, X, walk_w, debug=None):
     for C, arc in ((C1, a1), (C2, a2)):
         if C is not None and len(arc) > 1:
             fills.append(np.vstack([np.r_[C, zo]] + [np.r_[q, zo] for q in arc]))
-    nrm[0],nrm[-1] = ni,-nj
     return {"arc": curb, "inward": nrm, "outer": outer,
-            "outer_widths": [wkj]+[wkc]*len(mids)+[wki],
+            "outer_widths": rear.widths, "outer_stations": rear.stations,
+            "merged_inner": rear.merged_inner,
             "fill": None, "fills": fills, "ramps": []}, ti, tj
 
 
@@ -540,6 +550,15 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                 zci = _z_along(roads[ri][2], vi, si, ci)
                 zcj = _z_along(roads[rj][2], vj, sj, cj)
                 outer = [(*(Pj + uj * cj - nj * (wj + wkj)), zcj), (*O, zo), (*(Pi + ui * ci + ni * (wi + wki)), zci)]
+                rear = None
+                if not pavement:  # Curbless asphalt consumers deliberately use zero walk width.
+                    try:
+                        rear = corner_rear(curb, nrm, wki, wkj, outer[-1], outer[0])
+                    except MergedCornerRequired as error:
+                        if debug is not None:
+                            debug.append(('rear offset merge', str(error), X.round(1).tolist()))
+                        continue  # Try the existing smaller-radius/chamfer candidate.
+                    outer = rear.outer
                 Cc = _line_x(Pi + ni * di, ui, Pj - nj * dj, uj)
                 fill = (np.vstack([[*Cc, zo], np.column_stack((arc2, z[len(pre):len(pre) + k]))])
                         if Cc is not None else None)            # (an np.r_ per arc point: ~1/6 of find())
@@ -554,7 +573,10 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                 hit = _on_carriageway(probe, roads, (X, 60.0), half={roads[r][0]: h for r, h in own.items()})
                 if hit is None:     # the slab's outer corner: on other roads only (its own street bending on past the
                     # corner took it for its carriageway, the whole corner went and left bare ground, report #46)
-                    outer_p = np.vstack([[(np.array(o[:2]) + O) / 2 for o in (outer[0], outer[2])], [O]])
+                    if pavement:
+                        outer_p = np.vstack([[(np.array(o[:2]) + O) / 2 for o in (outer[0], outer[2])], [O]])
+                    else:
+                        outer_p = np.vstack((outer[:, :2], (outer[:-1, :2]+outer[1:, :2])/2))
                     hit = _on_carriageway(outer_p, roads, (X, 60.0), skip={roads[ri][0], roads[rj][0]})
                 if hit is not None:
                     if debug is not None:
@@ -564,7 +586,9 @@ def find(roads, has_walk, walk_w, parking_m=0.0, has_parking=lambda spec: False,
                         skip={ri, rj} if pi_ or pj_ else ()):
                     continue
                 corner = {"arc": curb, "inward": nrm, "outer": outer,
-                          "outer_widths": [wkj,(wki+wkj)/2,wki], "fill": fill, "ramps": [],
+                          "outer_widths": rear.widths if rear is not None else [wkj,(wki+wkj)/2,wki],
+                          "outer_stations": rear.stations if rear is not None else None,
+                          "merged_inner": rear.merged_inner if rear is not None else False, "fill": fill, "ramps": [],
                           "edge_style": 'chamfer' if chamfer else 'curve'}
                 if pavement:
                     corner["road_sides"] = ((roads[ri][0], li), (roads[rj][0], -lj))

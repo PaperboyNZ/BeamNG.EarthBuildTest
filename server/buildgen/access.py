@@ -243,7 +243,7 @@ def draw(mesh, spec, collision=False, detail=False):
             width=(math.dist(top[0][:2],top[3][:2])+math.dist(top[1][:2],top[2][:2]))/2
             repeat=2.4 if solid.kind in ('apron','driveway') else 1.2
             start=paving_run.get(solid.kind,0.)
-            across=2. if width>3. else 1.
+            across=width/repeat
             uv=((0.,start/repeat),(0.,(start+length)/repeat),
                 (across,(start+length)/repeat),(across,start/repeat))
             paving_run[solid.kind]=start+length

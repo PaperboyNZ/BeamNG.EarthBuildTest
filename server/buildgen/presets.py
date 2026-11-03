@@ -60,7 +60,7 @@ def catalogue():
 
 
 def select(use, classes, footprint, floors, climate, identity, zones=(), land_use=(), environment=None,
-           context=None, body_height=None):
+           context=None, body_height=None, property_identity=None):
     environment = environment or environments.Environment()
     rows = catalogue()
     available = [p for p in rows if p.use == use and p.min_area <= footprint.area <= p.max_area
@@ -75,19 +75,33 @@ def select(use, classes, footprint, floors, climate, identity, zones=(), land_us
     dedicated = [p for p in mapped if p.id.startswith('ci_')]
     if dedicated:
         pool = dedicated
+    # A supported association may select a facade grammar only when compatible
+    # with the independently resolved physical building use.
+    from . import property_programme
+    property_id = property_programme.preset_for_identity(property_identity, use)
+    property_rows = [p for p in rows if p.id == property_id]
+    if property_rows:
+        pool = property_rows
+    elif (hasattr(property_identity, 'get') and
+          property_identity.get('kind') == 'food_retail_size_unresolved'):
+        # The use is known but neither visual size band is established. Avoid
+        # falling back to a mapped supermarket or small-grocery facade.
+        pool = [p for p in available if not p.classes]
     from . import commercial_forms
     form_weights, form_reasons = commercial_forms.weights(use, classes, footprint, floors, body_height, context)
     forms = [p for p in available if p.id in form_weights]
     # Broad use needs architectural variety even without a detailed class/zone.
     # These forms describe appearance; the resolved occupancy remains untouched.
-    if forms:
+    if forms and not property_rows:
         pool = forms
     else:
         pool = [p for p in pool if p.id not in commercial_forms.IDS]
     reasons = ["mapped_class" if mapped else f"resolved_use:{use}", "measured_footprint_fit", f"storeys:{floors}"]
     reasons.extend(f"observed_land_use:{kind}:{overlap:.3f}" for kind,overlap in land_use if overlap >= .6)
-    if forms:
+    if forms and not property_rows:
         reasons.extend(form_reasons)
+    if property_rows:
+        reasons.append("supported_property_identity")
     if footprint.holes:
         courts = [p for p in pool if p.courtyard]
         if courts:

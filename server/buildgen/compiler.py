@@ -99,4 +99,5 @@ def plan(ring, attrs, look=None):
                                 and result.floors.value <= 2) else 0., windows=windows, steeple=False,
                   porch=False, cls=cls or (result.use.value if result.use.value != "unknown" else ""),
                   deck=False, pitch=math.degrees(math.atan2(result.roof_rise, hw)) if result.roof_rise else 0.,
-                  inference=result, diagnostics=result.diagnostics)
+                  inference=result, diagnostics=result.diagnostics,
+                  property_identity=attrs.get('_property_identity'))

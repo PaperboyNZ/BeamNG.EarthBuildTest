@@ -257,4 +257,77 @@ T.check(#objsWith('/new/restart_deck')==1 and #objsWith('/old/restart_deck')==0,
 FS.fileExists=exists
 roads.clear()
 
+-- Named material resources load before visuals, survive a quality swap, then
+-- retire with their final shape instead of accumulating across explored tiles.
+roads.reset(); roads.setGeo(true); roads.setSession('material-session')
+local materialA='bne_fascia_123_face'
+local materialB='bne_fascia_456_face'
+local oldLoader=loadJsonMaterialsFile
+loadJsonMaterialsFile=function(path)
+  local name=path:find('property_123',1,true) and materialA or path:find('property_456',1,true) and materialB
+  if name and not scenetree.findObject(name) then local o=S.newObject('Material');o:registerObject(name) end
+  return true
+end
+local function namedBody(h,name,path)
+  return {h=h,physicalHash='same',frame={clat,clon},
+    bld={shape='/temp/beamngEarth/material-session/'..h..'.cdae',pos={0,0,0}},
+    bld2={shape='/temp/beamngEarth/material-session/'..h..'_property.cdae',pos={0,0,0}},
+    bldcol={shape='/temp/beamngEarth/material-session/collision.cdae',pos={0,0,0}},
+    buildingChunks={v=1,visual={'bld','bld2'},collision={'bldcol'}},
+    buildingGroups={{group='0',visual={'bld','bld2'}}},
+    propertyMaterials={path=path,names={name},parts={'bld2'}}}
+end
+local first=namedBody('named1',materialA,'/temp/beamngEarth/material-assets/property_123.materials.json')
+T.check(roads.onTile({anchorId=2,key=key,h=first.h,data=first},2,B),'named tile accepted')
+T.check(scenetree.findObject(materialA) ~= nil,'material loaded before queued visual')
+local function holdsSession(name)
+  for _,s in ipairs(roads.heldSessions()) do if s==name then return true end end
+  return false
+end
+T.check(holdsSession('material-assets'),'texture session held while material is active')
+run(2,B)
+local second=namedBody('named2',materialB,'/temp/beamngEarth/material-assets/property_456.materials.json')
+T.check(roads.onTile({anchorId=2,key=key,h=second.h,data=second},2,B),'named visual replacement accepted')
+T.check(scenetree.findObject(materialA) ~= nil and scenetree.findObject(materialB) ~= nil,
+  'old and new material survive while fallback visual exists')
+run(2,B)
+T.check(scenetree.findObject(materialA) == nil and scenetree.findObject(materialB) ~= nil,
+  'old material released after visual replacement')
+car.x,car.y=1000000,1000000
+roads.onDrop({anchorId=2,key=key});run(2,B);roads.collisionRebuilt();run(2,B)
+T.check(scenetree.findObject(materialB) == nil,'last named material released after tile removal')
+T.check(not holdsSession('material-assets'),'texture session released after material retirement')
+loadJsonMaterialsFile=function() return false end
+first.physicalHash=string.rep('a',16)
+first.shapeHashes={bld=string.rep('b',64),bld2=string.rep('c',64),bldcol=string.rep('d',64)}
+first.sectorManifest={v=1,topology='closed-v1',producer={namespace='beamng-earth/geotile',feature_id=key},
+  frame={type='geotile-world-v1',origin={clat,clon}},
+  physical={revision=first.physicalHash,parts={{part='bldcol',sha256=first.shapeHashes.bldcol}}},
+  visual={revision=string.rep('e',64),depends_on=first.physicalHash,
+    parts={{part='bld',sha256=first.shapeHashes.bld},{part='bld2',sha256=first.shapeHashes.bld2}}}}
+car.x,car.y=B:geodeticToWorld(clat,clon,0)
+T.check(roads.onTile({anchorId=2,key=key,h=first.h,data=first},2,B),
+  'explicit loader failure accepts base tile')
+run(2,B)
+T.check(#objsWith('named1.cdae')==1 and #objsWith('collision.cdae')==1 and #objsWith('named1_property.cdae')==0,
+  'failed materials omit only optional visual and retain base and physics')
+roads.clear(); roads.reset(); roads.setGeo(true); roads.setSession('cap')
+loadJsonMaterialsFile=function() return true end
+local capAccepted=true
+for i=1,52 do
+  local names={}
+  for j=1,40 do names[j]=string.format('bne_fascia_%04d_%02d_face',i,j) end
+  local k=geotile.key(gx+i,gy)
+  local body=namedBody('cap'..i,names[1],'/temp/beamngEarth/material-assets/property_123.materials.json')
+  body.propertyMaterials.names=names
+  if not roads.onTile({anchorId=2,key=k,h=body.h,data=body},2,B) then capAccepted=false end
+end
+T.check(capAccepted,'resident material limit degrades rather than rejects a new tile')
+for _=1,220 do roads.update(gov,2,car,nil,B) end
+T.check(#objsWith('cap52.cdae')==1 and #objsWith('cap52_property.cdae')==0,
+  'at material cap base visual is imported without its named visual')
+T.check(#objsWith('collision.cdae')>=52,'at material cap the physics mesh remains available')
+loadJsonMaterialsFile=oldLoader
+roads.clear()
+
 T.done('test_roadgeo')

@@ -6,9 +6,12 @@ the clipped envelope, not a cross-gable or straight-skeleton solver.
 Courtyards and notches remain open in every LOD.
 """
 from runtimeprofiler import step as profile_step
-from dataclasses import dataclass
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass, field
 from functools import lru_cache
 import math
+import threading
 
 import numpy as np
 
@@ -34,7 +37,49 @@ class Envelope:
     strategy: str = "clipped_envelope"
 
 
+@dataclass(slots=True)
+class _ServiceCache:
+    owner: int
+    closed: bool = False
+    values: dict = field(default_factory=dict)
+    vertices: int = 0
+
+
+_SERVICE_CACHE = ContextVar('building_roof_service_cache', default=None)
+
+
+@contextmanager
+def service_cache():
+    """Retain bounded roof solutions for one building service, never a process."""
+    state = _ServiceCache(threading.get_ident())
+    token = _SERVICE_CACHE.set(state)
+    try:
+        yield
+    finally:
+        state.closed = True
+        state.values.clear()
+        state.vertices = 0
+        _SERVICE_CACHE.reset(token)
+
+
 def envelope(footprint, kind, variant='standard'):
+    state = _SERVICE_CACHE.get()
+    if (state is None or state.closed or state.owner != threading.get_ident()
+            or not isinstance(footprint, Footprint)):
+        return _resolve_envelope(footprint, kind, variant)
+    from .progressive import DETAIL
+    key = (DETAIL.get(), footprint, kind, variant)
+    if key in state.values:
+        return state.values[key]
+    result = _resolve_envelope(footprint, kind, variant)
+    if (isinstance(result, Envelope) and len(state.values) < 2048
+            and state.vertices + footprint.vertex_count <= 8192):
+        state.values[key] = result
+        state.vertices += footprint.vertex_count
+    return result
+
+
+def _resolve_envelope(footprint, kind, variant='standard'):
     from .progressive import ACTIVE, DETAIL
     if DETAIL.get()=='minimum':
         from .minimum_roofs import envelope as compact

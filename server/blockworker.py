@@ -12,6 +12,7 @@ init(...) runs once in the process (ProcessPoolExecutor initializer); build(...)
 far_geometry(...) (the far-tile workers, the same state) are its jobs. warm_q (a multiprocessing queue) carries the road cells to plan ahead of the player: (anchor id, lat,
 lon, [mapcells.CellKey]), the latest list replacing the earlier one.
 """
+from buildgen import font_bootstrap  # Spawned workers load FriBidi before Pillow.
 from runtimeprofiler import step as profile_step
 import logging
 import os
@@ -1094,12 +1095,29 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
     os.makedirs(tmpdir, exist_ok=True)
     try:
         # (roads.write_tile writes the shapes and the rows; its names are the anchor tile's: written aside, renamed)
-        _, n = roadsmod.write_tile(tmpdir, vfs_dir, 0, tile, None, P.chunks, None, None, P.dmesh, P.bld, P.props,
+        bld = P.bld
+        material_manifest = None
+        # Optional props are render-only and require the separate lean collider.
+        if bld is not None and len(bld) > 2 and bld[2] is not None and getattr(P, 'plans', ()):
+            from buildgen.products import property_visuals, add_property_group, property_part_names
+            extra, material_manifest, _ = property_visuals(P.plans, getattr(P, 'shared_courts', ()),
+                                                            tile, out_dir, vfs_dir)
+            if extra:
+                original = bld[0] if isinstance(bld[0], list) else [bld[0]]
+                tail = list(bld[1:])
+                if len(tail) > 2:
+                    tail[2] = add_property_group(tail[2], len(original), len(extra))
+                if material_manifest:
+                    material_manifest['parts'] = property_part_names(len(original), len(extra))
+                bld = (list(original) + extra,) + tuple(tail)
+        _, n = roadsmod.write_tile(tmpdir, vfs_dir, 0, tile, None, P.chunks, None, None, P.dmesh, bld, P.props,
                                    P.wires, P.park, tunnel_mesh=P.tmesh, fuel=P.fuel, rail_mesh=P.rmesh,
                                    guardrail_rows=P.guardrail_rows, garage_sound=P.garage_sound, wells=P.wells,
                                    decals=False,vegetation_exclusions=getattr(P,'vegetation_exclusions',None))
         with open(os.path.join(tmpdir, f"roads_0_{tile}_None.json"), encoding="utf-8") as f:
             data = json.loads(f.read())
+        if material_manifest:
+            data['propertyMaterials'] = material_manifest
         if getattr(P, 'shared_courts', ()):
             from sitegen import shared_courts
             sites, boxes, _ = shared_courts.metadata(P.shared_courts, tile.frame)
@@ -1146,7 +1164,7 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
         # them from physical identity so dense full/lite swaps still reuse it.
         visual=set((data.get('buildingChunks') or {}).get('visual',[])) if lean else set()
         physical={k:v for k,v in data.items() if k not in visual
-                  and k not in ('buildingChunks','buildingGroups','buildingDetail')}
+                  and k not in ('buildingChunks','buildingGroups','buildingDetail','propertyMaterials')}
         if 'colliders' in physical:
             physical['colliders']={k:v for k,v in physical['colliders'].items() if k not in visual}
         physical['shapeHashes']={k:v for k,v in shape_hashes.items() if k not in visual}
@@ -1181,6 +1199,55 @@ def _geo_content_key(key, zoom, buildings, left_hand, mph, gas_stations, buried,
     return revisit.key("roadsg", str(key), int(zoom), bool(buildings), bool(left_hand), bool(mph), bool(gas_stations),
                        _md_versions() if md is None else md, float(buried), lamp_region, country, GEO_SKIN_MARGIN_M,
                        building_detail)
+
+
+def _property_cache_files(data, out_dir, vfs_dir):
+    """Validate the tile's bounded material inventory before caching its files."""
+    import json, re
+    from pathlib import Path
+    manifest = data.get('propertyMaterials')
+    if manifest is None:
+        return {}
+    if not isinstance(manifest, dict) or not isinstance(manifest.get('path'), str):
+        raise ValueError('invalid property material manifest')
+    prefix = vfs_dir.rstrip('/')+'/'
+    path = manifest['path']
+    if not path.startswith(prefix):
+        raise ValueError('property material path outside session')
+    name = path[len(prefix):]
+    if not re.fullmatch(r'property_[a-f0-9]{16}\.materials\.json', name):
+        raise ValueError('invalid property material filename')
+    names = manifest.get('names')
+    if not isinstance(names, list) or not 0 < len(names) <= 40 or len(set(names)) != len(names):
+        raise ValueError('invalid property material inventory')
+    if any(not isinstance(n,str) or not re.fullmatch(r'bne_(?:fascia|directory)_[a-z0-9_]+_face', n) for n in names):
+        raise ValueError('invalid property material name')
+    material_file = Path(out_dir)/name
+    if material_file.stat().st_size > 256*1024:
+        raise ValueError('oversized property material file')
+    raw = material_file.read_bytes()
+    definitions = json.loads(raw)
+    if not isinstance(definitions, dict) or set(definitions) != set(names):
+        raise ValueError('property material inventory mismatch')
+    files = {name: raw.replace(prefix.encode(), b'@V@/')}
+    total = len(raw)
+    for key in names:
+        record=definitions[key]
+        stages=record.get('Stages') if isinstance(record, dict) else None
+        texture=stages[0].get('baseColorMap') if isinstance(stages,list) and stages and isinstance(stages[0],dict) else None
+        if not isinstance(texture,str) or not texture.startswith(prefix):
+            raise ValueError('invalid property texture path')
+        texture_name=texture[len(prefix):]
+        if not re.fullmatch(r'bne_(?:fascia|directory)_[a-z0-9_]+\.png',texture_name):
+            raise ValueError('invalid property texture filename')
+        image_file=Path(out_dir)/texture_name
+        size=image_file.stat().st_size
+        total += size
+        if size>8*1024*1024 or total>64*1024*1024:
+            raise ValueError('property texture budget exceeded')
+        image=image_file.read_bytes()
+        files[texture_name]=image
+    return files
 
 
 def prebuild_geo(gx, gy, zoom, scratch, buildings, left_hand, mph, gas_stations, buried=0.0, lamp_region=None,
@@ -1225,6 +1292,7 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
     code; no anchor, no height quantum, no lift) or built in its own frame. (vfs path, chunks, info, fuel pads)."""
     import geotiles
     import revisit
+    import json
     from buildgen.progressive import ACTIVE, DETAIL
     _stages, mark = _stage_clock()
     tile = geotiles.geobox(gx, gy)
@@ -1286,6 +1354,8 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
                     if name.endswith(".json"):
                         data = data.decode("utf-8").replace(f"{vfs_dir}/", "@V@/").encode("utf-8")
                     blobs[name] = data
+            with open(os.path.join(out_dir, names['json']), encoding='utf-8') as fh:
+                blobs.update(_property_cache_files(json.load(fh), out_dir, vfs_dir))
             s, w, nn, e = geotiles.info(gx, gy)[2:]
             wh = revisit.where(*geotiles.centre(gx, gy), s, w, nn, e,
                                revisit.sig(buildings=bool(buildings), gas_stations=bool(gas_stations),
@@ -1374,7 +1444,12 @@ def _map_walks(src, dst, walks):
         wk = dict(wk)
         if "corner" in wk:
             c = dict(wk["corner"])
+            old_arc = np.asarray(c['arc'], np.float64)
             c["arc"] = mp(c["arc"])
+            if c.get('outer_stations') is not None:
+                old_stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(old_arc[:, :2], axis=0), axis=1))]
+                new_stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(c['arc'][:, :2], axis=0), axis=1))]
+                c['outer_stations'] = np.interp(c['outer_stations'], old_stations, new_stations)
             c["outer"] = [tuple(v) for v in mp(np.asarray(c["outer"], np.float64).reshape(-1, 3))]
             inw = np.asarray(c["inward"], np.float64).reshape(-1, 2) @ r2.T
             c["inward"] = inw / np.maximum(np.hypot(*inw.T), 1e-12)[:, None]
@@ -1476,7 +1551,7 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]
-                b.add_corner(c["arc"], c["inward"], sidewalksmod.corner_outer(c), h=wk.get("curb_h", sidewalksmod.CURB_H), ramps=c.get("ramps", ()), slab=sidewalksmod.slab_material(wk))
+                b.add_corner(c["arc"], c["inward"], sidewalksmod.corner_outer(c), h=wk.get("curb_h", sidewalksmod.CURB_H), ramps=c.get("ramps", ()), slab=sidewalksmod.slab_material(wk), outer_stations=c.get('outer_stations'))
                 continue
             ww = wk.get("w", roadsmod.SIDEWALK["w"])
             curb, outv = sidewalksmod.run_geometry(wk["pts"], wk["side"], ww)
@@ -1962,7 +2037,12 @@ def far_geo(kind, gx, gy, gzoom, out_dir, vfs_dir, lamp_region=None, plan_ref=No
         return (f"{vfs_dir}/{names['json']}", int(extra.get("n", 0)), frame_ll, float(extra.get("pivot", 0.0)),
                 dict(extra.get("shapes") or {}))
     f0 = revisit.faults()
-    res = _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_plan, plan_refs)
+    if kind in ('bldfar', 'bldsky'):
+        from buildgen.roofs import service_cache
+        with service_cache():
+            res = _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_plan, plan_refs)
+    else:
+        res = _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_plan, plan_refs)
     if res is None:
         return None
     data, shapes, n = res

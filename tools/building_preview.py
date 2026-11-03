@@ -17,7 +17,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 
-def raster(mesh, props, drives, width, height, b, roof_grid=False, ground=None, *, camera=None, tight=False):
+def raster(mesh, props, drives, width, height, b, roof_grid=False, ground=None, *, camera=None, tight=False, texture_images=None):
     p, uv, t, mid, mats, colour = mesh[:6]
     points, tris = p.tolist(), t.tolist()
     texcoords = uv.tolist()
@@ -27,6 +27,8 @@ def raster(mesh, props, drives, width, height, b, roof_grid=False, ground=None, 
     textures={}
     texture_root=Path(__file__).resolve().parents[1]/'mod/beamng_earth/levels/beamng_earth/art/shapes/beamngEarth'
     for i,mat in enumerate(mats):
+        if texture_images and mat in texture_images:
+            textures[i]=np.asarray(texture_images[mat].convert('RGBA'))
         if mat.startswith('bne_minimum_') and (texture_root/(mat+'.png')).is_file():
             with Image.open(texture_root/(mat+'.png')) as image:textures[i]=np.asarray(image.convert('RGBA'))
     for mat, tri in zip(mid, t):

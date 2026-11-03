@@ -38,10 +38,10 @@ def cache_identity():
         return (mode,)
     import shapely
     from buildgen import roof_colours, zones, site_data
-    from sitegen import shared_courts
+    from sitegen import shared_courts, property_directories
     return (mode, shapely.__version__, shapely.geos_version_string,
             roof_colours.catalogue()[0], zones.catalogue()[0],
-            site_data.catalogue()[0], shared_courts.catalogue()[0])
+            site_data.catalogue()[0], shared_courts.catalogue()[0], property_directories.catalogue()[0])
 
 
 def prebuild(mode, function, *args, **kwargs):

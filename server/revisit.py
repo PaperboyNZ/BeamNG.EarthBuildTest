@@ -154,8 +154,9 @@ def code_key():
                 h.update(f"building_geometry={shapely.__version__}/{shapely.geos_version_string}".encode())
                 h.update(f"building_evidence={roof_colours.catalogue()[0]}/{zones.catalogue()[0]}".encode())
                 h.update(f"building_sites={site_data.catalogue()[0]}".encode())
-                from sitegen import shared_courts
+                from sitegen import shared_courts, property_directories
                 h.update(f"shared_site_records={shared_courts.catalogue()[0]}".encode())
+                h.update(f"property_directories={property_directories.catalogue()[0]}".encode())
             _code.append(h.hexdigest()[:16])
         return _code[0]
 

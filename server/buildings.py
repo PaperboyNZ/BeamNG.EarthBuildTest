@@ -341,7 +341,7 @@ def oriented_box(p):
 class Spec:
     """What is built for one footprint (decided by plan())."""
     __slots__ = ("ring", "floors", "floor_h", "height", "roof", "roof_mat", "facade", "band", "shop", "plain", "min_h", "wall", "door", "windows", "front", "steeple", "stoop",
-                 "sign", "porch", "cls", "seed", "deck", "pitch", "portal", "gring", "ship", "evidence", "footprint", "diagnostics", "inference", "facades", "garage_opening", "access", "site", "garage_access", "terminal", "church", "city", "roof_outline", "weather_exposure")
+                 "sign", "porch", "cls", "seed", "deck", "pitch", "portal", "gring", "ship", "evidence", "footprint", "diagnostics", "inference", "facades", "garage_opening", "access", "site", "garage_access", "terminal", "church", "city", "roof_outline", "weather_exposure", "property_identity")
 
     def __init__(self, **kw):
         for k in self.__slots__:
@@ -499,6 +499,7 @@ def plan(ring, attrs, neighbours=0, lat=None, lon=None, look=None, town=False, d
     from buildgen.weathering import exposure
     spec.weather_exposure = exposure(planning_attrs.get('_context'), lat, lon)
     spec.evidence = attrs.get("_evidence") or normalise_attributes(attrs)
+    spec.property_identity = attrs.get("_property_identity")
     spec.site = attrs.get('_site')
     if (spec.site is not None and spec.site.owner_footprint is not None and
             (fp is None or (spec.site.owner_footprint.outer, spec.site.owner_footprint.holes) != (fp.outer, fp.holes))):
@@ -1112,6 +1113,8 @@ def _signs(m, spec, ring, z_top, mat_idx):
     d = (b - a) / L
     out = np.array([d[1], -d[0]])
     t, k = 0.3, 0
+    from buildgen.property_palette import resolve as sign_palette
+    background, _, accent = sign_palette(spec)
     while t < L - 1.5:
         w = SIGN_SHOP_M[0] + (SIGN_SHOP_M[1] - SIGN_SHOP_M[0]) * _hash01(spec.seed, "signw", k)
         t1 = min(L - 0.3, t + w)
@@ -1119,7 +1122,10 @@ def _signs(m, spec, ring, z_top, mat_idx):
             t1 = L - 0.3
         if _hash01(spec.seed, "signon", k) < 0.85:
             c = a + d * ((t + t1) / 2) + out * (SIGN_OUT / 2)
-            look = f"sign|{int(_hash01(spec.seed, 'signc', k) * len(SIGN_TINTS))}"
+            # The older generic shop bands share the same facade/regional
+            # palette as named stage-one signs; adjacent panels vary in value.
+            blend=.12*_hash01(spec.seed,'sign-panel-tone',k)
+            look = custom_look(PANEL,tuple(((1-blend)*v+blend*a)/255 for v,a in zip(background,accent)))
             _box(m, c, d, (t1 - t) / 2 - 0.15, SIGN_OUT / 2, z_top - 0.15 - SIGN_H, z_top - 0.15, mat_idx[look])
         t, k = t1, k + 1
 
@@ -2609,7 +2615,8 @@ def _hulls_nearby(frame, layers, x0, y0, x1, y1, water_xy, reach=ships.PIER_REAC
 @profile_step('Building site selection')
 def tile_buildings(frame, x0, y0, x1, y1, layers, elev, water=None, part_layers=(), west_town=False, roads_xy=None,
                    tunnels_xy=None, garages_xy=None, supports=None, bridges_xy=None, water_xy=None, decks=None,
-                   ml_roads_xy=None, ways_xy=None, skip=frozenset(), min_size=None, own=None, context_for=None):
+                   ml_roads_xy=None, ways_xy=None, skip=frozenset(), min_size=None, own=None, context_for=None,
+                   place_layers=()):
     """[(Spec, gmin, gmax)] of the buildings whose footprint centroid is in the tile [x0, x1) x [y0, y1) (own: the
     tile's box when it says which points are its own, roads.box_owns: a geotile's)
     (anchor frame), rings relative to (x0, y0). layers: mapgeom.Features of buildings (one per map cell; a
@@ -2834,6 +2841,12 @@ def tile_buildings(frame, x0, y0, x1, y1, layers, elev, water=None, part_layers=
             z = float(np.asarray(elev(np.array([float(la)]), np.array([float(lo)])), np.float64)[0])
             return float(frame.geodetic_to_enu(float(la), float(lo), z)[2])       # (the decks' frame up)
         rings, attrs, looks, mins = _passages(rings, attrs, looks, mins, bridges_xy, decks, ground_at)
+    # Resolve once before planning; input Places cells are cache-only and indexed.
+    from property_identity import resolve_many as resolve_property_identities
+    identities = resolve_property_identities(rings, attrs, frame, x0, y0, place_layers)
+    for at, identity in zip(attrs, identities):
+        if identity is not None:
+            at["_property_identity"] = identity
     shared = _shared_walls(rings)
     if not rings:
         return []
@@ -3471,10 +3484,13 @@ def road_tile_items(frame, tx, ty, md, ground, decks=None, skip=frozenset()):
     v2 = building_ingest.enabled()
     box = roads.tile_bbox(tx, ty)
     x0, y0, x1, y1 = box
+    keys = roads.cells_of_tile(frame, tx, ty, margin=0.0)
     cds = [md.cell(k, layers=("buildings", "building_parts", "roads", "infrastructure", "water"), kind="demand")
-           for k in roads.cells_of_tile(frame, tx, ty, margin=0.0)]
+           for k in keys]
+    from property_identity import cached_layers
+    place_layers = cached_layers(md, keys) if v2 else ()
     items = tile_buildings(frame, x0, y0, x1, y1, [c.layers.get("buildings") for c in cds], ground,
-                          own=box if hasattr(box, "owns") else None,
+                          own=box if hasattr(box, "owns") else None, place_layers=place_layers,
                           part_layers=[c.layers.get("building_parts") for c in cds],
                           west_town=False if v2 else district_town(frame, tx, ty, md),
                           context_for=provider(md).query if v2 else None,
@@ -3598,8 +3614,12 @@ def far_items(frame, tile, ty, md, ground, lamp_region=None):
     box = roads.tile_bbox(tile, ty)
     x0, y0, x1, y1 = box
     own = box if hasattr(box, "owns") else None
-    cds = [md.cell(k, layers=FAR_LAYERS, kind="demand") for k in roads.cells_of_tile(frame, tile, ty, margin=0.0)]
+    keys = roads.cells_of_tile(frame, tile, ty, margin=0.0)
+    cds = [md.cell(k, layers=FAR_LAYERS, kind="demand") for k in keys]
+    from property_identity import cached_layers
+    place_layers = cached_layers(md, keys) if v2 else ()
     items = tile_buildings(frame, x0, y0, x1, y1, [c.layers.get("buildings") for c in cds], ground, own=own,
+                           place_layers=place_layers,
                            part_layers=[c.layers.get("building_parts") for c in cds],
                            west_town=False if v2 else district_town(frame, tile, ty, md),
                            context_for=provider(md).query if v2 else None,
