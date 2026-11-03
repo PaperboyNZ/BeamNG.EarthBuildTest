@@ -244,15 +244,20 @@ def clear(rows, *, wires=None, areas=None, walks=(), items=(), lines=(),
     if wires is not None and old_poles:
         adjusted=[]
         for wire in wires:
+            points,half_width=wire if isinstance(wire,tuple) else (wire,None)
             ends=[];valid=True
-            for endpoint in (wire[0],wire[-1]):
+            for endpoint in (points[0],points[-1]):
                 hits=[(np.linalg.norm(np.asarray(endpoint)[:2]-p[:2]),delta) for p,delta in old_poles]
                 distance,delta=min(hits,key=lambda v:v[0])
                 if distance<3 and delta is None:valid=False;break
                 ends.append(delta if distance<3 else np.zeros(3))
             if valid:
-                t=np.linspace(0,1,len(wire))[:,None]
-                adjusted.append(np.asarray(wire)+(1-t)*ends[0]+t*ends[1])
+                if not np.any(ends[0]) and not np.any(ends[1]):
+                    adjusted.append(wire)
+                    continue
+                t=np.linspace(0,1,len(points))[:,None]
+                moved=np.asarray(points)+(1-t)*ends[0]+t*ends[1]
+                adjusted.append((moved,half_width) if isinstance(wire,tuple) else moved)
         wires[:]=adjusted
     if diagnostics is not None:
         # Compare actual source stations with accepted tree positions, including

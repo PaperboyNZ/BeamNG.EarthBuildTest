@@ -243,10 +243,29 @@ def _across(roads, bi, bj, cr, X, walk_w, debug=None):
         return None
     if _branch_len(roads[ri][2], vi, si) < ti + 1.0 or _branch_len(roads[rj][2], vj, sj) < tj + 1.0:
         return None
-    curb2 = np.vstack([a1, a2])
-    keep = np.concatenate(([True], np.hypot(*np.diff(curb2, axis=0).T) > 0.05))
-    curb2 = curb2[keep]
-    if len(curb2) < 2:
+    ni, nj, nc = _left(ui), _left(uj), _left(uc)
+    Ci, Cj = Pi + ui * ti + ni * wi, Pj + uj * tj - nj * wj
+    a1, a2 = a1.copy(), a2.copy()
+    # Straight/consumed pieces can still end on the connector's offset rather
+    # than the branch's cut. Keep the established cuts and their exact joins;
+    # only the first/last producer samples change, including the fill boundary.
+    (a1 if len(a1) else a2)[0] = Ci
+    (a2 if len(a2) else a1)[-1] = Cj
+    if math.hypot(*(Cj-Ci)) <= 0.05:
+        if debug is not None:debug.append(('across: coincident branch joins', X.round(1).tolist()))
+        return None
+    source = np.vstack([a1, a2])
+    kept = [source[0]]
+    for point in source[1:-1]:
+        if math.hypot(*(point-kept[-1])) > 0.05:kept.append(point)
+    # Retain both exact terminal rows. A cluster of nearby interior samples
+    # must yield to the terminal, rather than silently shortening the corner.
+    while len(kept)>1 and math.hypot(*(source[-1]-kept[-1])) <= 0.05:kept.pop()
+    kept.append(source[-1])
+    curb2 = np.asarray(kept)
+    if ((curb2[1]-curb2[0]) @ -ui <= 1e-9
+            or (curb2[-1]-curb2[-2]) @ uj <= 1e-9):
+        if debug is not None:debug.append(('across: reversed branch join', X.round(1).tolist()))
         return None
     zi, zj = _z_along(roads[ri][2], vi, si, ti), _z_along(roads[rj][2], vj, sj, tj)
     s = np.concatenate(([0.0], np.cumsum(np.hypot(*np.diff(curb2, axis=0).T))))
@@ -260,7 +279,6 @@ def _across(roads, bi, bj, cr, X, walk_w, debug=None):
     wki = spi.walk if walk_w is None else walk_w
     wkj = spj.walk if walk_w is None else walk_w
     wkc = max(wki, wkj)
-    ni, nj, nc = _left(ui), _left(uj), _left(uc)
     Oi = _line_x(Pi + ni * (wi + wki), ui, Pi - nc * (wc + wkc), uc)
     Oj = _line_x(Pj - nc * (wc + wkc), -uc, Pj - nj * (wj + wkj), uj)
     Oi = Pi + ni * (wi + wki) if Oi is None or a1.shape[0] == 1 else Oi
