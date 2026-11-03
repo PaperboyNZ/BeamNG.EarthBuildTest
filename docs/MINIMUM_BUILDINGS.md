@@ -1,7 +1,9 @@
 # Minimum building generation
 
-Select **Advanced** in World, then **Minimum** under Graphics > Building generation
-quality. New settings use Simple generation and Minimum for Advanced; saved
+Under **Graphics**, select **Advanced**, then **Minimum** for Building generation
+quality. Sidewalks & Property Grounds sits alongside it. Both quality controls
+stay visible but are disabled while Simple is selected; their saved values are kept.
+New settings use Simple generation and Minimum for Advanced; saved
 choices are preserved. Switching replaces complete products;
 existing buildings remain visible until their replacements are ready.
 
@@ -36,9 +38,14 @@ the full solver. Plane, coverage and height equivalence are tested.
 Minimum also reaches distant building workers. Worker context, cache keys,
 session filenames and memoization distinguish it from other levels. Entering or
 leaving Minimum queues distant replacements without dropping existing coverage.
-Its separate physical policy prevents reuse of a detailed collision plan after
-projected facade geometry has been removed. Adaptive pressure never upgrades
-Minimum behind the user's selected ceiling.
+Schema-30 candidate plans pin their physical recipe when accepted. A visual
+ceiling change cannot remove their projected collision or occupancy. Lowering a
+standard accepted building to Minimum retains its closed bay silhouettes;
+compact accepted buildings retain their compatible speed representation until
+anchored refinements are implemented. Optional site policies still have separate
+cache identities in this compatibility stage. Every quality mode now owns its
+performance policy; there is no independent adaptive toggle. Minimum never
+automatically upgrades behind the user's selected ceiling.
 
 ## Validation and performance
 

@@ -150,6 +150,7 @@ def wall_looks(spec,p):
     if preserve:return spec.facade,spec.facade,spec.facade
     mapping={'brick':b.BRICK_WALL,'stone':b.STONE,'wood':b.SIDING,'render':b.STUCCO,'metal':b.METALWALL,'concrete':b.CONCRETE}
     def look(family,rgb):
+        family=materials.wall_family(family, spec.inference.use.value)
         # Brick/stone textures already contain their base colour.
         tint=tuple(.76+.22*c for c in rgb) if family in ('brick','stone') else tuple(rgb)
         return b.custom_look(mapping[family],tint)

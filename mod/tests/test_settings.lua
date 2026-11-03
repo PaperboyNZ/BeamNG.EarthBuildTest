@@ -52,7 +52,7 @@ for _, p in ipairs(settings.PRESET_ORDER) do
   end
 end
 for _, k in ipairs(settings.PRESET_KEYS) do
-  T.check(settings.PRESETS.high[k] == (k == 'buildingQuality' and 'high' or d[k]), 'High preset maps ' .. k)
+  T.check(settings.PRESETS.high[k] == ((k == 'buildingQuality' or k == 'groundsQuality') and 'high' or d[k]), 'High preset maps ' .. k)
 end
 T.check(d.rebaseDistance == rebase.DEFAULT_DISTANCE and d.skyMode == 'real' and d.clouds == true
   and d.viewDistanceMode == 'horizon' and d.viewDistanceKm == 100 and d.hudVisible == false,
@@ -549,23 +549,34 @@ T.check(settings.load().buildingQuality == 'minimum', 'fresh building quality de
 files[settings.FILE] = {version=1,quality='ultra'}
 T.check(settings.load().buildingQuality == 'minimum', 'missing building choice defaults to Minimum on older presets')
 files[settings.FILE] = nil
--- Six visual ceilings retain old saved intent and send adaptation separately.
+-- Every quality mode owns its performance policy; no independent saved toggle.
 for _, q in ipairs({'minimum','very_low','low','medium','high','very_high','ultra'}) do
   T.check(settings.set('buildingQuality', q).ok, 'accept quality ' .. q)
-  settings.set('buildingAdaptive', true)
   local graphics = settings.serverGraphics()
-  T.check(graphics.buildingQuality == q and graphics.buildingAdaptive == true, 'send tier and adaptation ' .. q)
+  T.check(graphics.buildingQuality == q and graphics.buildingAdaptive == (q ~= 'minimum'), 'send tier policy ' .. q)
 end
 for _, old in ipairs({'lite','adaptive','full'}) do
   files[settings.FILE] = {version=1,quality='custom',buildingQuality=old}
   local migrated, warnings = settings.load()
   T.check(#warnings == 0, 'old quality migrates ' .. old)
   T.check(migrated.buildingQuality == (old == 'lite' and 'low' or 'ultra'), 'old quality ceiling ' .. old)
-  T.check(migrated.buildingAdaptive == (old ~= 'full'), 'old Full retains forced detail ' .. old)
+  T.check(migrated.buildingAdaptive == nil, 'retired toggle absent after migration ' .. old)
 end
 files[settings.FILE] = {version=1,quality='custom',buildingQuality='ultra',buildingAdaptive=false}
-T.check(settings.load().buildingAdaptive == false, 'explicit nonadaptive setting persists')
+local migrated, warnings = settings.load()
+T.check(migrated.buildingAdaptive == nil and #warnings == 0, 'retired override ignored without warnings')
+T.check(settings.serverGraphics().buildingAdaptive == true, 'saved false cannot bypass Ultra performance policy')
+T.check(not settings.set('buildingAdaptive', false).ok, 'retired control cannot be edited')
+settings.save()
+T.check(files[settings.FILE].buildingAdaptive == nil, 'retired toggle removed on save')
 T.check(settings.get('buildingQuality') == 'ultra', 'explicit saved Ultra survives default change')
+T.check(settings.get('groundsQuality') == 'ultra', 'missing grounds quality migrates once from saved building quality')
+T.check(settings.set('groundsQuality', 'low').ok, 'independent grounds quality accepted')
+settings.set('buildingQuality', 'minimum')
+T.check(settings.get('groundsQuality') == 'low', 'building quality leaves grounds choice alone')
+T.check(settings.serverGraphics().groundsQuality == 'low', 'grounds choice reaches graphics wire')
+settings.save();settings.load()
+T.check(settings.get('groundsQuality') == 'low' and settings.get('buildingQuality') == 'minimum', 'independent saved qualities restore')
 files[settings.FILE] = nil
 -- Generation persists and switches live, independently of visual quality.
 settings.load()

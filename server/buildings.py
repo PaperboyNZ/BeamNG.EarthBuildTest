@@ -341,7 +341,7 @@ def oriented_box(p):
 class Spec:
     """What is built for one footprint (decided by plan())."""
     __slots__ = ("ring", "floors", "floor_h", "height", "roof", "roof_mat", "facade", "band", "shop", "plain", "min_h", "wall", "door", "windows", "front", "steeple", "stoop",
-                 "sign", "porch", "cls", "seed", "deck", "pitch", "portal", "gring", "ship", "evidence", "footprint", "diagnostics", "inference", "facades", "garage_opening", "access", "site", "garage_access", "terminal", "church", "city", "roof_outline", "weather_exposure", "property_identity")
+                 "sign", "porch", "cls", "seed", "deck", "pitch", "portal", "gring", "ship", "evidence", "footprint", "diagnostics", "inference", "facades", "garage_opening", "access", "site", "garage_access", "terminal", "church", "city", "roof_outline", "weather_exposure", "property_identity", "physical_mode")
 
     def __init__(self, **kw):
         for k in self.__slots__:
@@ -810,7 +810,8 @@ def _legacy_plan(ring, attrs, neighbours=0, lat=None, lon=None, look=None, town=
         wall = f"{STUCCO}|{int(_hash01(seed, 'wc') * len(WALL_TINTS[STUCCO]))}"
         facade = wall
     elif fm in ("metal", "steel", "corrugated_iron", "aluminium") and not (barn or shed):
-        wall = f"{METALWALL}|{int(_hash01(seed, 'wc') * len(WALL_TINTS[METALWALL]))}"
+        kind = METALWALL if industrial else STUCCO
+        wall = f"{kind}|{int(_hash01(seed, 'wc') * len(WALL_TINTS[kind]))}"
         facade, plain = wall, False
     fc = parse_color(attrs.get("facade_color"))
     if fc is not None and not attrs.get("bridge_part"):
@@ -1734,7 +1735,7 @@ def build(specs_and_ground, lite=False, *, texture_facades=False):
     from buildgen.quality import current
     lite = lite or current().rank < 2
     texture_facades = texture_facades or current().rank == 0
-    from buildgen.minimum import enabled as minimum_enabled, draw as minimum_draw
+    from buildgen.minimum import visual_enabled as minimum_enabled, draw as minimum_draw
     compact = minimum_enabled()
     m = Mesh()
     for spec, gmin, gmax in specs_and_ground:
@@ -1755,7 +1756,7 @@ def build(specs_and_ground, lite=False, *, texture_facades=False):
             if churches.draw(m, spec, gmin, gmax, lite=lite):
                 continue
         if spec.footprint is not None:
-            if compact and spec.inference is not None:
+            if (compact or minimum_enabled(spec)) and spec.inference is not None:
                 minimum_draw(m,spec,gmin,gmax)
                 continue
             from buildgen.geometry import draw
@@ -1833,8 +1834,7 @@ def collision_mesh(specs_and_ground):
     oriented box), parking decks as drawn; (positions, uvs, tris, tri materials, MATERIALS, colours) or None.
     The drawn mesh (windows a quad per bay and floor, cornices, signs) cost the game's collision rebuild ~30 ms of
     a 40 ms rebuild in Fells Point (2026-10-15), every few seconds while driving; this one is ~1/20 of its triangles."""
-    from buildgen.minimum import enabled as minimum_enabled, collision as minimum_collision
-    compact = minimum_enabled()
+    from buildgen.minimum import physical_enabled, collision as minimum_collision
     m = Mesh()
     tok = (MATERIALS.index(PANEL), (128, 128, 128, 255))
     zero = (0.0, 0.0)
@@ -1850,7 +1850,7 @@ def collision_mesh(specs_and_ground):
             if churches.draw(m, spec, gmin, gmax, collision=True):
                 continue
         if spec.footprint is not None:
-            if compact and spec.inference is not None:
+            if physical_enabled(spec) and spec.inference is not None:
                 minimum_collision(m,spec,gmin,gmax)
                 continue
             from buildgen.geometry import draw
@@ -3070,8 +3070,8 @@ def collider_boxes(items, x0, y0):
             from buildgen.regional_supports import boxes as support_boxes
             out.extend(support_boxes(spec,gmin,gmax,x0,y0))
             from buildgen.regional_facade_details import bay_boxes
-            from buildgen.minimum import enabled as minimum_enabled
-            if not minimum_enabled():out.extend(bay_boxes(spec,gmin,gmax,x0,y0))
+            from buildgen.minimum import physical_enabled
+            if not physical_enabled(spec):out.extend(bay_boxes(spec,gmin,gmax,x0,y0))
             from buildgen.regional_roof_details import gable_boxes
             out.extend(gable_boxes(spec,gmin,gmax,x0,y0))
             if spec.access is not None:

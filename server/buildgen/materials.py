@@ -77,3 +77,8 @@ def roof_scale(family):
     """
     size = {"metal": 1.2, "copper": 1.2, "tile": 2.4, "slate": 2.4, "shingle": 3., "thatch": 1.8}.get(family, 6.)
     return size, size
+
+
+def wall_family(family, use):
+    """Reserve corrugated wall stock for utilitarian building uses."""
+    return "render" if family == "metal" and use not in ("industrial", "agricultural", "ancillary") else family

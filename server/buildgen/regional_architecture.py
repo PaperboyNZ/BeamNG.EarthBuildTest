@@ -174,7 +174,7 @@ def wall_materials(spec,p,mats,body):
              'concrete':b.CONCRETE,'metal':b.METALWALL}
     result=[]
     for key in ('base_material','upper_material'):
-        family=p.get(key)
+        family=materials.wall_family(p.get(key), spec.inference.use.value)
         if family not in mapping:result.append(body);continue
         rgb=tuple(p.get('timber_colour',p['accent'])) if family=='wood' and p.get('massing_grammar') in ('alpine_timber','east_asian_timber') else \
             (.92,.91,.88) if family in ('stone','brick','concrete') else wall_colour(

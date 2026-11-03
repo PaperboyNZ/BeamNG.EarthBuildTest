@@ -15,6 +15,7 @@
       <div class="earth-help-title">{{ help ? help.name : "" }}</div>
       <div class="earth-help-text">{{ help ? help.desc : "Point at a setting to see what it does." }}</div>
       <div v-if="help && help.note" class="earth-note">{{ help.note }}</div>
+      <div v-if="help && isItemDisabled(help)" class="earth-note">{{ help.disabledReason }}</div>
     </div>
 
     <div class="earth-side-buttons">
@@ -28,7 +29,7 @@
 import { onMounted, onUnmounted } from "vue"
 import { BngButton, BngCardHeading, ACCENTS } from "@/common/components/base"
 import {
-  help, update, bannerText, bannerLevel, connectionText, statusText, openUpdate, showWelcome, close,
+  help, update, bannerText, bannerLevel, connectionText, statusText, openUpdate, showWelcome, close, isItemDisabled,
   startPolling, stopPolling,
 } from "./earthSettingsStore.js"
 

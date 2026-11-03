@@ -1657,7 +1657,7 @@ class Server:
 
 
     def build_roads_geo(self, aid, gx, gy, content=True, skin=True, exact=None, progress_token=None,
-                        building_detail='full', building_view=None):
+                        building_detail='full', building_view=None, grounds_quality=None):
         """blockworker.roads_geo in a road process: geotile (gx, gy)'s content (once: kept by the mod across
         rebases), anchor aid's skin and exact variants. Its gas station pads kept for the ground's painters. None
         when the anchor is gone. Worker threads (roads.GeoTracker)."""
@@ -1666,13 +1666,15 @@ class Server:
             return None
         lh, mph, buried, lamps, country, gzoom = self.geo_rules(gx, gy)
         import building_settings
+        from buildgen.grounds_quality import effective
+        mode=building_settings.current()
         fut = self.road_pool.submit(
-            building_settings.run, building_settings.current(), blockworker.roads_geo,
+            building_settings.run, mode, blockworker.roads_geo,
             aid, anchor.lat, anchor.lon, anchor.zooms[0], gx, gy, gzoom, self.out_dir,
             self.vfs_dir, self.sidewalks, DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0,
             self.buildings, lh, mph, self.anchor_q(anchor) if skin else None, self.gas_stations, buried, lamps,
             country, content, skin, exact, progress_token, building_detail, building_view,
-            submitted_at=time.perf_counter())
+            submitted_at=time.perf_counter(),grounds_quality=effective(grounds_quality,mode))
         t0, waited = time.perf_counter(), []
         try:
             res = poolsmod.result_running(fut, ROAD_TILE_TIMEOUT_S, waited)
@@ -1729,7 +1731,12 @@ class Server:
             gx, gy, gzoom, scratch, self.buildings, lh, mph, self.gas_stations, buried, lamps, country),
             ROAD_TILE_TIMEOUT_S)
 
-    def build_roads_tile(self, aid, tx, ty):
+    def build_roads_tile(self, aid, tx, ty, grounds_quality=None):
+        from buildgen import grounds_quality as grounds
+        import building_settings
+        return grounds.run(grounds.effective(grounds_quality,building_settings.current()),self._build_roads_tile,aid,tx,ty)
+
+    def _build_roads_tile(self, aid, tx, ty):
         """roads.py: one road tile of anchor aid, written to the session folder. Returns (vfs path,
         chunks) or None if the anchor is gone. Worker threads (fetches the map cells it lacks)."""
         anchor = self.anchors.get(aid)
@@ -1741,7 +1748,8 @@ class Server:
                 blockworker.roads_tile, aid, anchor.lat, anchor.lon, anchor.zooms[0], tx, ty, self.out_dir,
                 self.vfs_dir, self.sidewalks, DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0,
                 self.buildings, self.left_hand(anchor), self.mph(anchor), self.anchor_q(anchor),
-                self.gas_stations, self.buried(anchor), self.lamp_region(anchor), self.country(anchor))
+                self.gas_stations, self.buried(anchor), self.lamp_region(anchor), self.country(anchor),
+                grounds_quality=__import__('buildgen.grounds_quality',fromlist=['current']).current())
             try:
                 # bounded: a worker that never answered held this thread and its roads.Tracker slot for good (4
                 # slots: four hung tiles and no road tile ever again, the loading line at "roads & buildings 0/26")
@@ -4914,7 +4922,17 @@ class Connection:
             for name in ('bldfar','bldsky'):
                 tracker=getattr(self,name,None)
                 if hasattr(tracker,'change_generator'):tracker.change_generator()
-        if type(msg.get('buildingAdaptive')) is bool:self.building_adaptive=msg['buildingAdaptive']
+        if getattr(self,'building_quality',None) in NAMES:
+            self.building_adaptive=self.building_quality!='minimum'
+        elif type(msg.get('buildingAdaptive')) is bool:
+            self.building_adaptive=msg['buildingAdaptive']  # compatibility with unnamed legacy modes
+        grounds=msg.get('groundsQuality')
+        if grounds in NAMES:
+            prior=getattr(self,'grounds_quality',None)
+            self.grounds_quality=grounds
+            tracker=getattr(self,'roads',None)
+            if prior!=grounds and (prior is not None or getattr(tracker,'sent',None) or getattr(tracker,'building',None)):
+                if hasattr(tracker,'change_generator'):tracker.change_generator(self)
         detail_m=msg.get('buildingDetailM')
         if type(detail_m) in (int,float) and math.isfinite(detail_m):
             self.building_detail_m=min(640.,max(100.,float(detail_m)))
@@ -4943,11 +4961,11 @@ class Connection:
             far = far or cap != self.view_cap
             self.view_cap = cap
         log.info("graphics: terrain detail x%.2f, trees to %.0f m, far buildings to %.0f m, ground photo %d px, view %s; "
-                 "buildingQuality=%s, buildingAdaptive=%s, buildingDetailM=%s",
+                 "buildingQuality=%s, buildingAdaptive=%s, buildingDetailM=%s, groundsQuality=%s",
                  self.lod_scale, self.veg.send_m, self.bldfar.send_m, self.s.base_px,
                  "to the horizon" if self.view_cap is None else f"{self.view_cap / 1000:.0f} km",
                  getattr(self, 'building_quality', None), getattr(self, 'building_adaptive', None),
-                 getattr(self, 'building_detail_m', None))
+                 getattr(self, 'building_detail_m', None),getattr(self,'grounds_quality',None))
         if far and self.active is not None:
             self.update_far()
 
@@ -5588,14 +5606,20 @@ class Connection:
         if self.s.mapdata is not None and aid == self.active:
             if getattr(self.roads, "geo", False):
                 anchor = self.s.anchors.get(aid)
-                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), self.s.build_roads_geo,
+                import functools
+                road_builder=functools.partial(self.s.build_roads_geo,
+                    grounds_quality=getattr(self,'grounds_quality',None))
+                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), road_builder,
                                    vel=self.vel, ground_busy=self.terrain_wait > 0, view=self.view_at,
                                    foci=self.foci, frame=anchor.frame if anchor is not None else None)
                 # (the sign tiles stay the anchor's: each once the road geotiles under it are in)
                 ready = self.roads.ready_tiles(anchor.frame, *self.focus, roadsmod.SEND_M) if anchor is not None \
                     else set()
             else:
-                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), self.s.build_roads_tile,
+                import functools
+                road_builder=functools.partial(self.s.build_roads_tile,
+                    grounds_quality=getattr(self,'grounds_quality',None))
+                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), road_builder,
                                    vel=self.vel, ground_busy=self.terrain_wait > 0, view=self.view_at,
                                    foci=self.foci)
                 ready = self.roads.sent

@@ -74,14 +74,14 @@ def draw(mesh, spec, gmin, gmax, collision=False, lite=False, texture_facades=Fa
         from . import regional_roof_details as roof_details
         horizontal(mesh, fp, top-(.9 if roof_details.recessed_deck(spec) else 0.), mats[spec.roof_mat], b.ROOF_UV_M)
         roof_details.draw(mesh,spec,top,roof_details.looks(spec,mats))
-    if spec.inference is not None and spec.roof != "flat" and not collision:
+    if spec.inference is not None and spec.inference.roof_solver != 'fast' and spec.roof != "flat" and not collision:
         from .roofs import eaves
         eaves(mesh, spec, top, mats)
         from .attics import draw_windows
         draw_windows(mesh, spec, top, mats, lite=lite)
         from .regional_facade_details import draw_gable_frame
         draw_gable_frame(mesh,spec,top,mats)
-    if spec.inference is not None and spec.roof != "flat" and not collision and not lite:
+    if spec.inference is not None and spec.inference.roof_solver != 'fast' and spec.roof != "flat" and not collision and not lite:
         from .details import rainwater,roof_caps
         if quality.rank >= 4:rainwater(mesh,spec,top,mats,gmin,gmax,detail=quality.rank >= 5)
         if quality.rank >= 5:roof_caps(mesh,spec,top,mats)

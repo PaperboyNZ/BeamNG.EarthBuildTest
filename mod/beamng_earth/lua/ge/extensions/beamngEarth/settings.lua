@@ -59,7 +59,8 @@ M.SCHEMA = {
     label = 'Building generation' },
   buildingQuality = { kind = 'enum', default = 'minimum', values = { 'minimum', 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
     label = 'Building generation quality' },
-  buildingAdaptive = { kind = 'bool', default = true, label = 'Adaptive building performance' },
+  groundsQuality = { kind = 'enum', default = 'minimum', values = { 'minimum', 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
+    label = 'Sidewalks & Property Grounds' },
   buildingDetailM = { kind = 'number', default = 350, min = 100, max = 640,
     label = 'Building refinement distance (m)' },
   -- the drawn terrain block's aerial photo (px over the 1 km block; terrain.setPhotoSize, the server's photoPx):
@@ -133,7 +134,7 @@ M.SCHEMA = {
   updateDismissed = { kind = 'string', default = '', maxLen = 40, label = 'Update notice dismissed (version)' },
   devNoticeSeen = { kind = 'string', default = '', maxLen = 40, label = 'Development build notice seen (version)' },
 }
-M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'buildingGenerator', 'buildingQuality', 'buildingAdaptive', 'buildingDetailM', 'objectDetail',
+M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'buildingGenerator', 'buildingQuality', 'groundsQuality', 'buildingDetailM', 'objectDetail',
   'grassDistance', 'nightLights', 'rebaseDistance', 'viewDistanceMode', 'viewDistanceKm', 'hazeStrength', 'skyMode', 'clouds',
   'weatherMode', 'realGravity', 'groundCover', 'groundCoverDensity', 'rocks', 'roads', 'highwaySigns', 'dashboardSatellite',
   'hudVisible', 'statusBar', 'profilerMode', 'runtimeProfiler',
@@ -150,23 +151,23 @@ M.HIDDEN = { welcomeSeen = true, updateDismissed = true, devNoticeSeen = true, q
 -- quality setting that puts everything at max quality to the real horizon"): every knob at its most, never picked by
 -- the first run (M.detectQuality).
 M.PRESET_KEYS = { 'trees', 'treeDistance', 'groundCover', 'groundCoverDensity', 'grassDistance', 'rocks', 'nightLights',
-  'viewDistanceMode', 'viewDistanceKm', 'terrainDetail', 'buildingDistance', 'buildingQuality', 'buildingAdaptive', 'buildingDetailM', 'groundPhoto', 'objectDetail' }
+  'viewDistanceMode', 'viewDistanceKm', 'terrainDetail', 'buildingDistance', 'buildingQuality', 'groundsQuality', 'buildingDetailM', 'groundPhoto', 'objectDetail' }
 M.PRESETS = {
   low = { trees = 'low', treeDistance = 'near', groundCover = false, groundCoverDensity = 'low', grassDistance = 'near',
     rocks = true, nightLights = 'few', viewDistanceMode = 'fixed', viewDistanceKm = 40, terrainDetail = 'low',
-    buildingDistance = 'near', buildingQuality = 'low', buildingAdaptive = true, buildingDetailM = 200, groundPhoto = '1024', objectDetail = 'game' },
+    buildingDistance = 'near', buildingQuality = 'low', groundsQuality = 'low', buildingDetailM = 200, groundPhoto = '1024', objectDetail = 'game' },
   medium = { trees = 'medium', treeDistance = 'medium', groundCover = true, groundCoverDensity = 'low',
     grassDistance = 'normal', rocks = true, nightLights = 'few', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'medium', buildingAdaptive = true, buildingDetailM = 250, groundPhoto = '2048', objectDetail = 'game' },
+    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'medium', groundsQuality = 'medium', buildingDetailM = 250, groundPhoto = '2048', objectDetail = 'game' },
   high = { trees = 'normal', treeDistance = 'normal', groundCover = true, groundCoverDensity = 'normal',
     grassDistance = 'normal', rocks = true, nightLights = 'normal', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'high', buildingAdaptive = true, buildingDetailM = 350, groundPhoto = '2048', objectDetail = 'game' },
+    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'high', groundsQuality = 'high', buildingDetailM = 350, groundPhoto = '2048', objectDetail = 'game' },
   ultra = { trees = 'high', treeDistance = 'far', groundCover = true, groundCoverDensity = 'high', grassDistance = 'normal',
     rocks = true, nightLights = 'many', viewDistanceMode = 'horizon', viewDistanceKm = 100, terrainDetail = 'high',
-    buildingDistance = 'far', buildingQuality = 'very_high', buildingAdaptive = true, buildingDetailM = 500, groundPhoto = '2048', objectDetail = 'game' },
+    buildingDistance = 'far', buildingQuality = 'very_high', groundsQuality = 'very_high', buildingDetailM = 500, groundPhoto = '2048', objectDetail = 'game' },
   extreme = { trees = 'extreme', treeDistance = 'max', groundCover = true, groundCoverDensity = 'high',
     grassDistance = 'far', rocks = true, nightLights = 'many', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'extreme', buildingDistance = 'max', buildingQuality = 'ultra', buildingAdaptive = true, buildingDetailM = 640, groundPhoto = '4096', objectDetail = 'extreme' },
+    terrainDetail = 'extreme', buildingDistance = 'max', buildingQuality = 'ultra', groundsQuality = 'ultra', buildingDetailM = 640, groundPhoto = '4096', objectDetail = 'extreme' },
 }
 M.PRESET_ORDER = { 'low', 'medium', 'high', 'ultra', 'extreme' }
 
@@ -214,7 +215,7 @@ values = defaults() -- until load(): the defaults (= today's behaviour)
 
 -- Settings no longer on the page, left in older files: ignored without a warning (gasStations: gas stations are
 -- always on since the user's 2026-10-25 "make gas station always enabled and remove the toggle")
-M.RETIRED = { gasStations = true }
+M.RETIRED = { gasStations = true, buildingAdaptive = true }
 
 -- A valid value for key, or nil + error. Numbers are clamped to the range; strings that read as a
 -- number or boolean are accepted (the page sends what its controls hold).
@@ -256,7 +257,6 @@ function M.load(path)
       end
     end
     M.fillNewKnobs(data)
-    if data.buildingAdaptive == nil and data.buildingQuality == 'full' then values.buildingAdaptive = false end
   elseif ok and data ~= nil then
     warnings[#warnings + 1] = 'settings file is not an object'
   elseif not ok and data ~= nil then
@@ -275,6 +275,7 @@ function M.fillNewKnobs(data)
   for _, k in ipairs(M.PRESET_KEYS) do
     if data[k] == nil then
       if k == 'buildingQuality' then values[k] = M.SCHEMA[k].default
+      elseif k == 'groundsQuality' then values[k] = values.buildingQuality
       elseif preset then values[k] = preset[k]
       elseif k == 'treeDistance' and data.trees ~= nil then values[k] = M.TREE_DISTANCE_OF[values.trees] or values[k] end
     end
@@ -313,7 +314,7 @@ function M.resolveAuto(gpu)
     values.quality = M.matchingPreset() or 'custom'
   else
     for _, k in ipairs(M.PRESET_KEYS) do
-      if k ~= 'buildingQuality' then values[k] = M.PRESETS[pick][k] end
+      if k ~= 'buildingQuality' and k ~= 'groundsQuality' then values[k] = M.PRESETS[pick][k] end
     end
     values.quality = M.matchingPreset() or 'custom'
   end
@@ -416,7 +417,10 @@ function M.serverGraphics()
     treeScale = okT and trees.distanceScale and trees.distanceScale(values.treeDistance) or 1.0,
     buildingScale = M.BUILDING_DISTANCE[values.buildingDistance] or 1.0,
     buildingQuality = values.buildingQuality,
-    buildingAdaptive = values.buildingAdaptive,
+    -- Compatibility wire field for older servers. Each quality mode owns this
+    -- policy; it is no longer an independently saved or editable preference.
+    buildingAdaptive = values.buildingQuality ~= 'minimum',
+    groundsQuality = values.groundsQuality,
     buildingDetailM = values.buildingDetailM,
     photoPx = okR and terrain.photoSize and terrain.photoSize() or tonumber(values.groundPhoto),
     -- a fixed view distance: the far field's radius at most (nothing past it is drawn); 0 = the real horizon
@@ -470,10 +474,10 @@ M.APPLY = {
   terrainDetail = sendGraphics,
   buildingDistance = sendGraphics,
   buildingQuality = sendGraphics,
+  groundsQuality = sendGraphics,
   buildingGenerator = function()
     net.send({ type = 'building_generator', value = values.buildingGenerator })
   end,
-  buildingAdaptive = sendGraphics,
   buildingDetailM = sendGraphics,
   groundPhoto = function(v)
     require('beamngEarth/terrain').setPhotoSize(tonumber(v))

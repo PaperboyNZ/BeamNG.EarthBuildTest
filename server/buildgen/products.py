@@ -1,7 +1,8 @@
 """Persistent accepted plans, physical products and independent visual upgrades."""
 from runtimeprofiler import step as profile_step
 from pathlib import Path
-import hashlib,json,math,os,pickle,re
+import hashlib,json,math,os,pickle,re,time
+from contextlib import contextmanager
 from productcache import Store,identity
 from sitegen.identity import SourceIdentity,SourceRevision,GeographicFrame
 import inputwatch
@@ -28,6 +29,16 @@ def valid_reference(value):
     """Internal immutable-product reference, independent of session shape paths."""
     return (isinstance(value,dict) and set(value)=={'key','revision'} and
             all(isinstance(value[k],str) and re.fullmatch(r'[a-f0-9]{64}',value[k]) for k in value))
+
+
+def plan_record(items, physical_revision, dependencies, inputs, shared_sites=()):
+    """Construct a new acceptance record; never reuse obsolete fingerprints."""
+    from .accepted_contracts import capture
+    semantic, physical = capture(items, physical_revision, dependencies['frame'],
+                                 dependencies['building_site_policy'])
+    return dict(plans=items, physical_revision=physical_revision,
+                semantic_plan=semantic, physical_plan=physical,
+                inputs=inputs, dependencies=dependencies, shared_sites=shared_sites)
 
 
 def _current_inputs(records):
@@ -64,6 +75,8 @@ def load_accepted(store,tile,key,revision=None):
             any(not isinstance(it,tuple) or len(it)!=3 or type(it[0]) is not BuildingPlan or
                 any(type(z) not in (float,int) or not math.isfinite(z) for z in it[1:]) for it in items)):
         return None
+    from .accepted_contracts import valid
+    if not valid(value, deps):return None
     return plan
 
 
@@ -121,7 +134,54 @@ def property_part_names(base_count, extra_count):
     return ['bld' if n == 0 else f'bld{n+1}' for n in range(base_count, base_count+extra_count)]
 
 
+@contextmanager
+def _acceptance_lock(store,key,wait_s=2.):
+    """A bounded, strict single-writer lock for the paired acceptance records.
+
+    Unlike download coalescing, timeout/permission failure never grants an
+    unlocked write. A losing cold producer can adopt the winner's complete
+    product; it cannot replace the accepted plan with its visual target.
+    """
+    import xproc
+    path=store.path('accepted-plan',key).with_suffix('.accept.lock')
+    held=False;start=time.monotonic()
+    try:
+        path.parent.mkdir(parents=True,exist_ok=True)
+        while True:
+            try:
+                fd=os.open(path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+            except FileExistsError:
+                try:
+                    pid=int(path.read_text())
+                    if not xproc.alive(pid):path.unlink();continue
+                except ValueError:
+                    try:
+                        if time.time()-path.stat().st_mtime>120.:path.unlink();continue
+                    except OSError:pass
+                except OSError:pass
+                if time.monotonic()-start>=wait_s:break
+                time.sleep(.02)
+                continue
+            except OSError:break
+            try:os.write(fd,str(os.getpid()).encode())
+            finally:os.close(fd)
+            held=True;break
+    except OSError:pass
+    try:yield held
+    finally:
+        if held:
+            try:path.unlink()
+            except OSError:pass
+
+
 def retain(worker,tile,key,dependencies,P,out_dir,vfs_dir,n,info,watched):
+    store=Store(worker._s.cache_dir)
+    with _acceptance_lock(store,key) as held:
+        if not held:return False
+        return _retain(worker,tile,key,dependencies,P,out_dir,vfs_dir,n,info,watched,store)
+
+
+def _retain(worker,tile,key,dependencies,P,out_dir,vfs_dir,n,info,watched,store):
     """Commit only complete accepted plans and their matching physical revision."""
     if not getattr(P,'plans',None) or watched is None:return False
     names=worker.geo_names(tile.key,parts=info.get('parts'))
@@ -129,9 +189,15 @@ def retain(worker,tile,key,dependencies,P,out_dir,vfs_dir,n,info,watched):
     if 'bldcol' not in info.get('parts',{}):return False
     visual=set(data.get('buildingChunks',{}).get('visual',()))
     if not visual:return False
-    store=Store(worker._s.cache_dir)
-    planned=store.put('accepted-plan',key,dict(plans=P.plans,physical_revision=data['physicalHash'],
-                     inputs=watched,dependencies=dependencies,shared_sites=getattr(P,'shared_courts',())))
+    previous=load_accepted(store,tile,key)
+    physical=store.load('physical',key)
+    if (previous is not None and physical.status=='ready' and isinstance(physical.value,dict) and
+            physical.value.get('plan_revision')==previous.revision):
+        # Another producer already accepted this source/frame. Keep that
+        # authority even when this cold request chose a different presentation.
+        return False
+    planned=store.put('accepted-plan',key,plan_record(P.plans,data['physicalHash'],dependencies,
+                     watched,getattr(P,'shared_courts',())))
     if planned.status!='ready':return False
     physical=_replace_paths(data,vfs_dir+'/', '@V@/')
     physical.pop('h',None);physical.pop('buildingGroups',None);physical.pop('buildingDetail',None)
@@ -173,7 +239,14 @@ def refine(worker,tile,key,out_dir,vfs_dir,detail):
             physical.value['plan_revision']!=plan.revision):return None
     accepted=physical.value
     if accepted['data']['physicalHash']!=plan.value['physical_revision']:return None
-    visual_key=identity(dict(plan=plan.revision,quality=detail))
+    from .presentation_contracts import ComponentIdentity, ComponentProduct, ComponentCost
+    from .quality import rank
+    compact=all(s.physical_mode=='compact' for s,_,_ in plan.value['plans'])
+    component=ComponentIdentity(plan.value['semantic_plan'].revision,plan.value['physical_revision'],
+        'legacy_building',tile.key,'schema30-compat:'+detail,
+        'speed' if compact or detail=='minimum' else 'fast' if rank(detail)<=2 else 'detailed',
+        str(plan.value['dependencies']['generator']))
+    visual_key=component.key()
     names=worker.geo_names(tile.key)
     origin=[float(v) for v in tile.box[:2]]+[0.]
     def build_visual():
@@ -186,7 +259,7 @@ def refine(worker,tile,key,out_dir,vfs_dir,detail):
             material_manifest['parts'] = property_part_names(base_count, len(extra))
         meshes = list(meshes) + extra
         if not meshes:raise ValueError('accepted building plan produced no visual coverage')
-        entries={};blobs={};parts={};hashes={}
+        entries={};blobs={};parts={};hashes={};vertices=primitives=0;bounds=[]
         for index,mesh in enumerate(meshes):
             what='bld' if not index else f'bld{index+1}'
             name=worker.geo_names(tile.key,parts={what:{}})[what]
@@ -197,14 +270,29 @@ def refine(worker,tile,key,out_dir,vfs_dir,detail):
             blob=path.read_bytes();info=worker._shape_info(str(path),origin,what);info['col']=False
             entries[what]=dict(shape='@V@/'+name,pos=origin,**{k:v for k,v in info.items() if k!='col'})
             parts[what]=info;blobs[name]=blob;hashes[what]=hashlib.sha256(blob).hexdigest()
+            import numpy as np
+            levels=[mesh]+([mesh[6]] if len(mesh)>6 and mesh[6] is not None else [])
+            for level in levels:
+                vertices+=len(level[0]);primitives+=len(np.unique(level[3]))
+                bounds.append((np.asarray(level[0]).min(axis=0)+origin,np.asarray(level[0]).max(axis=0)+origin))
         quality=ACTIVE.get().detail if ACTIVE.get() else detail
-        return dict(entries=entries,files={**blobs, **assets},parts=parts,hashes=hashes,groups=groups,detail=quality,
-                    property_materials=_replace_paths(material_manifest, vfs_dir+'/', '@V@/'))
-    visual=store.get_or_build('visual-'+detail.replace('_','-'),visual_key,build_visual,
+        payload=dict(entries=entries,parts=parts,hashes=hashes,groups=groups,detail=quality,
+                     property_materials=_replace_paths(material_manifest, vfs_dir+'/', '@V@/'))
+        files=tuple(sorted({**blobs,**assets}.items()))
+        size=sum(len(blob) for _,blob in files)
+        # Conservative compatibility prior; this is an estimate, not a measured
+        # attribution of delayed engine/GPU work. The client governor is final.
+        cost=ComponentCost(size,vertices,primitives,len(parts),max(len(parts)*3.,size/(1<<20)*2.))
+        limits=tuple(float(x) for x in np.r_[np.min([v[0] for v in bounds],axis=0),
+                                             np.max([v[1] for v in bounds],axis=0)])
+        return ComponentProduct(component,json.dumps(payload,sort_keys=True,separators=(',',':'),
+                                allow_nan=False).encode(),files,cost,limits,tuple(sorted(entries)))
+    visual=store.get_or_build('presentation-component',visual_key,build_visual,
                              valid=lambda:inputwatch.current(plan.value['inputs']) and
                                  (ACTIVE.get() is None or ACTIVE.get().detail==detail))
     if visual.value is None:return None
-    visual=visual.value
+    if type(visual.value) is not ComponentProduct or visual.value.component!=component:return None
+    visual=visual.value.publication()
     # Essential files are byte-identical to the previously accepted physical
     # product. Publish metadata last; failure leaves the client's complete stage.
     for name,blob in {**accepted['files'],**visual['files']}.items():

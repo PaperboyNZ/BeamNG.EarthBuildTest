@@ -29,6 +29,7 @@ class Dormer:
 
 def plan(spec):
     r = spec.inference
+    if getattr(r, 'roof_solver', 'detailed') == 'fast':return (), ()
     if (r is None or spec.roof == 'flat' or r.use.value not in ('residential', 'unknown')
             or spec.windows is False or spec.plain or spec.floors > 3
             or spec.height > 12. or spec.church or spec.terminal or spec.city
@@ -44,7 +45,7 @@ def plan(spec):
 def _plan(fp, outline, kind, variant, rise, dormer_style, seed):
     from shapely.geometry import Polygon
     from shapely.ops import unary_union
-    roof = roofs.envelope(outline or fp, kind, variant)
+    roof = roofs.envelope(outline or fp, kind, variant, solver='detailed')
     windows = []
     # Fit glazing against both upper corners of each actual wall edge. This
     # handles saltbox/broken gables without assuming a symmetric triangle.

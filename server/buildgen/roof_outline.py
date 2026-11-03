@@ -11,6 +11,11 @@ def fit(spec,imagery=False):
     if not imagery or getattr(spec,'roof_outline',None) is not None:return
     if (spec.inference is None or spec.footprint is None or spec.roof=='flat'
             or spec.church or spec.terminal or spec.city or spec.deck):return
+    if spec.inference.roof_solver == 'fast' and not spec.footprint.is_rectangle():
+        # A flush low-tier silhouette keeps source walls/holes intact without
+        # adding offset/buffer work for newly pitched complex imagery outlines.
+        spec.diagnostics=tuple(spec.diagnostics or ())+('fast_roof_flush_outline',)
+        return
     import buildings as b
     from . import roof_edges,roofs
     t=roof_edges.treatment(spec,outline=True)

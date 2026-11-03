@@ -366,7 +366,7 @@ def draw(mesh, spec, gmin, gmax, bottom, lite=False, textured=False):
     from . import commercial_detail
     # Very Low keeps the accepted aperture grid and regional paint; avoid
     # planning small commercial trim which will never be emitted.
-    detail_plan=commercial_detail.plan(spec,layout,shared,commercial.detail_family(spec)) if quality.rank else None
+    detail_plan=commercial_detail.plan(spec,layout,shared,commercial.detail_family(spec)) if quality.rank >= 2 else None
     detail_elevations={(e.boundary,e.edge):e.components for e in detail_plan.elevations} if detail_plan else {}
     base = b.base_z(spec, gmin, gmax) + (spec.min_h or 0.)
     mats = b._Looks(spec.seed)

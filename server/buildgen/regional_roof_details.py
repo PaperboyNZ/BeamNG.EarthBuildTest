@@ -14,6 +14,7 @@ def box(centre, u, hx, hy, low, high):
 
 
 def plan(spec):
+    if getattr(spec.inference, 'roof_solver', 'detailed') == 'fast' and spec.roof != 'flat':return ()
     if not spec.inference or spec.plain or spec.church or spec.terminal or spec.city or spec.deck:
         return ()
     return _plan(spec.footprint, spec.roof_outline, spec.roof, roofs.variant(spec),
@@ -31,7 +32,7 @@ def _plan(fp, outline, kind, variant, rise, selected, min_h):
         if high>low and shape.covers(Polygon([p[:2] for p in faces[0]])):
             result.append((kind,material,faces))
     if kind!='flat':
-        roof=roofs.envelope(outline or fp,kind,variant)
+        roof=roofs.envelope(outline or fp,kind,variant,solver='detailed')
         from .stepped_gables import fits
         if 'stepped_gable' in selected and fits(fp,kind,variant,rise):
             for a,d in zip(fp.outer,fp.outer[1:]+fp.outer[:1]):

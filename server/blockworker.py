@@ -533,17 +533,20 @@ def terrain_patch(aid, lat, lon, zoom, box, path):
 
 
 def roads_tile(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks, lift, buildings=False, left_hand=False,
-               mph=True, q=None, gas_stations=False, buried=0.0, lamp_region=None, country=None):
+               mph=True, q=None, gas_stations=False, buried=0.0, lamp_region=None, country=None, grounds_quality=None):
     """earthd.Server.build_roads_tile here (road-tile pool): the anchor's road tile (tx, ty) built and
     written; returns roads.write_tile's (vfs path, chunks) and its stations' pads (gasstations.tile_sites pads: the
     server keeps them for the ground's painters). In the server's process its Python made up
     ~80 % of the main process's busy threads (in-game profile 2026-10-13): the block photos and far
     textures waited for the GIL. A tile built in this anchor's place before comes from the revisit cache."""
     watch = _stack_watch(f"road tile {tx}_{ty}")
+    from buildgen import grounds_quality as grounds
+    grounds_state=grounds.CURRENT.set(grounds_quality)
     try:
         return _roads_tile_cached(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks, lift, buildings,
                                   left_hand, mph, q, gas_stations, buried, lamp_region, country)
     finally:
+        grounds.CURRENT.reset(grounds_state)
         watch.cancel()
 
 
@@ -593,7 +596,8 @@ def _roads_tile_cached(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks,
     import revisit
     k = revisit.key("roads", round(float(lat), 7), round(float(lon), 7), zoom, tx, ty, bool(sidewalks), float(lift),
                     bool(buildings), bool(left_hand), bool(mph), None if q is None else float(q), bool(gas_stations),
-                    _s.md.versions() if _s.md is not None else None, float(buried), lamp_region, country)
+                    _s.md.versions() if _s.md is not None else None, float(buried), lamp_region, country,
+                    __import__('buildgen.grounds_quality',fromlist=['recipe_identity']).recipe_identity())
     wh = _where_enu(lat, lon, *roadsmod_tile_bbox(tx, ty),
                     sidewalks=bool(sidewalks), lift=float(lift), buildings=bool(buildings),
                     gas_stations=bool(gas_stations), md=_md_versions())
@@ -1198,7 +1202,7 @@ def _geo_content_key(key, zoom, buildings, left_hand, mph, gas_stations, buried,
     import revisit
     return revisit.key("roadsg", str(key), int(zoom), bool(buildings), bool(left_hand), bool(mph), bool(gas_stations),
                        _md_versions() if md is None else md, float(buried), lamp_region, country, GEO_SKIN_MARGIN_M,
-                       building_detail)
+                       building_detail, __import__('buildgen.grounds_quality',fromlist=['recipe_identity']).recipe_identity())
 
 
 def _property_cache_files(data, out_dir, vfs_dir):
@@ -1293,6 +1297,7 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
     import geotiles
     import revisit
     import json
+    from buildgen import products
     from buildgen.progressive import ACTIVE, DETAIL
     _stages, mark = _stage_clock()
     tile = geotiles.geobox(gx, gy)
@@ -1301,6 +1306,13 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
     k = _geo_content_key(tile.key, zoom, buildings, left_hand, mph, gas_stations, buried, lamp_region, country,
                          building_detail=requested_detail)
     got = revisit.load(_s.cache_dir, "roadsg", k)
+    if got is not None:
+        ref=(got[1].get('info') or {}).get('acceptedPlan')
+        if products.valid_reference(ref):
+            from productcache import Store
+            accepted=products.load_accepted(Store(_s.cache_dir),tile,ref['key'])
+            if accepted is not None and accepted.revision!=ref['revision']:
+                got=None
     if got is not None:
         blobs, extra = got
         for name, data in blobs.items():
@@ -1312,7 +1324,6 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
         return (f"{vfs_dir}/{names['json']}", int(extra.get("n", 0)), extra.get("info") or {},
                 [(sid, [(np.asarray(la), np.asarray(lo)) for la, lo in rs]) for sid, rs in extra.get("pads", [])])
     mark("cache_lookup")
-    from buildgen import products
     import sys,inputwatch
     product_key,dependencies=products.address(tile,_geo_content_key(tile.key,zoom,buildings,left_hand,mph,
                     gas_stations,buried,lamp_region,country,building_detail='accepted-plan-v1'))
@@ -1339,8 +1350,13 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
             # the revisions actually consumed, rather than the initial lookup.
             product_key,dependencies=products.address(tile,_geo_content_key(tile.key,zoom,buildings,left_hand,mph,
                             gas_stations,buried,lamp_region,country,building_detail='accepted-plan-v1'))
-            products.retain(sys.modules[__name__],tile,product_key,dependencies,P,out_dir,vfs_dir,n,info,
-                            inputwatch.snapshot(watched))
+            retained=products.retain(sys.modules[__name__],tile,product_key,dependencies,P,out_dir,vfs_dir,n,info,
+                                     inputwatch.snapshot(watched))
+            if not retained:
+                # A concurrent cold producer may have accepted the same source
+                # first. Publish that exact physical authority with our visuals.
+                accepted=products.refine(sys.modules[__name__],tile,product_key,out_dir,vfs_dir,requested_detail)
+                if accepted is not None:return accepted
         except (OSError,ValueError,TypeError,KeyError) as ex:
             log.debug('Accepted geometry product not retained: %s',ex)
     if revisit.ON and revisit.faults() == f0 and detail == requested_detail:
@@ -1546,7 +1562,8 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
         roadsmod.drape_walks(frame, elev, walks,
                              lambda x, y: roadmeshmod.drawn_ground(frame, drawn, np.c_[x, y], q))
         mark("drape")
-        b = sidewalksmod.Builder(origin, collision=True,
+        from buildgen.grounds_quality import current as grounds_quality
+        b = sidewalksmod.Builder(origin, collision=True, quality=grounds_quality(),
             ground=lambda x,y: roadmeshmod.drawn_ground(frame, drawn, np.c_[x,y], q))
         for wk in walks:
             if "corner" in wk:
@@ -1629,7 +1646,7 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
 
 def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, lift, buildings, left_hand, mph, q,
               gas_stations, buried=0.0, lamp_region=None, country=None, content=True, skin=True, exact=None,
-              progress_token=None, building_detail='full', building_view=None, submitted_at=None):
+              progress_token=None, building_detail='full', building_view=None, submitted_at=None, grounds_quality=None):
     """earthd.Server.build_roads_geo here (road-tile pool): geotile (gx, gy)'s content (content: built in its own
     frame, or from the revisit cache; gzoom its DEM zoom, the rules its own place's), anchor aid's skin (skin) and its
     parts' exact variants for that anchor (exact: {what: {pivot}}, or "auto": those of the content built here that its
@@ -1643,9 +1660,16 @@ def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, l
     import geotiles
     from buildgen.quality import WORKER_VALUES
     detail_state = DETAIL.set(building_detail if isinstance(building_detail,str) and building_detail in WORKER_VALUES else 'full')
-    progress_state = ACTIVE.set(Publisher(out_dir,vfs_dir,geotiles.geobox(gx,gy),progress_token,building_view)
-                                if progress_token else None)
+    from buildgen import grounds_quality as grounds
+    if grounds_quality is not None and grounds_quality not in grounds.NAMES:
+        DETAIL.reset(detail_state)
+        watch.cancel()
+        raise ValueError('invalid grounds quality')
+    grounds_state=grounds.CURRENT.set(grounds_quality)
+    progress_state = None
     try:
+        progress_state = ACTIVE.set(Publisher(out_dir,vfs_dir,geotiles.geobox(gx,gy),progress_token,building_view)
+                                    if progress_token else None)
         out = {"content": None, "skin": None, "exact": {}, "stages": {}}
         t0 = time.perf_counter()
         c0 = time.process_time()
@@ -1676,7 +1700,8 @@ def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, l
         out["dependencies"] = {k: v - before.get(k, 0) for k, v in stats().items()}
         return out
     finally:
-        ACTIVE.reset(progress_state)
+        if progress_state is not None:ACTIVE.reset(progress_state)
+        grounds.CURRENT.reset(grounds_state)
         DETAIL.reset(detail_state)
         watch.cancel()
 

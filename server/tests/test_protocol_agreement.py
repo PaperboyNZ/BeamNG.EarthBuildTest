@@ -156,7 +156,7 @@ MOD_TO_SERVER = {
     # and the ground photo's px
     "graphics": {"lodScale": F(NUM, OPT), "treeScale": F(NUM, OPT), "buildingScale": F(NUM, OPT),
                  "photoPx": F(NUM, OPT), "viewM": F(NUM, OPT), "buildingQuality": F(str, OPT),
-                 "buildingAdaptive": F(bool, OPT), "buildingDetailM": F(NUM, OPT)},
+                 "buildingAdaptive": F(bool, OPT), "buildingDetailM": F(NUM, OPT), "groundsQuality": F(str, OPT)},
     "map_tiles": {"tiles": F(list)},       # the world map's basemap tiles as files (settings.mapTiles)
     "geocode": {"id": F(int), "q": F(str), "lat": F(NUM, OPT), "lon": F(NUM, OPT)},   # the map's search box
     # the map's cache view (covermap.py; additive): the zoom-z tiles x0..x1, y0..y1; mode summary / elevation /

@@ -20,14 +20,30 @@ def plan(ring, attrs, look=None):
     _, _, _, hw = b.oriented_box(ring)
     source_fp = attrs.get("_planning_footprint") or fp
     _, _, _, source_hw = b.oriented_box(np.asarray(source_fp.outer))
-    result = resolve(attrs, source_fp, source_hw, attrs.get("_context"), can_pitch=roofs.supported(fp))
+    from .topology import InvalidFootprint
+    from shapely.errors import GEOSException
+    try:
+        result = resolve(attrs, source_fp, source_hw, attrs.get("_context"), can_pitch=roofs.supported(fp))
+        # Explicit roof_height bypasses inferred_rise: validate that roof too,
+        # before it can fail later in visual or collision mesh construction.
+        if result.roof.value != 'flat' and attrs.get('roof_height') is not None:
+            roofs.envelope(fp, result.roof.value, result.roof_variant)
+    except (InvalidFootprint, GEOSException, ValueError) as exc:
+        result = resolve(attrs, source_fp, source_hw, attrs.get("_context"), can_pitch=False)
+        result = replace(result, diagnostics=result.diagnostics +
+                         ('roof_geometry_flat_fallback:'+type(exc).__name__,))
     from .regional_roofs import supported_form
-    if not supported_form(fp) and result.roof_variant!='standard':
+    if result.roof_solver != 'fast' and not supported_form(fp) and result.roof_variant!='standard':
         result=replace(result,roof_variant='standard',diagnostics=result.diagnostics+('regional_roof_variant_complex_outline_fallback',))
     if result.roof.value == "hipped" and not fp.is_rectangle():
-        strategy = roofs.envelope(fp, "hipped").strategy
-        diagnostics = tuple(d for d in result.diagnostics if d != "clipped_pitched_roof_envelope")
-        result = replace(result, diagnostics=diagnostics + ("roof_strategy:" + strategy,))
+        try:
+            strategy = roofs.envelope(fp, "hipped", result.roof_variant, solver=result.roof_solver).strategy
+            diagnostics = tuple(d for d in result.diagnostics if d != "clipped_pitched_roof_envelope")
+            result = replace(result, diagnostics=diagnostics + ("roof_strategy:" + strategy,))
+        except (InvalidFootprint, GEOSException, ValueError) as exc:
+            result = replace(result, roof=replace(result.roof, value='flat', status='fallback', source='roof_geometry'),
+                             roof_variant='standard', roof_rise=0., body_height=float(result.height.value), pitch=0.,
+                             diagnostics=result.diagnostics+('roof_geometry_flat_fallback:'+type(exc).__name__,))
     sid = attrs.get("seed_id")
     # Production callers always carry source IDs; direct geometry tools can use
     # canonical footprint content explicitly, without a tile-centroid seed.
@@ -37,7 +53,7 @@ def plan(ring, attrs, look=None):
         choices = tuple(choices) if choices is not None else tuple(range(len(table[mat])))
         return f"{mat}|{choices[min(int(b._hash01(seed, channel) * len(choices)), len(choices) - 1)]}"
 
-    material = result.facade.value
+    material = materials.wall_family(result.facade.value, result.use.value)
     style_region = house_styles.profile_region(result)
     mixed_house = result.house_style.variant != 'unmixed'
     city_candidate = city.candidate(result, str(attrs.get('class') or '').strip().lower())

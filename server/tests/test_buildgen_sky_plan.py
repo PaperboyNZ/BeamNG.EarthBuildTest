@@ -52,7 +52,7 @@ class SkylinePlanTests(unittest.TestCase):
                           roof_shape=('gabled','hipped','flat')[i%3],roof_height=2.)
             self.items[key]=freeze_items([(spec,0.,0.)])
             child=geotiles.geobox(*key);address,deps=products.address(child,'sky-fixture-'+child.key)
-            value=dict(plans=self.items[key],physical_revision='a'*16,inputs=self.inputs,dependencies=deps)
+            value=products.plan_record(self.items[key],'a'*16,deps,self.inputs)
             saved=self.store.put('accepted-plan',address,value)
             self.values[key]=value;self.refs[key]=dict(key=address,revision=saved.revision)
 
@@ -217,7 +217,7 @@ class SkylinePlanTests(unittest.TestCase):
         key=self.keys[0]
         tiny=building(fp=Footprint(((30.,30.),(33.,30.),(33.,33.),(30.,33.))),roof_shape='flat')
         self.items[key]=freeze_items([*self.items[key],(tiny,0.,0.)])
-        value=dict(self.values[key],plans=self.items[key])
+        value=products.plan_record(self.items[key],'a'*16,self.values[key]['dependencies'],self.inputs)
         saved=self.store.put('accepted-plan',self.refs[key]['key'],value)
         self.refs[key]=dict(self.refs[key],revision=saved.revision)
         before={key:b.collision_mesh(items) for key,items in self.items.items()}

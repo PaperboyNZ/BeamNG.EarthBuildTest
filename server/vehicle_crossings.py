@@ -93,6 +93,11 @@ def add(builder,curb,out,w,h,caps,ramps,slab,ranges,verge=False,texture_path=Non
                            np.tile(normal_profile[:,0],len(at))]
         builder.vehicle_visuals.append((np.vstack((P,P[vertices])),visual_t,
                                         np.vstack((surface_uv,curb_uv)),M))
+        endpoints = None
+        if builder.quality not in ('minimum', 'very_low', 'low'):
+            profile_ids = np.arange(len(at))*cols
+            endpoints = np.c_[remap[profile_ids+1], remap[profile_ids+2]]
+        builder.vehicle_sections.append((P, cols, at, endpoints))
         previous=d
     normal(previous,total)
     builder._built=None

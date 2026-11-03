@@ -62,16 +62,19 @@ def service_cache():
         _SERVICE_CACHE.reset(token)
 
 
-def envelope(footprint, kind, variant='standard'):
+def envelope(footprint, kind, variant='standard', *, solver=None):
+    if solver is None:
+        from .quality import cheap_planning
+        solver = 'fast' if cheap_planning() else 'detailed'
     state = _SERVICE_CACHE.get()
     if (state is None or state.closed or state.owner != threading.get_ident()
             or not isinstance(footprint, Footprint)):
-        return _resolve_envelope(footprint, kind, variant)
+        return _resolve_envelope(footprint, kind, variant, solver)
     from .progressive import DETAIL
-    key = (DETAIL.get(), footprint, kind, variant)
+    key = (solver, footprint, kind, variant)
     if key in state.values:
         return state.values[key]
-    result = _resolve_envelope(footprint, kind, variant)
+    result = _resolve_envelope(footprint, kind, variant, solver)
     if (isinstance(result, Envelope) and len(state.values) < 2048
             and state.vertices + footprint.vertex_count <= 8192):
         state.values[key] = result
@@ -79,17 +82,36 @@ def envelope(footprint, kind, variant='standard'):
     return result
 
 
-def _resolve_envelope(footprint, kind, variant='standard'):
+def _resolve_envelope(footprint, kind, variant='standard', solver='detailed'):
+    from .topology import InvalidFootprint
+    from shapely.errors import GEOSException
+    try:
+        return _resolve_checked(footprint, kind, variant, solver)
+    except (InvalidFootprint, GEOSException, ValueError):
+        # A valid source footprint can produce a degenerate decorative band.
+        # Fall back to the same occupied-area roof, with the regional variant
+        # omitted. Never retry the whole road tile for optional roof detail.
+        if variant == 'standard':
+            raise
+        result = _resolve_checked(footprint, kind, 'standard', solver)
+        from .progressive import ACTIVE
+        job = ACTIVE.get()
+        if job is not None and len(job.roof_cache) < 2048 and job.roof_cache_vertices + footprint.vertex_count <= 8192:
+            job.roof_cache[(solver, footprint, kind, variant)] = result
+            job.roof_cache_vertices += footprint.vertex_count
+        return result
+
+
+def _resolve_checked(footprint, kind, variant='standard', solver='detailed'):
     from .progressive import ACTIVE, DETAIL
-    if DETAIL.get()=='minimum':
-        from .minimum_roofs import envelope as compact
-        result=compact(footprint,kind,variant)
-        if result is not None:return result
     job=ACTIVE.get()
-    if job is None:return _envelope(footprint,kind,variant)
-    key=(footprint,kind,variant)
+    if solver == 'fast':
+        from .fast_roofs import envelope as solve
+    else:solve = _envelope
+    if job is None:return solve(footprint,kind,variant)
+    key=(solver,footprint,kind,variant)
     if key in job.roof_cache:return job.roof_cache[key]
-    result=_envelope(footprint,kind,variant)
+    result=solve(footprint,kind,variant)
     # Bound both entries and source complexity; released with the worker job.
     if len(job.roof_cache)<2048 and job.roof_cache_vertices+footprint.vertex_count<=8192:
         job.roof_cache[key]=result
@@ -181,13 +203,27 @@ def variant(spec):
 
 @profile_step('Building roof solution')
 def for_spec(spec, footprint=None):
+    solver = getattr(spec.inference, 'roof_solver', 'detailed')
+    if solver == 'fast':
+        from .fast_roofs import envelope as compact
+        outline = getattr(spec, 'roof_outline', None) if footprint is None else None
+        if outline is None:return envelope(footprint or spec.footprint,spec.roof,variant(spec),solver=solver)
+        return compact(outline,spec.roof,variant(spec),domain=spec.footprint)
     if footprint is None and getattr(spec,'roof_outline',None) is not None:
         from .roof_edges import extended
-        return extended(spec.roof_outline,spec.roof,variant(spec),0.,0.,spec.footprint)
-    return envelope(footprint or spec.footprint,spec.roof,variant(spec))
+        return extended(spec.roof_outline,spec.roof,variant(spec),0.,0.,spec.footprint,
+                        source=envelope(spec.roof_outline,spec.roof,variant(spec),solver=solver))
+    return envelope(footprint or spec.footprint,spec.roof,variant(spec),solver=solver)
 
 
 def draw(mesh, spec, top, mats, overhang=False):
+    if getattr(spec.inference, 'roof_solver', 'detailed') == 'fast':
+        from .fast_roofs import draw as compact
+        return compact(mesh,spec,top,mats,overhang)
+    return _draw(mesh,spec,top,mats,overhang)
+
+
+def _draw(mesh, spec, top, mats, overhang=False):
     import buildings as b
     roof_base = top
     rise = spec.inference.roof_rise

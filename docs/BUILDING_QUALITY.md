@@ -45,12 +45,16 @@ See [the lean pipeline measurements](LEAN_BUILDINGS_20261102.md) for current cos
 
 ## Adaptive performance at every level
 
-`buildingQuality` selects the ceiling. `buildingAdaptive` is a separate boolean,
-enabled by default for all six levels. New settings default to Simple generation with Minimum quality for Advanced; saved quality
+`buildingQuality` selects both the ceiling and its performance policy. The
+separate adaptive toggle is retired. Older saved `buildingAdaptive` overrides
+are ignored and disappear on the next settings save. Minimum remains at speed;
+the other modes apply their own pressure and recovery policy automatically.
+The wire field remains derived from the selected mode for older servers.
+New settings default to Simple generation with Minimum quality for Advanced; saved quality
 choices and explicit overall graphics presets retain their intended values. The existing overall graphics presets map
 Low/Medium/High/Ultra/Extreme to building Low/Medium/High/Very High/Ultra. Very Low
 is available independently. Existing saved Light becomes Low, Adaptive becomes
-Ultra with adaptation, and Full becomes Ultra without adaptation.
+Ultra, and Full becomes Ultra. Both use Ultra's built-in performance policy.
 
 | Ceiling | Refinement reach cap | Fast travel enter / leave | Recovery after pressure | Facade group cap / cost units |
 | --- | ---: | ---: | ---: | ---: |

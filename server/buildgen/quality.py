@@ -36,6 +36,16 @@ PROFILES = {p.name:p for p in (
 WORKER_VALUES = NAMES + ('full', 'lite')
 
 
+def cheap_planning():
+    """Low ceilings bound inference as well as the final mesh.
+
+    Legacy 'lite' is only a representation of a previously accepted plan.
+    It must not change architectural evidence used by distant/high-tier jobs.
+    """
+    from .progressive import DETAIL
+    return DETAIL.get() in ('minimum', 'very_low', 'low')
+
+
 def import_vertices(stage=2):
     """Cheap coverage imports broadly; increasingly detailed imports get smaller."""
     if current().name == 'minimum':return 20000
@@ -50,8 +60,8 @@ def site_level():
     Separate product addresses force a full safe rebuild across policy changes.
     Visual detail changes within the complete-site levels reuse physical output.
     """
-    from .progressive import DETAIL
-    return {'minimum': -1, 'very_low': 0, 'low': 1}.get(DETAIL.get(), 2)
+    from .grounds_quality import site_level as policy
+    return policy()
 
 
 def current():
@@ -91,7 +101,9 @@ def adaptive_target(tracker, conn, speed, *, busy=False, now=0., free_camera=Fal
     """
     name=getattr(conn,'building_quality','full')
     p=PROFILES[name]
-    if not getattr(conn,'building_adaptive',True):return name
+    # Every named mode owns its pressure policy. The retired independent toggle
+    # must not pin expensive generation when restored from an older settings file.
+    if name == 'minimum':return name
     if getattr(tracker,'quality_ceiling',None)!=name:
         tracker.quality_ceiling=name
         tracker.quality_fast=False

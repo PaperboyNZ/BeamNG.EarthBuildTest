@@ -72,6 +72,18 @@ class InferenceTest(unittest.TestCase):
         self.assertEqual(spec.roof_mat.split("|")[0], b.ROOF_METAL)
         np.testing.assert_allclose(b.LOOKS[spec.facade][1], np.array([0x12, 0x34, 0x56]) / 255.)
 
+    def test_corrugated_stock_is_reserved_for_utilitarian_use(self):
+        from buildgen import materials, regional_architecture, regional_blocks
+        house = planned({"class": "house", "facade_material": "metal", "facade_color": "#123456"})
+        self.assertEqual(house.inference.facade.value, "metal")
+        self.assertEqual(house.facade.split("|")[0], b.STUCCO)
+        industrial = planned({"class": "industrial", "facade_material": "metal"})
+        self.assertEqual(industrial.facade.split("|")[0], b.METALWALL)
+        for use in ("residential", "mixed", "commercial", "civic", "unknown"):
+            self.assertEqual(materials.wall_family("metal", use), "render")
+        for use in ("industrial", "agricultural", "ancillary"):
+            self.assertEqual(materials.wall_family("metal", use), "metal")
+
     def test_observed_local_architecture_overrides_climate_prior(self):
         ctx = replace(context(facade_material="stone", roof_shape="hipped", roof_material="tile"), climate=4)
         result = planned({"class": "house"}, ctx).inference

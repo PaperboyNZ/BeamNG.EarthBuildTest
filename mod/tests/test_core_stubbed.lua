@@ -965,6 +965,12 @@ do -- Exercise the real serializer/socket path, not just settings.serverGraphics
   msg=last('graphics')
   T.check(msg.buildingQuality == 'minimum' and msg.buildingAdaptive == false and msg.buildingDetailM == 350,
     'graphics wire: reconnect preserves Minimum and explicit false')
+  local beforeGrounds = #received('graphics')
+  g.groundsQuality='ultra'
+  T.check(core.sendGraphics() and #received('graphics') == beforeGrounds+1 and last('graphics').groundsQuality == 'ultra',
+    'graphics wire: independent grounds selection alone sends')
+  T.check(last('graphics').buildingQuality == 'minimum', 'graphics wire: grounds does not change building quality')
+  T.check(not core.sendGraphics(), 'graphics wire: unchanged independent grounds selection deduplicates')
   beamngEarth_settings=oldSettings
 end
 beamngEarth_settings = nil

@@ -2767,12 +2767,12 @@ function M.sendGraphics()
   local settings = rawget(_G, 'beamngEarth_settings')
   local g = settings and settings.serverGraphics and settings.serverGraphics()
   if type(g) ~= 'table' or not net.isConnected() or not st.sessionId then return false end
-  local sig = string.format('%s/%s/%s/%s/%s/%s/%s/%s', tostring(g.lodScale), tostring(g.treeScale), tostring(g.buildingScale),
-    tostring(g.photoPx), tostring(g.viewM), tostring(g.buildingQuality), tostring(g.buildingAdaptive), tostring(g.buildingDetailM))
+  local sig = string.format('%s/%s/%s/%s/%s/%s/%s/%s/%s', tostring(g.lodScale), tostring(g.treeScale), tostring(g.buildingScale),
+    tostring(g.photoPx), tostring(g.viewM), tostring(g.buildingQuality), tostring(g.buildingAdaptive), tostring(g.buildingDetailM), tostring(g.groundsQuality))
   if sig == M.graphicsSent then return false end
   net.send({ type = 'graphics', lodScale = g.lodScale, treeScale = g.treeScale, buildingScale = g.buildingScale,
     photoPx = g.photoPx, viewM = g.viewM, buildingQuality = g.buildingQuality,
-    buildingAdaptive = g.buildingAdaptive, buildingDetailM = g.buildingDetailM })
+    buildingAdaptive = g.buildingAdaptive, buildingDetailM = g.buildingDetailM, groundsQuality = g.groundsQuality })
   M.graphicsSent = sig
   return true
 end

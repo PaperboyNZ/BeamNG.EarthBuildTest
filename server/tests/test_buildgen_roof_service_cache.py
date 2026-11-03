@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from buildgen import roofs,minimum_roofs,progressive
+from buildgen import roofs,fast_roofs,progressive
 from buildgen.topology import Footprint
 
 
@@ -38,7 +38,7 @@ class ServiceCacheTests(unittest.TestCase):
         fp=rectangle();compact=result('compact');full=result('full')
         token=progressive.DETAIL.set('full')
         try:
-            with patch.object(minimum_roofs,'envelope',return_value=compact) as low,\
+            with patch.object(fast_roofs,'envelope',return_value=compact) as low,\
                  patch.object(roofs,'_envelope',return_value=full) as high,roofs.service_cache():
                 self.assertIs(roofs.envelope(fp,'gabled'),full)
                 minimum=progressive.DETAIL.set('minimum')
@@ -52,7 +52,7 @@ class ServiceCacheTests(unittest.TestCase):
 
     def test_kind_and_variant_are_independent_keys(self):
         fp=rectangle()
-        with patch.object(roofs,'_resolve_envelope',side_effect=lambda fp,kind,variant:result(kind+variant)) as solve,roofs.service_cache():
+        with patch.object(roofs,'_resolve_envelope',side_effect=lambda fp,kind,variant,solver:result(kind+variant)) as solve,roofs.service_cache():
             a=roofs.envelope(fp,'gabled');b=roofs.envelope(fp,'hipped');c=roofs.envelope(fp,'gabled','shed')
             self.assertIsNot(a,b);self.assertIsNot(a,c)
             self.assertIs(roofs.envelope(fp,'gabled'),a)

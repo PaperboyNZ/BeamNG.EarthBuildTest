@@ -90,6 +90,7 @@ class Resolution:
     house_style: house_styles.HouseStyle = house_styles.HouseStyle()
     dwelling_structure: str = ''
     modifiers: tuple[str, ...] = ()
+    roof_solver: str = 'detailed'
 
 
 def observed(ev, field):
@@ -281,7 +282,10 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
         elif roof_prior != "flat":
             roof = Decision(roof_prior, "fallback", "low_building_climate_prior", "low")
     from .regional_roofs import supported_form
-    if roof.status=='fallback' and roof.value!='flat' and low and supported_form(footprint) and style_region:
+    from .quality import cheap_planning
+    bounded = cheap_planning()
+    style_form = can_pitch if bounded else supported_form(footprint)
+    if roof.status=='fallback' and roof.value!='flat' and low and style_form and style_region:
         regional_profile=regional_architecture.profile(style_region)
         if regional_profile and use.value in ('residential','mixed','commercial','civic','unknown'):
             from . import residential
@@ -310,7 +314,7 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
     if 'stepped_gable' in selected and not stepped_gables.suitable_footprint(footprint):
         selected=tuple(key for key in selected if key!='stepped_gable')
         diagnostics.append('stepped_gable_unsuitable_span')
-    if roof.status == 'fallback' and supported_form(footprint):
+    if roof.status == 'fallback' and style_form:
         if 'mansard' in selected:
             roof = Decision('hipped', 'fallback', 'regional_modifier:mansard', 'low')
             roof_variant = 'mansard'
@@ -337,6 +341,9 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
         diagnostics.append("narrow_pitched_roof_flat_fallback")
         roof = Decision("flat", "fallback", "narrow_outline", "low")
 
+    if bounded and roof.value != 'flat':
+        diagnostics.append('fast_regional_roof')
+
     pitch = 32. if 17 <= context.climate <= 30 else 22. if 1 <= context.climate <= 3 else 26.
     if form.value == "detached_lowrise" and not 17 <= context.climate <= 30:
         pitch = 20. + 6. * materials.unit(identity, "lowrise-pitch")
@@ -354,8 +361,11 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
         from .roof_proportions import inferred_rise
         fixed_top = h is not None or hd.source == "observed_neighbour_heights"
         domestic = use.value in ('residential', 'unknown', 'mixed') and hd.value <= 15.
-        rise = float(rh) if rh is not None else inferred_rise(
-            footprint, roof.value, roof_variant, half_width, pitch, hd.value, fixed_top, domestic)
+        if rh is not None:
+            rise = float(rh)
+        else:
+            rise = inferred_rise(footprint, roof.value, roof_variant, half_width, pitch,
+                                 hd.value, fixed_top, domestic)
         if commercial_prior and rh is None:
             # Warehouse spans must not create house-like towering gables.
             rise = min(rise, 2.8, hd.value * (.23 if fixed_top else .30))
@@ -460,4 +470,5 @@ def resolve(attrs, footprint, half_width, context=None, can_pitch=True):
     dwelling=residential.resolve_id(environment.region,identity,fd.value,use.value,cls,hd.value,area,bool(attrs.get('_part')))
     if dwelling:diagnostics.append('dwelling_structure:'+dwelling)
     return Resolution(use, architecture, facade, roof, roof_mat, hd, fd, body, rise, pitch,
-                      candidates, context.manifest, tuple(diagnostics), form, selection, colour,roof_variant,house_style,dwelling,selected)
+                      candidates, context.manifest, tuple(diagnostics), form, selection, colour,roof_variant,house_style,dwelling,selected,
+                      roof_solver='fast' if bounded else 'detailed')

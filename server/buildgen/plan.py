@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from sitegen.adapters import LegacySiteAdapter
 
 
-SCHEMA_VERSION = 27
+SCHEMA_VERSION = 30
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +120,7 @@ class BuildingPlan:
     roof_outline: Footprint | None = None
     weather_exposure: tuple | None = None
     property_identity: Mapping | None = None
+    physical_mode: str | None = None
 
     def __post_init__(self):
         for field in fields(self):
@@ -136,6 +137,8 @@ class BuildingPlan:
         if self.gring is not None and (self.gring.shape != (len(self.ring),) or
                                       not np.isfinite(self.gring).all()):
             raise ValueError("ground samples must be finite and match the building ring")
+        if self.physical_mode not in (None, 'compact', 'standard'):
+            raise ValueError('unknown accepted physical recipe')
 
     @classmethod
     def from_spec(cls, spec):
@@ -153,12 +156,15 @@ def freeze_items(items):
     """Snapshot the complete compiler input, including its ground height ranges."""
     from dataclasses import replace
     from . import facades
-    from .minimum import enabled
+    from .minimum import visual_enabled as enabled
+    from .minimum import enabled as minimum_enabled
     compact = enabled()
     result = []
     for spec, gmin, gmax in items:
         frozen = BuildingPlan.from_spec(spec)
-        if not compact and frozen.inference is not None and frozen.footprint is not None and frozen.facades is None:
+        if frozen.physical_mode is None:
+            frozen = replace(frozen, physical_mode='compact' if minimum_enabled() else 'standard')
+        if frozen.physical_mode!='compact' and not (compact or enabled(frozen)) and frozen.inference is not None and frozen.footprint is not None and frozen.facades is None:
             frozen = replace(frozen, facades=facades.plan(frozen, gmin, gmax))
         result.append((frozen, float(gmin), float(gmax)))
     return tuple(result)

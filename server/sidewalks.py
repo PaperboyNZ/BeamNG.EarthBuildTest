@@ -89,6 +89,11 @@ def run_uvs(mesh, origin, piece, path):
         take = error < best
         best[take] = error[take]
         metric[take] = np.c_[s[take], across[take]]
+        if len(path) > 2 and path[2] is not None:
+            curved_s, source_s, inset, scale = path[2]
+            metric[take, 0] = np.interp(s[take], curved_s, source_s)
+            metric[take, 1] = (np.interp(s[take], curved_s, inset)
+                               + np.interp(s[take], curved_s, scale)*across[take])
     metric[:, 0] += path_station(piece[1][0], path)
     UV[ids] = metric
     return P, T, UV, M
@@ -275,15 +280,20 @@ class Builder:
     (earthfast.sidewalk_mesh: the profile, ramps, tactile pads, caps and corner slabs, in the old Python's arithmetic
     and order) when its arrays are asked for; collision: the lean collision mesh beside it (self.col.arrays())."""
 
-    def __init__(self, origin, collision=False, ground=None):
+    def __init__(self, origin, collision=False, ground=None, quality='minimum'):
         self.origin = np.asarray(origin, np.float64)
         self.ground = ground
+        self.quality = quality  # independent Sidewalks & Property Grounds selection
         self.pieces = []            # (kind, points, dirs, outer, ramps, width, height, caps, slab)
         self.tree_gardens = []
         self.surface_paths = []     # original run retained across driveway/verge splits
+        self.round_flags = []       # complete angular fallback when preflight rejects a piece
         self._built = None          # the Rust meshes once built (full, lean)
+        self._native_reuse = None   # angular physics fork reuses the same native sweep
+        self._last_native = None
         self.vehicle_meshes = []
         self.vehicle_visuals = []
+        self.vehicle_sections = []
         self.verge_builder = None
         self._defer_surface_uvs = False  # internal verge batch still needs profile-offset UVs
         self.col = _Lean(self) if collision else None
@@ -314,14 +324,20 @@ class Builder:
             # A second bounded native batch gives offset-based UVs for the
             # planted strip. Geometry/collision still use the same native sweep.
             if self.verge_builder is None:
-                self.verge_builder = Builder(self.origin, collision=self.col is not None)
+                self.verge_builder = Builder(self.origin, collision=self.col is not None, quality=self.quality)
                 self.verge_builder._defer_surface_uvs = True
             self.verge_builder.add_run(curb,toward_out,w,h,caps,slab=BRICK,texture_path=texture_path)
             self._built = None
             return
+        import sidewalk_outline
+        outline = sidewalk_outline.run(curb, toward_out, w, caps, ramps, self.quality)
+        mapping = None
+        if outline is not None:
+            curb, toward_out, ramps, mapping = outline
+        self.round_flags.append(outline is not None)
         self.pieces.append((0, curb[:, :3], np.asarray(toward_out, np.float64)[:, :2], None, list(ramps), float(w),
                             float(h), (bool(caps[0]), bool(caps[1])), int(slab)))
-        self.surface_paths.append(texture_path)
+        self.surface_paths.append((*texture_path, mapping) if mapping is not None else texture_path)
         self._built = None
 
     def add_corner(self, arc, inward, outer, h=CURB_H, ramps=(), slab=1, outer_stations=None):
@@ -339,6 +355,8 @@ class Builder:
                             outer, list(ramps), 2.5, float(h), (False, False),
                             int(slab)))
         self.surface_paths.append((self.pieces[-1][1], self.pieces[-1][2], outer_stations))
+        import sidewalk_outline
+        self.round_flags.append(sidewalk_outline.permitted(self.pieces[-1][1], ramps, self.quality))
         self._built = None
 
     def empty(self):
@@ -350,11 +368,19 @@ class Builder:
             # Retain each piece's path while mapping its native geometry. The
             # native ABI has no per-piece vertex offsets, so map before combining.
             from vehicle_crossings import combine
+            import sidewalk_rounding
+            rounded = sidewalk_rounding.enabled(self.quality)
+            profile_detail = rounded and sidewalk_rounding.spans(self.quality) > 1
             batches = []
+            raw_batches = []
             back_regions = ([], [])
-            for piece, path in zip(ps, self.surface_paths):
+            for index, (piece, path, round_allowed) in enumerate(zip(ps, self.surface_paths, self.round_flags)):
                 finish = piece[8]
-                visual, collision = native_mesh([piece], self.origin, self.col is not None)
+                native = (self._native_reuse[index] if self._native_reuse is not None else
+                          native_mesh([piece], self.origin, self.col is not None))
+                if profile_detail:
+                    raw_batches.append(native)
+                visual, collision = native
                 curved = piece[0] == 1 and path[2] is not None
                 if curved:
                     from walk_surfaces import curved_corner
@@ -375,6 +401,8 @@ class Builder:
                     visual = complete_corner_slab(visual)
                     if self.col is not None:
                         collision = complete_corner_slab(collision)
+                if profile_detail and round_allowed:
+                    visual = sidewalk_rounding.native_visual(visual, piece, self.origin, self.quality)
                 if piece[0] == 0:
                     visual = run_uvs(visual, self.origin, piece, path)
                 elif not curved:
@@ -383,11 +411,15 @@ class Builder:
                 if finish != 1:
                     M = np.where((M == 1) | (M == BRICK), finish, M)
                 batches.append(((P, T, UV, M), collision))
+            self._last_native = raw_batches if profile_detail else None
             if not batches:
                 batches.append(native_mesh([], self.origin, self.col is not None))
             self._built = (combine(batches[0][0], [b[0] for b in batches[1:]]),
                            combine(batches[0][1], [b[1] for b in batches[1:]]))
             extra = list(self.vehicle_visuals)
+            if profile_detail:
+                extra = [sidewalk_rounding.vehicle_visual(mesh, *section, quality=self.quality)
+                         for mesh, section in zip(extra, self.vehicle_sections)]
             if not self._defer_surface_uvs:
                 from sidewalk_details import meshes
                 extra.extend(meshes(ps, self.origin))
@@ -417,14 +449,21 @@ class Builder:
                 visual, collision = self._built
                 self._built = surface_uvs(visual), collision
             collision_replaced = False
+            angular_collision_needed = False
             if self.ground is not None:
                 visual, collision = self._built
                 corrected = clear_terrain(visual, self.origin, self.ground)
                 if corrected is not visual:
                     # Corrected pavement must have the exact same driving
                     # surface. Keep decorative utility covers out of physics.
-                    p, t, uv, m = corrected
-                    collision = (p, t[m != 5], uv, np.zeros(np.count_nonzero(m != 5), np.int64))
+                    if profile_detail and self.col is not None:
+                        # Terrain clearance can replace physics from the visible
+                        # surface. Rebuild that exceptional path from the original
+                        # angular profile on the already accepted rounded outline.
+                        angular_collision_needed = True
+                    else:
+                        p, t, uv, m = corrected
+                        collision = (p, t[m != 5], uv, np.zeros(np.count_nonzero(m != 5), np.int64))
                     collision_replaced = True
                 self._built = corrected, collision
             if self.col is not None and back_regions[1] and not collision_replaced:
@@ -436,7 +475,20 @@ class Builder:
                 visual,collision=self._built
                 self._built=(cut(visual,self.tree_gardens,self.origin),
                              cut(collision,self.tree_gardens,self.origin) if self.col is not None else collision)
+            if angular_collision_needed:
+                self._built = self._built[0], self._angular_copy().col.arrays()
         return self._built
+
+    def _angular_copy(self):
+        """Angular profile of the same accepted outline, for terrain physics."""
+        import copy
+        b = copy.copy(self)
+        b.quality, b._built = 'minimum', None
+        b._native_reuse, b._last_native = self._last_native, None
+        b.col = _Lean(b) if self.col is not None else None
+        if self.verge_builder is not None:
+            b.verge_builder = self.verge_builder._angular_copy()
+        return b
 
     def arrays(self):
         P, T, UV, M = self._build()[0]

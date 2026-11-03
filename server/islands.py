@@ -205,6 +205,11 @@ def find(roads_list, is_oneway=lambda spec: bool(getattr(spec, "oneway", False))
         is_roundabout = rnd >= RING_ROUND_ANY or (rnd >= RING_ROUND and oneway_ok)
         if not (is_roundabout or (abs_area <= SMALL_AREA_M2 and oneway_ok)):
             continue
+        # A self-crossing road cycle has no unambiguous inside. Do not suppress
+        # sidewalks or pass it to polygon overlays as if it were an island.
+        from shapely.geometry import Polygon
+        if not Polygon(poly).is_valid:
+            continue
         if any(_inside(poly, c) for c in structures):
             continue                                # a building inside: a city block, not an island
         if any(_crosses(poly, edges[j][2]) for j in range(len(edges)) if j not in key):
@@ -274,14 +279,22 @@ def _island_ring(poly, roads_hw, z, carriageways=()):
         return None
     # Smoothing and chords between individually safe ray hits can cut across
     # a concavity into a lane. Clip the complete polygon back to safe ground.
+    from shapely.errors import GEOSException
     from shapely.geometry import LineString, Point, Polygon
     from shapely.ops import unary_union
-    lanes = unary_union([LineString(p).buffer(hw + .06, cap_style=2, join_style=2)
-                         for p, hw in (carriageways or roads_hw)])
-    candidate = Polygon(ring[:, :2])
-    if not candidate.is_valid:
-        candidate = candidate.buffer(0)
-    safe = candidate.intersection(Polygon(poly)).difference(lanes)
+    loop = Polygon(poly)
+    if not loop.is_valid:
+        return None
+    try:
+        lanes = unary_union([LineString(p).buffer(hw + .06, cap_style=2, join_style=2)
+                             for p, hw in (carriageways or roads_hw)])
+        candidate = Polygon(ring[:, :2])
+        if not candidate.is_valid:
+            candidate = candidate.buffer(0)
+        safe = candidate.intersection(loop).difference(lanes)
+    except GEOSException:
+        # A bad local overlay must not prevent the entire terrain from loading.
+        return None
     parts = [safe] if safe.geom_type == 'Polygon' else list(getattr(safe, 'geoms', ()))
     parts = [p for p in parts if p.geom_type == 'Polygon' and p.covers(Point(c)) and not p.interiors]
     if not parts:

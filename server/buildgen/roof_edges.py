@@ -90,11 +90,15 @@ def _treatment(footprint,grammar,variant,use,floors,family,seed,clipped):
 
 def for_spec(spec):
     from . import roofs
+    solver = getattr(spec.inference, 'roof_solver', 'detailed')
+    if solver == 'fast':
+        outline = getattr(spec, 'roof_outline', None)
+        return roofs.envelope(outline, spec.roof, roofs.variant(spec), solver=solver) if outline is not None else roofs.for_spec(spec)
     if getattr(spec,'roof_outline',None) is not None:
-        return roofs.envelope(spec.roof_outline,spec.roof,roofs.variant(spec))
+        return roofs.envelope(spec.roof_outline,spec.roof,roofs.variant(spec),solver=solver)
     t=treatment(spec)
     if not t.eave:return roofs.for_spec(spec)
-    return extended(spec.footprint,spec.roof,roofs.variant(spec),t.eave,t.rake)
+    return extended(spec.footprint,spec.roof,roofs.variant(spec),t.eave,t.rake,source=roofs.for_spec(spec))
 
 
 def height(roof,xy):

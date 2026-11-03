@@ -12,6 +12,28 @@ def enabled():
     return DETAIL.get() == 'minimum'
 
 
+def visual_enabled(spec=None):
+    # Compact accepted physical envelopes cannot acquire projected structural
+    # assemblies during a visual refinement. Keep the compatible representation
+    # until its anchored fast/detailed replacements are available.
+    if getattr(spec, 'physical_mode', None) == 'compact':
+        return True
+    from .progressive import DETAIL
+    if DETAIL.get() == 'minimum':
+        return True
+    # Downgrading a previously accepted detailed plan preserves its established
+    # aperture layout. Fresh source-local Very Low plans use compact facades.
+    inference = getattr(spec, 'inference', None)
+    return (DETAIL.get() == 'very_low' and inference is not None and
+            inference.context.profile == 'source-local-low-v1')
+
+
+def physical_enabled(spec):
+    """Accepted collision recipe; visual quality cannot change this decision."""
+    mode = getattr(spec, 'physical_mode', None)
+    return mode == 'compact' if mode is not None else enabled()
+
+
 def collision(mesh, spec, gmin, gmax):
     """Match the compact body, supports and access; omit removed facade bays."""
     import buildings as b
@@ -70,6 +92,7 @@ def _windows(mesh, a, direction, left, right, bottom, top, material):
 def draw(mesh, spec, gmin, gmax):
     import buildings as b
     from . import materials, regional_architecture as regional, regional_blocks, roofs
+    from . import fast_facade
     from .geometry import horizontal
     from .regional_supports import draw as supports
     fp = spec.footprint
@@ -124,7 +147,7 @@ def draw(mesh, spec, gmin, gmax):
                     # Upper storeys share one masked, repeating window grid per
                     # elevation. Ground-floor panes retain exact door clearance.
                     rows = spec.floors
-                    if rows > 2:
+                    if rows > 2 and enabled():
                         pattern = profile.get('opening_pattern') if profile else None
                         kind = {'vertical':'tall','horizontal':'wide','grouped':'wide'}.get(pattern,'sash')
                         if spec.cls in ('office','commercial'):kind='modern'
@@ -139,18 +162,8 @@ def draw(mesh, spec, gmin, gmax):
                     left=np.tile(centres-width/2,rows)
                     right=left+width
                     z=np.repeat(np.arange(rows)*spec.floor_h+sill,n)+base
-                    keep=(z+height<=top-.15)
-                    # Stock door props and closed garage panels own these intervals.
-                    reservations=[]
-                    if boundary==0 and spec.door and edge==spec.door[0]:
-                        dz=spec.access.door_z if spec.access else gmax
-                        reservations.append((spec.door[1]-.85,spec.door[1]+.85,dz,dz+2.4))
-                    if boundary==0 and spec.garage_opening and edge==spec.garage_opening[0]:
-                        _,centre,w,h=spec.garage_opening
-                        gz=spec.access.garage_z if spec.access and spec.access.garage_z is not None else base
-                        reservations.append((centre-w/2-.2,centre+w/2+.2,gz,gz+h+.2))
-                    for l,r,lo,hi in reservations:
-                        keep &= ~((left<r)&(right>l)&(z<hi)&(z+height>lo))
+                    reserved=fast_facade.reservations(spec,boundary,edge,base,gmax)
+                    keep=fast_facade.window_mask(left,right,z,height,top,reserved)
                     _windows(mesh,a,(dx,dy),left[keep],right[keep],z[keep],z[keep]+height,mats['bne_bld_fac_white'])
             if boundary==0 and spec.garage_opening and edge==spec.garage_opening[0]:
                 _,centre,w,h=spec.garage_opening
@@ -167,3 +180,9 @@ def draw(mesh, spec, gmin, gmax):
     if spec.access:
         from .access import draw as access
         access(mesh,spec,False,detail=False)
+    if getattr(spec, 'physical_mode', None) == 'standard':
+        # Accepted projected bays remain visible through a Minimum downgrade.
+        # Their closed physical faces are already anchored in the frozen layout;
+        # this emits only the required silhouette, without decorative railings.
+        from .regional_facade_details import draw_collision_bays
+        draw_collision_bays(mesh,spec,gmin,gmax,mats[spec.facade])

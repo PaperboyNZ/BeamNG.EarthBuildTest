@@ -11,7 +11,7 @@ import numpy as np
 
 from .evidence import BuildingEvidence
 
-VERSION = 1
+VERSION = 2
 
 
 def address(key, cells, revision):

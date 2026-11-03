@@ -98,7 +98,8 @@ class QualityTests(unittest.TestCase):
             self.assertEqual(choose(0,20+q.settle_s-.01),q.fallback)
             self.assertEqual(choose(0,21+q.settle_s),name)
             conn.building_adaptive=False
-            self.assertEqual(choose(100,30,busy=True),name)
+            self.assertEqual(choose(100,30,busy=True),q.fallback,
+                             'retired toggle cannot bypass the quality mode budget')
 
     def test_free_camera_is_not_throttled_by_an_unrelated_fast_car(self):
         t=SimpleNamespace();c=SimpleNamespace(building_quality='ultra')
@@ -141,6 +142,7 @@ class QualityTests(unittest.TestCase):
             f=Future();submitted.append((fn,f));return f
         loop=SimpleNamespace(run_in_executor=submit)
         with tempfile.TemporaryDirectory() as folder,patch.object(roads,'geo_wanted',return_value={key:0}),\
+             patch.object(roads.time,'monotonic',return_value=100.) as clock,\
              patch.object(geotiles,'tiles_near',return_value=[(*key,0)]):
             conn=SimpleNamespace(building_quality='high',building_adaptive=False,building_progress=True,
                                  send=lambda msg:None,s=SimpleNamespace(out_dir=folder))
@@ -149,26 +151,29 @@ class QualityTests(unittest.TestCase):
                 submitted[-1][1].set_result(dict(content=('/q',0,dict(h=name,parts={},buildingDetail=name),[])))
                 tracker.skins.add(key);tracker.need[(key,1)]={}
             try:
+                pose();self.assertEqual(submitted[-1][0].keywords['building_detail'],'low');done('low')
+                clock.return_value=110.
                 pose();self.assertEqual(submitted[-1][0].keywords['building_detail'],'high');done('high')
                 conn.building_quality='ultra';pose()
                 self.assertEqual(submitted[-1][0].keywords['building_detail'],'ultra');done('ultra')
                 conn.building_adaptive=True;pose(80)
-                self.assertEqual(len(submitted),2)
+                self.assertEqual(len(submitted),3)
                 conn.building_quality='very_low';pose()
                 self.assertEqual(submitted[-1][0].keywords['building_detail'],'very_low')
                 done('very_low');conn.building_quality='minimum';pose()
                 self.assertEqual(submitted[-1][0].keywords['building_detail'],'minimum')
             finally:tracker.close()
 
-    def test_graphics_accepts_six_names_and_boolean_adaptation_only(self):
+    def test_graphics_quality_modes_own_adaptation_and_ignore_retired_override(self):
         from earthd import Connection
         conn=SimpleNamespace(lod_scale=1.,tree_scale=1.,building_scale=1.,veg=SimpleNamespace(send_m=1300),
                              bldfar=SimpleNamespace(send_m=1600),s=SimpleNamespace(base_px=2048),view_cap=None,active=None)
         for name in quality.NAMES:
             Connection.set_graphics(conn,dict(buildingQuality=name,buildingAdaptive=False))
-            self.assertEqual(conn.building_quality,name);self.assertFalse(conn.building_adaptive)
+            self.assertEqual(conn.building_quality,name)
+            self.assertEqual(conn.building_adaptive,name!='minimum')
         Connection.set_graphics(conn,dict(buildingQuality='bad',buildingAdaptive='true'))
-        self.assertEqual(conn.building_quality,'ultra');self.assertFalse(conn.building_adaptive)
+        self.assertEqual(conn.building_quality,'ultra');self.assertTrue(conn.building_adaptive)
 
     def test_all_quality_cache_keys_are_unique(self):
         args=('g',15,True,False,False,False,0.,None,None)

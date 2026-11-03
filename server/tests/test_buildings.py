@@ -1006,7 +1006,9 @@ class RealTagsTest(unittest.TestCase):
         self.assertTrue(str(sp.wall).startswith(bld.STUCCO), "plaster facade maps to stucco")
         # metal
         sm = bld.plan(rect(0, 0, 10, 10), {"class": "house", "facade_material": "metal"}, 0, 39.2, -76.6)
-        self.assertTrue(str(sm.wall).startswith(bld.METALWALL), "metal facade maps to metalwall")
+        self.assertTrue(str(sm.wall).startswith(bld.STUCCO), "houses use a restrained wall even when mapped metal")
+        industrial = bld.plan(rect(0, 0, 30, 20), {"class": "industrial", "facade_material": "metal"}, 0, 35.7, 139.7)
+        self.assertTrue(str(industrial.wall).startswith(bld.METALWALL))
         # stone
         ss = bld.plan(rect(0, 0, 10, 10), {"class": "house", "facade_material": "stone"}, 0, 39.2, -76.6)
         self.assertTrue(str(ss.wall).startswith(bld.STONE), "stone facade maps to stone")

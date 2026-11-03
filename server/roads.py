@@ -8112,6 +8112,9 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
                 continue
             # (from its south-west-most point: each tile finds the loop from its own roads, starting anywhere)
             ring = np.roll(f["ring"], -int(np.lexsort((f["ring"][:, 1], f["ring"][:, 0]))[0]), axis=0)
+            from sidewalk_outline import island_ring
+            from buildgen.grounds_quality import current as grounds_quality
+            ring = island_ring(ring, islands.ISLAND_BAND_M, grounds_quality())
             # (closed: offset with a vertex either side of its start, so its ends meet mitred, not 5 cm apart)
             band = offset_polyline(np.vstack([ring[-1:], ring, ring[:2]]), islands.ISLAND_BAND_M / 2)[1:-1]
             # tight simplify + denser nodes: the default 0.25 m / 12 m spacing faceted the curb into a hexagon (PR
@@ -8693,7 +8696,7 @@ class GeoTracker:
         from buildgen import quality as building_quality
         ceiling=getattr(conn,'building_quality','full')
         profile=building_quality.PROFILES.get(ceiling)
-        adaptive=profile is not None and getattr(conn,'building_adaptive',True)
+        adaptive=profile is not None and ceiling!='minimum'
         if profile:
             # Reserve capacity for physical coverage and stalled work. Optional
             # visual jobs by themselves must not keep the recovery timer armed.
@@ -9131,7 +9134,8 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
             data["railcol"] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
     if walks:
         x0, y0, _, _ = tile_bbox(tx, ty)
-        b = sidewalks.Builder((x0, y0, 0.0), collision=True, ground=sidewalk_ground)
+        from buildgen.grounds_quality import current as grounds_quality
+        b = sidewalks.Builder((x0, y0, 0.0), collision=True, ground=sidewalk_ground, quality=grounds_quality())
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]

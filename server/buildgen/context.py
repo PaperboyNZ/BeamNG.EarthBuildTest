@@ -26,7 +26,7 @@ from . import regional_architecture
 from .topology import InvalidFootprint
 
 
-PROFILE = "observed-buildings-landuse-climate-v1"
+PROFILE = "observed-buildings-landuse-climate-v2"
 LAYERS = ("buildings", "land_use")
 RADIUS_M = 250.0
 LOCAL_M = 75.0
@@ -116,6 +116,13 @@ class _Bundle:
         from shapely.geometry import Polygon
         from shapely.ops import unary_union
         self.frame = geodesy.EnuFrame(*key.center(), 0.0)
+        west, south, east, north = key.bounds()
+        xx, yy, _ = self.frame.geodetic_to_enu(np.array([south, north]), np.array([west, east]), 0.)
+        # Only building centres within 250 m of the owner cell can contribute.
+        # Intersecting boxes conservatively retain long/cross-boundary shapes.
+        # Land-use coverage remains complete for large target footprints.
+        bounds = (min(xx)-RADIUS_M-5., min(yy)-RADIUS_M-5.,
+                  max(xx)+RADIUS_M+5., max(yy)+RADIUS_M+5.)
         buildings, land, source_records = {}, {}, []
         coverage = []
         for cd in cds:
@@ -128,7 +135,13 @@ class _Bundle:
                 f = cd.layers.get(layer)
                 if f is None:
                     raise ValueError(f"building context lacks required {layer} in {cd.key}")
-                for i in range(len(f.kind)):
+                if layer == 'buildings':
+                    boxes = f.boxes(self.frame)
+                    indices = np.flatnonzero((boxes[:,0] <= bounds[2]) & (boxes[:,2] >= bounds[0]) &
+                                             (boxes[:,1] <= bounds[3]) & (boxes[:,3] >= bounds[1]))
+                else:
+                    indices = range(len(f.kind))
+                for i in indices:
                     cc = ingest.components(f, i)
                     if not cc:
                         continue
@@ -232,6 +245,9 @@ class Provider:
 
     def query(self, f, i, *, background=False):
         import mapcells
+        from .quality import cheap_planning
+        if cheap_planning():
+            return direct_context(f, i)
         cc = ingest.components(f, i)
         lon, lat = np.asarray(cc[0][1][0], np.float64).mean(axis=0)
         key = mapcells.cell_of(float(lat), float(lon))
@@ -272,6 +288,25 @@ class Provider:
         elif background and not future.done():
             raise ContextPending()
         return future.result().query(f, i)
+
+
+def direct_context(f, i):
+    """Source-local low-tier evidence: no halo IO, neighbour shapes or unions.
+
+    Mapped use/height/floors still enter inference directly from the feature.
+    Optional neighbourhood guesses are explicitly absent, never misreported as
+    complete neighbourhood evidence. Cache identity includes the tier policy.
+    """
+    import climate
+    import mapcells
+    cc = ingest.components(f, i)
+    lon, lat = np.asarray(cc[0][1][0], np.float64).mean(axis=0)
+    owner = mapcells.cell_of(float(lat), float(lon))
+    manifest = ContextManifest('source-local-low-v1', str(owner))
+    return Context(manifest=manifest, climate=climate.koppen_at(float(lat), float(lon)),
+                   diagnostics=('low_quality_neighbourhood_inference_omitted',),
+                   roof_colour=roof_colours.query(str(f.ids[i]) if f.ids is not None else '', cc),
+                   location=(float(lat), float(lon)))
 
 
 _provider_lock = threading.Lock()

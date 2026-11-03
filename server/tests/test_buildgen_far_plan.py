@@ -80,7 +80,8 @@ class FarPlanProductsTests(unittest.TestCase):
         first,data,out=self.far('same')
         old={name:(out/name).read_bytes() for name in (Path(first[0]).name,first[4]['shape'])}
         plan,low,high=self.saved.value['plans'][0]
-        newer=dict(self.saved.value,plans=((replace(plan,seed=plan.seed+.0001),low,high),))
+        newer=products.plan_record(((replace(plan,seed=plan.seed+.0001),low,high),),
+            self.saved.value['physical_revision'],self.saved.value['dependencies'],self.saved.value['inputs'])
         updated=self.store.put('accepted-plan',self.key,newer)
         newref=dict(key=self.key,revision=updated.revision)
         second,after,_=self.far('same',newref)
@@ -148,7 +149,9 @@ class FarPlanProductsTests(unittest.TestCase):
         first=build(self.gx,self.gy);self.assertEqual(calls,[self.ref])
         self.assertEqual(build(self.gx,self.gy),first);self.assertEqual(len(calls),1)
         plan,lo,hi=self.saved.value['plans'][0]
-        saved=self.store.put('accepted-plan',self.key,dict(self.saved.value,plans=((replace(plan,seed=plan.seed+.01),lo,hi),)))
+        newer=products.plan_record(((replace(plan,seed=plan.seed+.01),lo,hi),),
+            self.saved.value['physical_revision'],self.saved.value['dependencies'],self.saved.value['inputs'])
+        saved=self.store.put('accepted-plan',self.key,newer)
         updated=dict(key=self.key,revision=saved.revision)
         conn.roads.info[(self.gx,self.gy)]={'acceptedPlan':updated}
         second=build(self.gx,self.gy)
