@@ -9,14 +9,16 @@ a 4096 x 1024 sheet of 5 sidewalk strips with panel joints along them), plus a c
 draw call per material per district instead of three per sidewalk piece.
 
 Here: the sidewalk runs of a road tile (roads.build_tile, after the cuts at crossings) are swept
-along a fixed profile into one shape (cdae.py, two materials). The profile, across from the curb
+along a fixed profile into one shape (cdae.py). The profile, across from the curb
 line (offset 0) outwards, heights above the road:
     face   (0, -SINK) -> (BATTER, h - NOSE)   curbs, the band's dark part
     nose   -> (NOSE_W, h)                     curbs, light
     top    -> (CURB_W, h)                     curbs, light
-    slab   -> (W, h + W * CROSS_SLOPE)        sidewalk1 (rising away from the road, as built)
+    slab   -> (W, h + W * CROSS_SLOPE)        tileable slabs (rising away from the road, as built)
     back   -> (W, -SINK)                      curbs, dark
 with flat end caps (curbs). Heights follow the road's (graded) centreline z, carried by the runs.
+Slabs, brick, grass and tactile pads receive metric surface UVs after assembly; only curbs use
+a trim atlas. Surface coordinates follow the path's station and profile offset.
 The mod shows it as a TSStatic that collides with its visible mesh. Pure functions; deterministic.
 """
 import numpy as np
@@ -35,10 +37,130 @@ CURB_W = 0.15           # m of curb top band
 CROSS_SLOPE = 0.015     # sidewalk cross slope, rising away from the road
 CURB_REPEAT_M = 9.0     # m of curb per texture width (3 joints of 3 m)
 SLAB_REPEAT_M = 45.0    # m of sidewalk per texture width (4096 px, a 205 px strip ~ 2.25 m)
-MATERIALS = ("curbs", "sidewalk1", "tactile_indicator",  # West Coast USA (art/shapes/roads), loaded by the mod
-             "bne_sidewalk_brick")                       # red brick pavers (buildings.materials.json)
+MATERIALS = ("curbs", "bne_sidewalk_slab", "tactile_indicator",  # loaded by roads.lua
+             "bne_sidewalk_brick", "bne_land_lawn", "bne_sidewalk_utility", "bne_sidewalk_stone")
+GRASS = 4
 BRICK = 3
-BRICK_REPEAT_M = 1.2        # m per repeat of the brick paver texture
+STONE = 6
+BRICK_REPEAT_M = 1.2        # native sweep encoding, converted to path metres below
+BRICK_TILE_M = 4.8          # herringbone sheet: approximately 0.20 x 0.10 m paving bricks
+SLAB_TILE_M = (8.0, 4.0)    # slabs_large: 2048 x 1024, four by two square 2 m panels
+GRASS_REPEAT_M = 3.0
+STONE_TILE_M = (3.0, 1.5)   # Italy sidewalk tiles: 1024 x 512, six by three 0.5 m panels
+UV_PHASE_M = 24.0          # common multiple of all surface repeats, including tactile 0.6 m
+
+
+def path_station(point, path):
+    """Stable station of a cut's start on its original curb line."""
+    curb = np.asarray(path[0])[:, :2]
+    delta = np.diff(curb, axis=0)
+    lengths = np.linalg.norm(delta, axis=1)
+    valid = np.flatnonzero(lengths > 1e-8)
+    if not len(valid):
+        return 0.
+    fraction = np.clip(np.sum((np.asarray(point)[:2]-curb[:-1])*delta, axis=1)
+                       / np.maximum(lengths**2, 1e-16), 0., 1.)
+    distance = np.sum((curb[:-1]+fraction[:, None]*delta-np.asarray(point)[:2])**2, axis=1)
+    i = valid[np.argmin(distance[valid])]
+    phase = float(curb[0] @ (delta[valid[0]]/lengths[valid[0]])) % UV_PHASE_M
+    return phase + np.sum(lengths[:i]) + fraction[i]*lengths[i]
+
+
+def run_uvs(mesh, origin, piece, path):
+    """Recover sweep stations in linear time from the native strip UVs.
+
+    A tactile boundary can overwrite U on the neighbouring slab's vertex.
+    Check both encodings against geometry before rescaling any material.
+    """
+    P, T, UV, M = mesh
+    ids = np.unique(T[np.isin(M, (1, 2, BRICK))])
+    UV = UV.copy()
+    curb, outward = piece[1] - origin, piece[2]
+    stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(curb[:, :2], axis=0), axis=1))]
+    best = np.full(len(ids), np.inf)
+    metric = np.zeros((len(ids), 2))
+    for repeat in (SLAB_REPEAT_M if piece[8] == 1 else BRICK_REPEAT_M, TACTILE_REPEAT_M):
+        s = np.clip(UV[ids, 0]*repeat, 0., stations[-1])
+        centre = np.column_stack([np.interp(s, stations, curb[:, j]) for j in range(2)])
+        n = np.column_stack([np.interp(s, stations, outward[:, j]) for j in range(2)])
+        rel = P[ids, :2] - centre
+        across = np.sum(rel*n, axis=1) / np.maximum(np.sum(n*n, axis=1), 1e-12)
+        error = np.sum((rel-across[:, None]*n)**2, axis=1)
+        take = error < best
+        best[take] = error[take]
+        metric[take] = np.c_[s[take], across[take]]
+        if len(path) > 2 and path[2] is not None:
+            curved_s, source_s, inset, scale = path[2]
+            metric[take, 0] = np.interp(s[take], curved_s, source_s)
+            metric[take, 1] = (np.interp(s[take], curved_s, inset)
+                               + np.interp(s[take], curved_s, scale)*across[take])
+    metric[:, 0] += path_station(piece[1][0], path)
+    UV[ids] = metric
+    return P, T, UV, M
+
+
+def corner_uvs(mesh, origin, path):
+    """A regular paving grid aligned with the corner's incoming footpath.
+
+    A junction fan has no single across-path station at its inside vertex.
+    Projecting that fan onto arc length stretches and pinches the tiles, so
+    use the incoming curb normal as a local planar frame for the whole corner.
+    """
+    P, T, UV, M = mesh
+    vertices = np.unique(T[M == 1])
+    UV = UV.copy()
+    curb, outward = path[:2]
+    if len(vertices) and len(curb) >= 2:
+        normal = outward[0] / max(np.linalg.norm(outward[0]), 1e-12)
+        tangent = np.array([normal[1], -normal[0]])
+        if tangent @ (curb[1, :2]-curb[0, :2]) < 0:
+            tangent = -tangent
+        relative = P[vertices, :2] - (curb[0, :2]-np.asarray(origin)[:2])
+        phase = float(curb[0, :2] @ tangent) % UV_PHASE_M
+        UV[vertices] = np.c_[relative@tangent + phase, relative@normal]
+    return P, T, UV, M
+
+
+def surface_uvs(mesh):
+    """Apply each surface material's metric mapping after all sidewalk pieces are assembled.
+
+    Profile offsets also identify the planted verge before this step.
+    Path metres keep paving aligned through bends and driveway cuts. Split only
+    vertices used by different materials: a tactile edge must not
+    change the adjoining pavement's UVs (or a pavement edge the curb's trim band).
+    """
+    P, T, UV, M = mesh
+    if not len(T):
+        return mesh
+    source_uv = UV
+    T, UV = T.copy(), UV.copy()
+    owner = np.full(len(P), -1, np.int64)
+    ps, uvs = [P], [UV]
+    count = len(P)
+    repeats = {1: SLAB_TILE_M, 2: TACTILE_REPEAT_M, BRICK: BRICK_TILE_M,
+               GRASS: GRASS_REPEAT_M, STONE: STONE_TILE_M}
+    for mat in np.unique(M):
+        rows = M == mat
+        vertices = np.unique(T[rows])
+        shared = vertices[owner[vertices] >= 0]
+        owner[vertices] = mat
+        target = vertices.copy()
+        if len(shared):
+            remap = np.arange(len(P), dtype=np.int64)
+            remap[shared] = count + np.arange(len(shared))
+            T[rows] = remap[T[rows]]
+            target = remap[vertices]
+            ps.append(P[shared])
+            uvs.append(UV[shared].copy())
+            count += len(shared)
+        if mat in repeats:
+            repeat = np.asarray(repeats[mat], np.float64)
+            mapped = source_uv[vertices] / repeat
+            original = target < len(P)
+            UV[target[original]] = mapped[original]
+            if len(shared):
+                uvs[-1][:] = mapped[~original]
+    return (np.concatenate(ps) if len(ps) > 1 else P), T, (np.concatenate(uvs) if len(uvs) > 1 else UV), M
 
 # curbs sheet (1024 x 512, 8 bands of 64 px; Collada v up, so band 0 is v in [7/8, 1]):
 # rows 0-40 of a band are the light curb top, 40-64 the darker face
@@ -49,8 +171,13 @@ V_SLAB_IN, V_SLAB_OUT = 1.0 - 0.195, 1.0 - 0.005
 
 def _normals_2d(xy):
     """Unit left normals at each point of a polyline (mitred like roads.offset_polyline, clamped)."""
+    if len(xy) < 2:
+        return np.zeros((len(xy), 2))
     d = np.diff(xy, axis=0)
     L = np.hypot(d[:, 0], d[:, 1])
+    if np.any(L < 1e-8):
+        keep = np.r_[True, L >= 1e-8]
+        return _normals_2d(xy[keep])[np.cumsum(keep) - 1]
     L[L == 0] = 1.0
     t = d / L[:, None]
     nseg = np.stack([-t[:, 1], t[:, 0]], axis=1)
@@ -153,58 +280,215 @@ class Builder:
     (earthfast.sidewalk_mesh: the profile, ramps, tactile pads, caps and corner slabs, in the old Python's arithmetic
     and order) when its arrays are asked for; collision: the lean collision mesh beside it (self.col.arrays())."""
 
-    def __init__(self, origin, collision=False):
+    def __init__(self, origin, collision=False, ground=None, quality='minimum'):
         self.origin = np.asarray(origin, np.float64)
-        self.pieces = []            # (kind 0 run / 1 corner, points (k, 3), dirs (k, 2), outer (m, 3), ramps, w, h, caps,
-        self._built = None          # slab); the Rust meshes once built (full, lean)
+        self.ground = ground
+        self.quality = quality  # independent Sidewalks & Property Grounds selection
+        self.pieces = []            # (kind, points, dirs, outer, ramps, width, height, caps, slab)
+        self.tree_gardens = []
+        self.surface_paths = []     # original run retained across driveway/verge splits
+        self.round_flags = []       # complete angular fallback when preflight rejects a piece
+        self._built = None          # the Rust meshes once built (full, lean)
+        self._native_reuse = None   # angular physics fork reuses the same native sweep
+        self._last_native = None
+        self.vehicle_meshes = []
+        self.vehicle_visuals = []
+        self.vehicle_sections = []
+        self.verge_builder = None
+        self._defer_surface_uvs = False  # internal verge batch still needs profile-offset UVs
         self.col = _Lean(self) if collision else None
 
-    def add_run(self, curb, toward_out, w, h=CURB_H, caps=(True, True), ramps=(), slab=1):
+    def add_run(self, curb, toward_out, w, h=CURB_H, caps=(True, True), ramps=(), slab=1, driveways=(), verge=False,
+                texture_path=None, gardens=()):
         """One sidewalk run: curb (k, 3) the curb line (z = the road there), toward_out (k, 2) unit
         vectors from the curb outwards (scaled by the miter), w its width; caps: end caps at the
         (start, end) (not where the run goes on in the next tile or meets a corner piece); ramps:
         curb ramps [(s0, s1)] in arc length along the curb."""
+        self.tree_gardens.extend(gardens)
         curb = np.asarray(curb, np.float64)
         if len(curb) < 2:
             return
+        toward_out = np.asarray(toward_out, np.float64)
+        keep = np.r_[True, np.linalg.norm(np.diff(curb[:, :2], axis=0), axis=1) >= 1e-8]
+        curb, toward_out = curb[keep], toward_out[keep]
+        if len(curb) < 2:
+            return
+        texture_path = (curb, toward_out) if texture_path is None else texture_path
+        if driveways:
+            import vehicle_crossings
+            if w >= vehicle_crossings.MIN_WIDTH:
+                vehicle_crossings.add(self,curb,toward_out,w,h,caps,ramps,slab,driveways,verge=verge,
+                                      texture_path=texture_path)
+                return
+        if verge and w >= 2.4 and not ramps and slab == 1:
+            # A second bounded native batch gives offset-based UVs for the
+            # planted strip. Geometry/collision still use the same native sweep.
+            if self.verge_builder is None:
+                self.verge_builder = Builder(self.origin, collision=self.col is not None, quality=self.quality)
+                self.verge_builder._defer_surface_uvs = True
+            self.verge_builder.add_run(curb,toward_out,w,h,caps,slab=BRICK,texture_path=texture_path)
+            self._built = None
+            return
+        import sidewalk_outline
+        outline = sidewalk_outline.run(curb, toward_out, w, caps, ramps, self.quality)
+        mapping = None
+        if outline is not None:
+            curb, toward_out, ramps, mapping = outline
+        self.round_flags.append(outline is not None)
         self.pieces.append((0, curb[:, :3], np.asarray(toward_out, np.float64)[:, :2], None, list(ramps), float(w),
                             float(h), (bool(caps[0]), bool(caps[1])), int(slab)))
+        self.surface_paths.append((*texture_path, mapping) if mapping is not None else texture_path)
         self._built = None
 
-    def add_corner(self, arc, inward, outer, h=CURB_H, ramps=()):
+    def add_corner(self, arc, inward, outer, h=CURB_H, ramps=(), slab=1, outer_stations=None):
         """A corner piece: the curb along the polyline arc (k, 3) (a curb return, with the straight
         runs and tapers of curb extensions; inward: unit vectors toward the sidewalk), the slab from
         the curb top to the outer corner points [(x, y, z) ...] (from the second sidewalk's end round
         to the first's), and the back faces along the outer edges. ramps: [(s0, s1)] arc lengths
         where the curb is lowered (the slab then slopes up from it toward the outer corner)."""
+        outer = clean_corner_outer(outer)
+        if outer_stations is not None:
+            outer_stations = np.asarray(outer_stations, np.float64).copy()
+            if outer_stations.shape != (len(outer),):
+                raise ValueError('corner rear stations do not match its boundary')
         self.pieces.append((1, np.asarray(arc, np.float64)[:, :3], np.asarray(inward, np.float64)[:, :2],
-                            np.asarray(outer, np.float64).reshape(-1, 3), list(ramps), 2.5, float(h), (False, False),
-                            1))
+                            outer, list(ramps), 2.5, float(h), (False, False),
+                            int(slab)))
+        self.surface_paths.append((self.pieces[-1][1], self.pieces[-1][2], outer_stations))
+        import sidewalk_outline
+        self.round_flags.append(sidewalk_outline.permitted(self.pieces[-1][1], ramps, self.quality))
         self._built = None
 
     def empty(self):
-        return not self.pieces
+        return not self.pieces and not self.vehicle_meshes and self.verge_builder is None
 
     def _build(self):
         if self._built is None:
-            import fast
-            fast.require(104, "sidewalk_mesh")
             ps = self.pieces
-            kind = np.array([p[0] for p in ps], np.int64)
-            pts = np.ascontiguousarray(np.concatenate([p[1] for p in ps]) if ps else np.zeros((0, 3)))
-            dirs = np.ascontiguousarray(np.concatenate([p[2] for p in ps]) if ps else np.zeros((0, 2)))
-            off = np.r_[0, np.cumsum([len(p[1]) for p in ps])].astype(np.int64)
-            outs = [p[3] if p[3] is not None else np.zeros((0, 3)) for p in ps]
-            outer = np.ascontiguousarray(np.concatenate(outs) if ps else np.zeros((0, 3)))
-            ooff = np.r_[0, np.cumsum([len(o) for o in outs])].astype(np.int64)
-            rs = [np.asarray(p[4], np.float64).reshape(-1, 2) for p in ps]
-            ramps = np.ascontiguousarray(np.concatenate(rs) if ps else np.zeros((0, 2)))
-            roff = np.r_[0, np.cumsum([len(r) for r in rs])].astype(np.int64)
-            self._built = fast._ef.sidewalk_mesh(
-                kind, pts, dirs, off, outer, ooff, ramps, roff, np.array([p[5] for p in ps], np.float64),
-                np.array([p[6] for p in ps], np.float64), np.array([p[7] for p in ps], bool).reshape(-1, 2),
-                np.array([p[8] for p in ps], np.int64), tuple(float(v) for v in self.origin), self.col is not None)
+            # Retain each piece's path while mapping its native geometry. The
+            # native ABI has no per-piece vertex offsets, so map before combining.
+            from vehicle_crossings import combine
+            import sidewalk_rounding
+            rounded = sidewalk_rounding.enabled(self.quality)
+            profile_detail = rounded and sidewalk_rounding.spans(self.quality) > 1
+            batches = []
+            raw_batches = []
+            back_regions = ([], [])
+            for index, (piece, path, round_allowed) in enumerate(zip(ps, self.surface_paths, self.round_flags)):
+                finish = piece[8]
+                native = (self._native_reuse[index] if self._native_reuse is not None else
+                          native_mesh([piece], self.origin, self.col is not None))
+                if profile_detail:
+                    raw_batches.append(native)
+                visual, collision = native
+                curved = piece[0] == 1 and path[2] is not None
+                if curved:
+                    from walk_surfaces import curved_corner
+                    from walk_back import continuous_back
+                    phase = path_station(piece[1][0], path)
+                    args = (self.origin, piece[1], piece[2], piece[3], path[2], phase)
+                    native_visual = visual
+                    visual = curved_corner(native_visual, *args)
+                    back_args = (self.origin, piece[1], piece[2], piece[3], path[2], piece[6])
+                    visual = continuous_back(visual, native_visual, *back_args,
+                                             overlap_regions=back_regions[0])
+                    if self.col is not None:
+                        native_collision = collision
+                        collision = curved_corner(native_collision, *args)
+                        collision = continuous_back(collision, native_collision, *back_args,
+                                                    overlap_regions=back_regions[1])
+                elif piece[0] == 1:
+                    visual = complete_corner_slab(visual)
+                    if self.col is not None:
+                        collision = complete_corner_slab(collision)
+                if profile_detail and round_allowed:
+                    visual = sidewalk_rounding.native_visual(visual, piece, self.origin, self.quality)
+                if piece[0] == 0:
+                    visual = run_uvs(visual, self.origin, piece, path)
+                elif not curved:
+                    visual = corner_uvs(visual, self.origin, path)
+                P, T, UV, M = visual
+                if finish != 1:
+                    M = np.where((M == 1) | (M == BRICK), finish, M)
+                batches.append(((P, T, UV, M), collision))
+            self._last_native = raw_batches if profile_detail else None
+            if not batches:
+                batches.append(native_mesh([], self.origin, self.col is not None))
+            self._built = (combine(batches[0][0], [b[0] for b in batches[1:]]),
+                           combine(batches[0][1], [b[1] for b in batches[1:]]))
+            extra = list(self.vehicle_visuals)
+            if profile_detail:
+                extra = [sidewalk_rounding.vehicle_visual(mesh, *section, quality=self.quality)
+                         for mesh, section in zip(extra, self.vehicle_sections)]
+            if not self._defer_surface_uvs:
+                from sidewalk_details import meshes
+                extra.extend(meshes(ps, self.origin))
+            collision_extra = list(self.vehicle_meshes)
+            if self.verge_builder is not None:
+                P,T,UV,M = (a.copy() for a in self.verge_builder.arrays())
+                # The first slab strip is 0.6 m wide (CURB_W .. CURB_W+PAD_W).
+                # The remaining >=1.65 m stays paved, including every crossing.
+                planted = (M == BRICK) & (UV[T,1].max(axis=1) <= CURB_W+PAD_W+1e-8)
+                M[M == BRICK] = 1
+                M[planted] = GRASS
+                extra.append((P,T,UV,M))
+                if self.col is not None:
+                    collision_extra.append(self.verge_builder.col.arrays())
+            if extra:
+                from vehicle_crossings import combine
+                visual, collision = self._built
+                self._built=(combine(visual,extra),
+                             combine(collision,collision_extra) if self.col is not None else collision)
+            if any(back_regions):
+                from walk_overlap import upper_back_envelope
+                visual, collision = self._built
+                if back_regions[0]:
+                    visual = upper_back_envelope(visual, back_regions[0])
+                self._built = visual, collision
+            if not self._defer_surface_uvs:
+                visual, collision = self._built
+                self._built = surface_uvs(visual), collision
+            collision_replaced = False
+            angular_collision_needed = False
+            if self.ground is not None:
+                visual, collision = self._built
+                corrected = clear_terrain(visual, self.origin, self.ground)
+                if corrected is not visual:
+                    # Corrected pavement must have the exact same driving
+                    # surface. Keep decorative utility covers out of physics.
+                    if profile_detail and self.col is not None:
+                        # Terrain clearance can replace physics from the visible
+                        # surface. Rebuild that exceptional path from the original
+                        # angular profile on the already accepted rounded outline.
+                        angular_collision_needed = True
+                    else:
+                        p, t, uv, m = corrected
+                        collision = (p, t[m != 5], uv, np.zeros(np.count_nonzero(m != 5), np.int64))
+                    collision_replaced = True
+                self._built = corrected, collision
+            if self.col is not None and back_regions[1] and not collision_replaced:
+                from walk_overlap import upper_back_envelope
+                visual, collision = self._built
+                self._built = visual, upper_back_envelope(collision, back_regions[1])
+            if self.tree_gardens:
+                from garden_cutouts import cut
+                visual,collision=self._built
+                self._built=(cut(visual,self.tree_gardens,self.origin),
+                             cut(collision,self.tree_gardens,self.origin) if self.col is not None else collision)
+            if angular_collision_needed:
+                self._built = self._built[0], self._angular_copy().col.arrays()
         return self._built
+
+    def _angular_copy(self):
+        """Angular profile of the same accepted outline, for terrain physics."""
+        import copy
+        b = copy.copy(self)
+        b.quality, b._built = 'minimum', None
+        b._native_reuse, b._last_native = self._last_native, None
+        b.col = _Lean(b) if self.col is not None else None
+        if self.verge_builder is not None:
+            b.verge_builder = self.verge_builder._angular_copy()
+        return b
 
     def arrays(self):
         P, T, UV, M = self._build()[0]
@@ -232,6 +516,204 @@ class _Lean:
 
     def empty(self):
         return self.b.empty()
+
+
+def clear_terrain(mesh, origin, ground):
+    """Keep pavement above the drawn 1 m terrain with continuous side faces.
+
+    Split with the existing native terrain kernel, then at the intersection of
+    the pavement and terrain planes. Their upper envelope is continuous across
+    shared edges. Existing rear slopes and caps follow each corrected boundary;
+    their buried bottoms stay fixed. Unaffected triangles keep their XYZ and UVs.
+    """
+    import fast
+    from vehicle_crossings import combine
+    from walk_skin import BoundarySkin
+    P, T, UV, M = mesh
+    selected = np.flatnonzero(np.isin(M, (1, 2, BRICK, GRASS, STONE, 5)))
+    if not len(selected):
+        return mesh
+    absolute = P + np.asarray(origin)
+    xy = absolute[np.unique(T[selected]), :2]
+    low = np.floor(xy.min(axis=0)).astype(int)-1
+    high = np.ceil(xy.max(axis=0)).astype(int)+1
+    xx, yy = np.meshgrid(np.arange(low[0],high[0]+1), np.arange(low[1],high[1]+1))
+    grid = np.asarray(ground(xx.ravel(), yy.ravel()), np.float64).reshape(xx.shape)
+    if not np.isfinite(grid).all():
+        raise ValueError('non-finite terrain beneath sidewalk')
+    p, uv, t, src = fast._ef.follow_tris(
+        np.ascontiguousarray(absolute[:, :2]), np.ascontiguousarray(UV),
+        np.ascontiguousarray(T[selected]), 1., np.ascontiguousarray(grid),
+        int(low[0]), int(low[1]), 1e-8)
+    p, uv, t, src = map(np.asarray, (p, uv, t, src))
+    if not len(t):
+        return mesh
+    # Native output vertices are not shared, but polygons can fan into several
+    # triangles; expand once so source-plane interpolation stays unambiguous.
+    q = p[t]
+    tex = uv[t]
+    original = absolute[T[selected[src]]]
+    ab, ac = original[:, 1, :2]-original[:, 0, :2], original[:, 2, :2]-original[:, 0, :2]
+    det = ab[:, 0]*ac[:, 1]-ab[:, 1]*ac[:, 0]
+    rel = q[:, :, :2]-original[:, :1, :2]
+    s = (rel[:, :, 0]*ac[:, None, 1]-rel[:, :, 1]*ac[:, None, 0])/det[:, None]
+    v = (ab[:, None, 0]*rel[:, :, 1]-ab[:, None, 1]*rel[:, :, 0])/det[:, None]
+    z = original[:, :1, 2]+s*(original[:, 1:2, 2]-original[:, :1, 2])+v*(original[:, 2:3, 2]-original[:, :1, 2])
+    # 1 cm covers roundoff without changing an ordinary 15 cm curb or ramp.
+    delta = q[:, :, 2]+.01-z
+    affected = np.unique(src[np.any(delta > 1e-7, axis=1)])
+    if not len(affected):
+        return mesh
+    skin = BoundarySkin(absolute, T, UV, M, selected[affected])
+    positions, textures, faces, materials = [], [], [], []
+    for i in np.flatnonzero(np.isin(src, affected)):
+        # [x,y,original z,u,v,terrain-original difference]. Clip at delta=0,
+        # so adjoining triangles describe the same max(surface, terrain) edge.
+        poly = np.c_[q[i, :, :2], z[i], tex[i], delta[i]]
+        for positive in (False, True):
+            if positive and np.all(poly[:, -1] == 0):
+                continue
+            out = []
+            for a,b in zip(poly, np.roll(poly,-1,axis=0)):
+                inside_a = a[-1] >= 0 if positive else a[-1] <= 0
+                inside_b = b[-1] >= 0 if positive else b[-1] <= 0
+                if inside_a:
+                    out.append(a.copy())
+                if inside_a != inside_b:
+                    out.append(a+(b-a)*(a[-1]/(a[-1]-b[-1])))
+            if len(out)<3:
+                continue
+            out = np.asarray(out)
+            base = len(positions)
+            coords = out[:, :3].copy()
+            if positive:
+                coords[:, 2] += out[:, -1]
+            skin.collect(selected[src[i]], out[:, :3], coords)
+            positions.extend(coords-np.asarray(origin))
+            textures.extend(out[:, 3:5])
+            for j in range(1,len(out)-1):
+                a,b = coords[[j,j+1], :2]-coords[0, :2]
+                if abs(a[0]*b[1]-a[1]*b[0]) < 1e-12:
+                    continue
+                faces.append([base,base+j,base+j+1])
+                materials.append(M[selected[src[i]]])
+    keep = np.ones(len(T),bool)
+    keep[selected[affected]] = False
+    changed_skin, skin_mesh = skin.rebuild()
+    keep[changed_skin] = False
+    patches = [(np.asarray(positions), np.asarray(faces,np.int64),
+                np.asarray(textures), np.asarray(materials,np.int64))]
+    if skin_mesh is not None:
+        sp, st, su, sm = skin_mesh
+        patches.append((sp-np.asarray(origin), st, su, sm))
+    return combine((P,T[keep],UV,M[keep]), patches)
+
+
+def extend_collider_heights(boxes, mesh, origin):
+    """Occupancy guards include pavement raised by terrain clearance."""
+    p = mesh[0]
+    if len(p):
+        low = float(p[:, 2].min()+origin[2]-.1)
+        high = float(p[:, 2].max()+origin[2]+.1)
+        for box in boxes:
+            box[2] = min(box[2], low)
+            box[5] = max(box[5], high)
+
+
+def clean_corner_outer(outer):
+    """Remove zero-length rear edges before native ear clipping.
+
+    Coincident XY may carry slightly different draped heights. Retain the higher
+    datum rather than leave a vertical seam through the pavement.
+    """
+    result = []
+    for point in np.asarray(outer, np.float64).reshape(-1, 3):
+        if result and np.linalg.norm(point[:2] - result[-1][:2]) < 1e-8:
+            result[-1][2] = max(result[-1][2], point[2])
+        else:
+            result.append(point.copy())
+    return np.asarray(result, np.float64).reshape(-1, 3)
+
+
+def complete_corner_slab(mesh):
+    """Check native corner coverage; repair incomplete clipping as one surface.
+
+    The slab's contiguous vertex block precedes the rear skins. Preserve its
+    original XYZ/UVs, including ramp heights, in both visible and collision meshes.
+    """
+    P, T, UV, M = mesh
+    rows = np.flatnonzero(M == 1)
+    if not len(rows):
+        raise ValueError('corner triangulation produced no pavement')
+    # Native corner appends slab vertices directly after the curb-strip vertices.
+    # Incomplete clipping can leave vertices unused, so infer its end from the
+    # following back-strip triangles, never from the slab triangles alone.
+    start = int(T[:rows[0]].max()) + 1 if rows[0] else 0
+    end = int(T[rows[-1]+1:].min()) if rows[-1]+1 < len(T) else len(P)
+    xy = P[start:end, :2]
+    from shapely.geometry import Polygon
+    shape = Polygon(xy)
+    if not shape.is_valid or shape.area <= 1e-10:
+        return mesh  # Degenerate legacy inputs are outside polygon repair.
+    triangles = P[T[rows], :2]
+    edges = triangles[:, 1:] - triangles[:, :1]
+    area = np.abs(edges[:, 0, 0]*edges[:, 1, 1] - edges[:, 0, 1]*edges[:, 1, 0]).sum()/2
+    if abs(area-shape.area) <= max(1e-8, shape.area*1e-8):
+        return mesh
+    from shapely import constrained_delaunay_triangles
+    lookup = {tuple(p): i+start for i, p in enumerate(xy)}
+    faces = []
+    covered = 0.
+    for triangle in constrained_delaunay_triangles(shape).geoms:
+        coords = np.asarray(triangle.exterior.coords)[:3]
+        face = [lookup[tuple(p)] for p in coords]
+        a, b = coords[1:] - coords[0]
+        if a[0]*b[1]-a[1]*b[0] < 0:
+            face.reverse()
+        faces.append(face)
+        covered += triangle.area
+    if abs(covered-shape.area) > max(1e-8, shape.area*1e-8):
+        raise ValueError('corner triangulation does not cover the pavement')
+    keep = M != 1
+    return P, np.vstack((T[keep], np.asarray(faces, np.int64))), UV, np.r_[M[keep], np.ones(len(faces), np.int64)]
+
+
+def corner_outer(corner):
+    """Offset the native 2.5 m outer datum to each actual adjoining walk width.
+
+    Kept separate from draped source Z so repeat builds/rebases cannot add the
+    correction twice. This fixes small ledges on wide or asymmetric footpaths.
+    """
+    outer=np.asarray(corner['outer'],np.float64).copy()
+    widths=corner.get('outer_widths')
+    if widths is not None:
+        outer[:,2]+=(np.asarray(widths)-2.5)*CROSS_SLOPE
+    return outer
+
+
+def slab_material(walk):
+    return STONE if walk.get('pavement') == 'stone' else BRICK if walk.get('brick') else 1
+
+
+def native_mesh(ps, origin, collision):
+    """One native geometry batch; material-specific surface UVs follow assembly."""
+    import fast
+    fast.require(104, 'sidewalk_mesh')
+    kind = np.array([p[0] for p in ps], np.int64)
+    pts = np.ascontiguousarray(np.concatenate([p[1] for p in ps]) if ps else np.zeros((0, 3)))
+    dirs = np.ascontiguousarray(np.concatenate([p[2] for p in ps]) if ps else np.zeros((0, 2)))
+    off = np.r_[0, np.cumsum([len(p[1]) for p in ps])].astype(np.int64)
+    outs = [p[3] if p[3] is not None else np.zeros((0, 3)) for p in ps]
+    outer = np.ascontiguousarray(np.concatenate(outs) if ps else np.zeros((0, 3)))
+    ooff = np.r_[0, np.cumsum([len(o) for o in outs])].astype(np.int64)
+    rs = [np.asarray(p[4], np.float64).reshape(-1, 2) for p in ps]
+    ramps = np.ascontiguousarray(np.concatenate(rs) if ps else np.zeros((0, 2)))
+    roff = np.r_[0, np.cumsum([len(r) for r in rs])].astype(np.int64)
+    return fast._ef.sidewalk_mesh(kind, pts, dirs, off, outer, ooff, ramps, roff,
+        np.array([p[5] for p in ps], np.float64), np.array([p[6] for p in ps], np.float64),
+        np.array([p[7] for p in ps], bool).reshape(-1, 2),
+        np.array([BRICK if p[8] != 1 else 1 for p in ps], np.int64),
+        tuple(float(v) for v in origin), collision)
 
 
 def run_geometry(walk_line, side, w):

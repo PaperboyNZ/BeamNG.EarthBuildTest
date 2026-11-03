@@ -22,8 +22,17 @@ export const settingsSchema = [
         options: [ { label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "Normal", value: "normal" }, { label: "High", value: "high" }, { label: "Ultra", value: "ultra" }, { label: "Extreme", value: "extreme" } ] },
       { id: "treeDistance", type: "select", default: "normal", name: "Tree draw distance", desc: "How far out trees, rocks, poles and roadside props are drawn: about 1.3 km at Normal, 1 km at Near, 2.8 km at Max. Farther needs more memory and a stronger GPU, and the app builds more tree tiles around you.",
         options: [ { label: "Near", value: "near" }, { label: "Medium", value: "medium" }, { label: "Normal", value: "normal" }, { label: "Far", value: "far" }, { label: "Farther", value: "farther" }, { label: "Max", value: "max" } ] },
-      { id: "buildingDistance", type: "select", default: "normal", name: "Building draw distance", desc: "How far out buildings and bridges are drawn: simple far buildings to about 1.6 km and the skyline's big buildings to about 4.8 km at Normal; Near 60 %, Far 150 %, Max twice as far. The buildings near you are always drawn in full.",
+      { id: "buildingDistance", type: "select", default: "normal", name: "Building draw distance", desc: "How far out buildings and bridges are drawn: simple far buildings to about 1.6 km and the skyline's big buildings to about 4.8 km at Normal; Near 60 %, Far 150 %, Max twice as far. Building generation quality controls nearby detail separately.",
         options: [ { label: "Near", value: "near" }, { label: "Normal", value: "normal" }, { label: "Far", value: "far" }, { label: "Max", value: "max" } ] },
+      { id: "buildingGenerator", type: "select", default: "legacy", name: "Building generation", desc: "Simple is the default and uses the original building generator. Advanced defaults to Minimum quality and uses the new building and landscaping system with detailed architecture, courtyards and multipart buildings. Your choice is saved for future sessions.",
+        note: "Applies while you play. Existing buildings stay visible until their replacements are ready. Terrain and downloaded data are kept.",
+        options: [ { label: "Simple", value: "legacy" }, { label: "Advanced", value: "v2" } ] },
+      { id: "buildingQuality", type: "select", disabledIf: c => c.buildingGenerator !== "v2", disabledReason: "Select Advanced to edit quality. Your choices are kept while Simple is selected.", default: "minimum", name: "Building generation quality", desc: "Each quality mode manages performance automatically; there is no separate adaptive toggle. Advanced defaults to Minimum. Quality levels above Minimum are experimental and costly: they increase generation time and resource use. Minimum stays at its speed representation, even while stationary, and prioritizes performance with compact regional buildings, textured windows, updated materials and essential access. It omits small facade detail and inferred site decoration. Very Low preserves architectural shapes, colours and window layouts with textured facades and essential entrances and garage access. Low adds facade detail. Medium adds recessed openings. Sidewalks, yards, gardens and entrance paths follow Sidewalks & Property Grounds independently. High adds frames and sills; Very High adds simplified gutters; Ultra retains full architectural detail. Higher modes defer new detail during fast travel or coverage pressure and resume useful nearby refinement after settling. Completed detail stays visible until a compatible replacement is ready.",
+        options: [ { label: "Minimum", value: "minimum" }, { label: "Very Low", value: "very_low" }, { label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "High", value: "high" }, { label: "Very High", value: "very_high" }, { label: "Ultra", value: "ultra" } ] },
+      { id: "groundsQuality", type: "select", disabledIf: c => c.buildingGenerator !== "v2", disabledReason: "Select Advanced to edit quality. Your choices are kept while Simple is selected.", default: "minimum", name: "Sidewalks & Property Grounds", desc: "Curbs, sidewalks, yards, gardens, and entrance paths. Independent of building quality. Minimum keeps angular curb edges and essential access. Very Low permits rounded curb edges; Low also permits simple proven entrance links and planting. Medium and above allow more complete accepted site planning and visual detail. Physical surfaces change together through the existing safe handover.",
+        options: [ { label: "Minimum", value: "minimum" }, { label: "Very Low", value: "very_low" }, { label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "High", value: "high" }, { label: "Very High", value: "very_high" }, { label: "Ultra", value: "ultra" } ] },
+      { id: "activeBuildingGenerator", type: "info", name: "Active building generation", desc: "The building system selected by the connected Earth server. Changed buildings and their associated geometry update progressively." },
+      { id: "buildingDetailM", type: "float", min: 100, max: 640, step: 50, default: 350, name: "Building refinement distance (m)", desc: "Maximum distance for adaptive refinement. Each quality level also limits its reach and skips details too small to see. Higher distances require more generation work.", showIf: c => c.buildingGenerator === "v2" && c.buildingQuality !== "minimum" },
       { id: "objectDetail", type: "select", default: "game", name: "Object detail", desc: "How far out trees, buildings, props and cars keep their detailed models before switching to simpler ones, in BeamNG.Earth's world only. Game setting: the game's own Mesh Quality (Options, Graphics). Low to Extreme override it here (Ultra is the game's highest; Extreme 1.5 times more). Higher costs GPU time where much is in view.",
         options: [ { label: "Game setting", value: "game" }, { label: "Low", value: "low" }, { label: "Normal", value: "normal" }, { label: "High", value: "high" }, { label: "Ultra", value: "ultra" }, { label: "Extreme", value: "extreme" } ] },
       { id: "grass", type: "select", virtual: true, default: "normal", name: "Grass and shrubs", desc: "3D grass and scrub near the car (the game's own Hirochi Raceway and West Coast USA plants). Off saves the most on handhelds. Without the optional grass patch (tools/gcpatch, Linux) the game regrows the grass in one slower frame each time the ground under the car moves; denser grass makes that frame longer.",
@@ -190,6 +199,7 @@ export const presetLine = computed(() => {
   return p ? `${p.name}: ${p.desc}` : ""
 })
 export const visibleItems = category => category.items.filter(it => !it.showIf || it.showIf(config.value))
+export const isItemDisabled = item => !!(item.disabledIf && item.disabledIf(config.value))
 export const categoryNamed = name => settingsSchema.find(c => c.name === name) || settingsSchema[0]
 
 // Extract global defaults (persisted settings only)
@@ -226,6 +236,13 @@ export function fmt(v, digits) {
 
 export function infoValue(item) {
   const s = status.value
+  if (item.id === "activeBuildingGenerator") {
+    const labels = { legacy: "Simple", v2: "Advanced" }
+    const active = labels[s.buildingGenerator]
+    if (s.buildingGeneratorError) return s.buildingGeneratorError
+    if (s.connection !== "connected" || !active) return "Connect to a matching Earth server to view"
+    return s.buildingGenerator === config.value.buildingGenerator ? active : `${active} (switching to ${labels[config.value.buildingGenerator]})`
+  }
   if (item.id === "connection") return connectionText.value
   if (item.id === "anchor") return s.anchorId ? `#${s.anchorId}  ${fmt(s.anchorLat, 5)}, ${fmt(s.anchorLon, 5)}` : "none"
   if (item.id === "player") return (typeof s.playerLat === "number") ? `${fmt(s.playerLat, 5)}, ${fmt(s.playerLon, 5)}  (${fmt(s.dist / 1000, 1)} km from origin)` : "-"
@@ -331,6 +348,7 @@ export function updateSetting(key) {
 }
 
 export function resetSetting(item) {
+  if (isItemDisabled(item)) return
   config.value[item.id] = item.default
   updateSetting(item.id)
 }
@@ -383,6 +401,7 @@ export function confirmClearCache() {
 }
 
 export function selectOption(item, val) {
+  if (isItemDisabled(item)) return
   if (item.id === "grass") { setGrass(val); return }
   config.value[item.id] = val
   updateSetting(item.id)

@@ -1108,6 +1108,14 @@ three days of testing: dem 741 MB / 7.5k files, imagery 1.4 GB / 35k, deshadow 7
     each run: a 15 cm face with a 2 cm batter, a bevelled nose and a 15 cm curb top band (`curbs`,
     plain band), then the slab (`sidewalk1`, rising 1.5 % away from the road) and a back face.
   - Heights follow the road's graded centreline z, and grading keeps the sidewalk band flat.
+  - Corner rear edges follow the curb's offset curve and retain the exact joins to adjacent
+    runs. Paving coordinates follow distance along the corner midline and across its actual
+    width; access paths and driveways also use physical texture repeats. Consumed inner radii
+    merge only when the unchanged approaches cover the discarded offset loop.
+  - Rear slopes use continuous shared boundaries. Where tight sloping corners overlap, only
+    the upper surface is retained inside the affected patch. Terrain clearance also rebuilds
+    incident rear/cap faces, so lifting the pavement cannot open a gap at its back. Corrected
+    pavement supplies the matching driving collision, excluding decorative utility covers.
   - It is written as one two-material `.cdae` (`cdae.encode` now takes several materials, one
     primitive each) and announced in the tile JSON as `"walk": {shape, pos}`.
   - The mod shows it as one TSStatic with `collisionType "Visible Mesh"` (governor kind `roadWalk`).

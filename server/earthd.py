@@ -51,6 +51,7 @@ SESSION_ORPHAN_S after nobody claimed them. The mod resyncs at its current origi
 tiles on screen never lose their files.
 """
 import os
+from buildgen import font_bootstrap  # Load FriBidi before Pillow initializes.
 
 # Heavy numpy work must not compete with the game's physics threads (§4.5): one BLAS/OpenMP
 # thread per worker. Set before numpy is imported.
@@ -1425,6 +1426,10 @@ class Server:
         on = bool(on) and bool(self.boost_cpus)
         if on == self.boost_on:
             return
+        if getattr(self, "split_on", False):
+            self.boost_on = on          # (an edge hold's split in force: its end pins by this, split_boost)
+            log.info("load boost %s (%s) after the edge hold", "on" if on else "off", why)
+            return
         cpus = ((getattr(self, "catchup_cpus", None) or self.boost_cpus) if half_only else self.boost_cpus) if on \
             else self.server_cpus
         if not cpus:
@@ -1437,6 +1442,39 @@ class Server:
         self.boost_on = on
         log.info("load boost %s (%s): %d threads on CPUs %s", "on" if on else "off", why, n,
                  ",".join(map(str, sorted(cpus))))
+
+    def split_boost(self, on, why):
+        """The full priority split (cpupin.full_split: the server on every CPU, the game on its first cores) on, or off
+        back to the boost in force before (Server.load_boost's state is left as it was). True when on. Not over full
+        priority loading (boost_full: that is the same split already)."""
+        if on:
+            if self.boost_full or getattr(self, "split_on", False):
+                return False
+            full = cpupin.full_split(self.server_cpus, getattr(self, "game_cpus", None))
+            if not full:
+                return False
+            try:
+                n = cpupin.pin_tree(full[0])
+                g = cpupin.pin_game(full[1])
+            except OSError as e:
+                log.warning("%s boost: %s", why, e)
+                return False
+            self.split_on = True
+            log.info("%s: every core (%d server threads on CPUs %s, the game's %d on %s)", why, n,
+                     ",".join(map(str, sorted(full[0]))), g, ",".join(map(str, sorted(full[1]))))
+            return True
+        if not getattr(self, "split_on", False):
+            return False
+        self.split_on = False
+        if self.boost_full:
+            return False                # (full priority loading came meanwhile: its split stays)
+        try:
+            cpupin.pin_tree(self.boost_cpus if self.boost_on and self.boost_cpus else self.server_cpus)
+            cpupin.pin_game(getattr(self, "game_cpus", None))
+        except OSError as e:
+            log.warning("%s: %s", why, e)
+        log.info("%s: the cores back as before", why)
+        return False
 
     def build_far_bld_tile(self, aid, tx, ty):
         """buildings.far_tile: a far (render-only) building tile of anchor aid, or None. Worker threads."""
@@ -1580,7 +1618,7 @@ class Server:
 
     FAR_GEO_KEPT = 20000        # far geotiles of this session remembered (build_far_geo: sent again from the files)
 
-    def build_far_geo(self, kind, gx, gy):
+    def build_far_geo(self, kind, gx, gy, plan_ref=None, plan_refs=None, building_detail='full'):
         """blockworker.far_geo in the far buildings' process: far geotile (gx, gy) of kind ("bldfar", "bldsky",
         "brfar"), anchor-free (its own place's rules and DEM zoom); one built before in this session comes from its
         files. (vfs path, n, frame, pivot, shapes) or None (its cells not at hand yet). Worker threads
@@ -1588,25 +1626,38 @@ class Server:
         if self.far_bld_pool is None or self.mapdata is None:
             return None
         import geotiles
+        from buildgen import products
+        if kind!='bldfar' or not products.valid_reference(plan_ref):plan_ref=None
         z = blockworker.far_geo_zoom(kind)
+        if kind=='bldsky':
+            from buildgen import distant
+            plan_refs=distant.references(geotiles.geobox(gx,gy,z),plan_refs)
+        else:plan_refs=None
         memo = self.__dict__.setdefault("_far_geo_done", {})
-        got = memo.get((kind, gx, gy))
+        token=plan_ref['revision'] if plan_ref else distant.reference_revision(plan_refs) if plan_refs else None
+        import building_settings
+        mode = building_settings.current()
+        building_detail='minimum' if building_detail=='minimum' and mode=='v2' and kind!='brfar' else 'full'
+        memo_key=(kind,gx,gy,token,mode if kind != 'brfar' else None,building_detail)
+        got = memo.get(memo_key)
         if got is not None and all(os.path.exists(os.path.join(self.out_dir, n))
                                    for n in [os.path.basename(got[0])] + list(got[4].values())):
             return got
         _lh, _mph, _buried, lamps, _country, gzoom = self.geo_rules(gx, gy, z)
         t0 = time.perf_counter()
-        got = self.far_bld_pool.submit(blockworker.far_geo, kind, gx, gy, gzoom, self.out_dir, self.vfs_dir,
-                                       lamps).result()
+        from buildgen import quality
+        got = self.far_bld_pool.submit(building_settings.run, mode, quality.run, building_detail, blockworker.far_geo, kind, gx, gy, gzoom, self.out_dir, self.vfs_dir,
+                                       lamps,plan_ref=plan_ref,plan_refs=plan_refs).result()
         log.debug("far geotile %s %s: %.2f s (queue + build)", kind, geotiles.key(gx, gy, z), time.perf_counter() - t0)
         if got is not None:
             if len(memo) > self.FAR_GEO_KEPT:
                 memo.clear()
-            memo[(kind, gx, gy)] = got
+            memo[memo_key] = got
         return got
 
 
-    def build_roads_geo(self, aid, gx, gy, content=True, skin=True, exact=None):
+    def build_roads_geo(self, aid, gx, gy, content=True, skin=True, exact=None, progress_token=None,
+                        building_detail='full', building_view=None, grounds_quality=None):
         """blockworker.roads_geo in a road process: geotile (gx, gy)'s content (once: kept by the mod across
         rebases), anchor aid's skin and exact variants. Its gas station pads kept for the ground's painters. None
         when the anchor is gone. Worker threads (roads.GeoTracker)."""
@@ -1614,11 +1665,16 @@ class Server:
         if anchor is None or self.mapdata is None or self.road_pool is None:
             return None
         lh, mph, buried, lamps, country, gzoom = self.geo_rules(gx, gy)
+        import building_settings
+        from buildgen.grounds_quality import effective
+        mode=building_settings.current()
         fut = self.road_pool.submit(
-            blockworker.roads_geo, aid, anchor.lat, anchor.lon, anchor.zooms[0], gx, gy, gzoom, self.out_dir,
+            building_settings.run, mode, blockworker.roads_geo,
+            aid, anchor.lat, anchor.lon, anchor.zooms[0], gx, gy, gzoom, self.out_dir,
             self.vfs_dir, self.sidewalks, DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0,
             self.buildings, lh, mph, self.anchor_q(anchor) if skin else None, self.gas_stations, buried, lamps,
-            country, content, skin, exact)
+            country, content, skin, exact, progress_token, building_detail, building_view,
+            submitted_at=time.perf_counter(),grounds_quality=effective(grounds_quality,mode))
         t0, waited = time.perf_counter(), []
         try:
             res = poolsmod.result_running(fut, ROAD_TILE_TIMEOUT_S, waited)
@@ -1630,8 +1686,11 @@ class Server:
                         st[k] = st.get(k, 0.0) + v
                 top = " ".join(f"{k} {v:.1f}" for k, v in sorted(st.items(), key=lambda kv: -kv[1])[:5])
                 tm = (res or {}).get("time") or {}
+                queue_s = ((res or {}).get("worker") or {}).get("queue_s")
+                if queue_s is None:
+                    queue_s = waited[0] if waited else 0.0
                 log.info("road geotile %d_%d in %.1f s (queue %.1f; content %.1f s %.1f cpu, skin %.1f s %.1f cpu): %s",
-                         gx, gy, took, waited[0] if waited else 0.0, tm.get("content_s", 0.0),
+                         gx, gy, took, queue_s, tm.get("content_s", 0.0),
                          tm.get("content_cpu", 0.0), tm.get("skin_s", 0.0), tm.get("skin_cpu", 0.0), top)
         except concurrent.futures.TimeoutError:
             fut.cancel()
@@ -1666,11 +1725,18 @@ class Server:
             return None
         lh, mph, buried, lamps, country, gzoom = self.geo_rules(gx, gy)
         scratch = os.path.join(self.cache_dir, "areas", "scratch")
+        import building_settings
         return poolsmod.result_running(getattr(self.road_pool, "submit_low", self.road_pool.submit)(
-            blockworker.prebuild_geo, gx, gy, gzoom, scratch, self.buildings, lh, mph, self.gas_stations, buried,
-            lamps, country), ROAD_TILE_TIMEOUT_S)
+            building_settings.prebuild, building_settings.current(), blockworker.prebuild_geo,
+            gx, gy, gzoom, scratch, self.buildings, lh, mph, self.gas_stations, buried, lamps, country),
+            ROAD_TILE_TIMEOUT_S)
 
-    def build_roads_tile(self, aid, tx, ty):
+    def build_roads_tile(self, aid, tx, ty, grounds_quality=None):
+        from buildgen import grounds_quality as grounds
+        import building_settings
+        return grounds.run(grounds.effective(grounds_quality,building_settings.current()),self._build_roads_tile,aid,tx,ty)
+
+    def _build_roads_tile(self, aid, tx, ty):
         """roads.py: one road tile of anchor aid, written to the session folder. Returns (vfs path,
         chunks) or None if the anchor is gone. Worker threads (fetches the map cells it lacks)."""
         anchor = self.anchors.get(aid)
@@ -1682,7 +1748,8 @@ class Server:
                 blockworker.roads_tile, aid, anchor.lat, anchor.lon, anchor.zooms[0], tx, ty, self.out_dir,
                 self.vfs_dir, self.sidewalks, DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0,
                 self.buildings, self.left_hand(anchor), self.mph(anchor), self.anchor_q(anchor),
-                self.gas_stations, self.buried(anchor), self.lamp_region(anchor), self.country(anchor))
+                self.gas_stations, self.buried(anchor), self.lamp_region(anchor), self.country(anchor),
+                grounds_quality=__import__('buildgen.grounds_quality',fromlist=['current']).current())
             try:
                 # bounded: a worker that never answered held this thread and its roads.Tracker slot for good (4
                 # slots: four hung tiles and no road tile ever again, the loading line at "roads & buildings 0/26")
@@ -1715,6 +1782,7 @@ class Server:
             if anchor.tunnels is None:
                 anchor.tunnels = self.chain_view(anchor, "tunnels", elev, g)
         fuel, skip, fuel_cuts, fuel_pads = [], frozenset(), [], []
+        drives = []
         if self.gas_stations:       # pumps and refuel areas; their canopy outlines left out of the buildings
             fuel, skip = gasstationsmod.tile_sites(anchor.frame, tx, ty, self.mapdata, elev, cuts=fuel_cuts,
                                                    pads=fuel_pads)
@@ -1758,20 +1826,41 @@ class Server:
         if self.airports is not None:   # runway markings, drawn by the road mesh like the lane lines
             chunks += self.airports.tile_chunks(anchor.frame, tx, ty, elev, roadsmod.tile_bbox)
         x0, y0, _, _ = roadsmod.tile_bbox(tx, ty)
+        lot_context = parkingmod.prepare_lot_context(anchor.frame, tx, ty, self.mapdata)
         if items is not None:           # front doors and shopfronts, driveways into the road mesh
             # (no street tree in a house: its own or the next tile's)
             rings = buildingsmod.near_rings(anchor.frame, tx, ty, self.mapdata, skip=skip)
             props[:] = furnituremod.off_buildings(props, rings)
+            from buildgen.road_conflicts import filter_items
+            clip_notes = []
+            items = filter_items(items, [*chunks, *cover], origin=(x0, y0),
+                                 roads=near_roads, walks=walks,
+                                 ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)),
+                                 diagnostics=clip_notes)
+            if clip_notes:
+                from collections import Counter
+                log.debug('Building street clearance %s_%s: %s', tx, ty,
+                          dict(Counter(n['reason'] for n in clip_notes)))
             drives = []
-            props.extend(buildingsmod.doors(items, lines, x0, y0, drives))
+            props.extend(buildingsmod.doors(items, lines, x0, y0, drives,
+                                           ground=lambda xy: roadmeshmod.drawn_ground(
+                                               anchor.frame, drawn, xy, self.anchor_q(anchor)),
+                                           walks=walks if walks is not None else []))
             props.extend(buildingsmod.toll_booth_rows(items, x0, y0))
-            drives.extend(buildingsmod.garage_drives(items, lines, x0, y0))
-            chunks += drives
+            from sitegen.site_obstacles import for_items as site_inventory
+            drives.extend(buildingsmod.garage_drives(items, lines, x0, y0,
+                          ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)),
+                          walks=walks, bounds=box,
+                          site_obstacles=site_inventory(items,self.mapdata,anchor.frame,box,chunks=chunks,
+                              fuel_pads=fuel_pads,surface=self.surface,cells=cells,drives=drives,
+                              keys=roadsmod.cells_of_tile(anchor.frame,tx,ty))))
+            props.extend(buildingsmod.landscape_props(items, x0, y0))
+            chunks += [d for d in drives if not d.get('bne_access_only')]
             park = parkingmod.clear_of(park, props, drives)
-            park = parkingmod.tile_lot_spots(anchor.frame, tx, ty, self.mapdata, elev, items, park)
+            park = parkingmod.tile_lot_spots(anchor.frame, tx, ty, self.mapdata, elev, items, park, lot_context=lot_context)
             park = gasstationsmod.clear_park(park, fuel)
             buildingsmod.brick_walks(walks, items, anchor.lat, anchor.lon)
-        chunks += parkingmod.finish_markings(anchor.frame, tx, ty, self.mapdata, elev, items, marks)
+        chunks += parkingmod.finish_markings(anchor.frame, tx, ty, self.mapdata, elev, items, marks, lot_context=lot_context)
 
         # Share the bridge mesh's exact parapet geometry with the tile builder.
         # Mapped rails on a deck are replaced by guardrails.bridge_rows(); the parapet runs also feed the fallback matching.
@@ -1841,9 +1930,25 @@ class Server:
             import industry
             garage_sound = (garage_sound + industry.refinery_sound_rows(anchor.frame, tx, ty, self.mapdata, elev)
                             + industry.power_plant_sound_rows(anchor.frame, tx, ty, self.mapdata, elev))
+        import roadside_clearance
+        furniture_areas = roadside_clearance.keepouts(walks=walks, items=items,
+                             drives=drives, lines=lines, chunks=chunks, origin=(x0, y0))
+        props = roadside_clearance.clear(props, wires=wires, areas=furniture_areas,
+            walks=walks, items=items, lines=lines, origin=(x0, y0), bounds=box,
+            ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)))
+        from sitegen.hardscape import collect
+        from sitegen.mapped_surfaces import collect as mapped_surfaces
+        import streetplanters
+        streetplanters.attach(walks,props)
+        vegetation_exclusions = collect(items, drives, walks, chunks=chunks,
+            origin=box[:2], bounds=box,
+            ground=lambda xy: roadmeshmod.drawn_ground(anchor.frame, drawn, xy, self.anchor_q(anchor)),
+            frame=anchor.frame, fuel_pads=fuel_pads,
+            mapped_polygons=mapped_surfaces(anchor.frame,box,self.surface), clearance=furniture_areas)
         return roadsmod.write_tile(self.out_dir, self.vfs_dir, aid, tx, ty, chunks, walks if self.sidewalks else None,
                                    mesh, dmesh, bld, props, wires, park, tunnel_mesh=tmesh, fuel=fuel,
-                                   rail_mesh=rmesh, guardrail_rows=guardrail_rows, garage_sound=garage_sound, wells=oil_wells)
+                                   rail_mesh=rmesh, guardrail_rows=guardrail_rows, garage_sound=garage_sound, wells=oil_wells,
+                                   vegetation_exclusions=vegetation_exclusions)
 
     def set_gas_stations(self, on):
         """The settings page's "Gas stations" switch (the mod's gas_stations; the user, 2026-10-23: off saves their
@@ -1898,6 +2003,7 @@ class Server:
             "sidewalks": bool(self.sidewalks),
             "lift": float(DETAIL_ROAD_LIFT if self.near_visual == "detail" else 0.0),
             "buildings": bool(self.buildings),
+            "building_generator": __import__('building_settings').current(),
             "gas_stations": bool(self.gas_stations),
             # every kind: the map data's versions (Overture release, layer versions, the weekly rail / lane builds)
             "md": md,
@@ -2036,6 +2142,20 @@ class Server:
                 self.warm_thread = threading.Thread(target=self._warm_loop, name="roads-ahead", daemon=True)
                 self.warm_thread.start()
             self.warm_cv.notify()
+
+    def bake_sync(self, anchor, x, y):
+        """The data repo's baked packs near the player (bakepack.sync: road plans and cell facts made offline) fetched
+        in a thread of their own, as the player moves (at most every bakepack.CHECK_S)."""
+        if not BAKE_FETCH or self.mapdata is None or not self.grading or self.net is None:
+            return
+        import bakepack
+        now = time.monotonic()
+        if bakepack._sync["busy"] or now - bakepack._sync["at"] < bakepack.CHECK_S:
+            return
+        la, lo, _ = anchor.frame.enu_to_geodetic(x, y, 0.0)
+        sig = f"w{int(self.road_widths is not None)}s{int(self.sea is not None)}"
+        pool = self.__dict__.setdefault("bake_pool", ThreadPoolExecutor(1, thread_name_prefix="bake-packs"))
+        pool.submit(bakepack.sync, self.cache_dir, self.net, self.mapdata, float(la), float(lo), sig)
 
     def download_ahead(self, anchor, x, y, vx, vy):
         """Fetch the elevation tiles (the blocks' zoom) and the road tiles' map cells along the player's straight
@@ -3837,6 +3957,10 @@ BOOST_GRACE_S = 5.0         # (the car dropped into place moves a little at firs
 # roads round the car not built; off once caught up for CATCHUP_CALM_S
 CATCHUP_AFTER_S = 1.5
 CATCHUP_CALM_S = 3.0
+BAKE_FETCH = os.environ.get("BNGE_BAKE_FETCH", "off") == "on"   # the data repo's packs (Server.bake_sync): off until
+# there are any (the user, 2026-11-02: no cloud baking while world gen changes daily; local packs, BeamMP servers, later)
+CATCHUP_MORE_S = 10.0       # s behind all along before the catch-up boost lends half the game's cores
+HOLD_BOOST_CALM_S = 2.0     # s after an edge hold ends before its boost does (Connection.hold_boost)
 CATCHUP_LEND_SHARE = float(os.environ.get("BNGE_CATCHUP_LEND", "0.25"))     # of the game's cores (cpupin.boosted)
 CATCHUP_MIN_MS = 8.0        # m/s: only while driving (a parked player's work waits as before)
 BOOST_FULL_MAX_S = 300.0    # full priority loading (Server.load_boost's teleportPriority) ends this long after at most
@@ -4503,7 +4627,22 @@ class Connection:
 
     def build_far_geo(self, kind):
         """The far geotile tracker's build(gx, gy) of kind (Server.build_far_geo)."""
-        return lambda gx, gy: self.s.build_far_geo(kind, gx, gy)
+        import building_settings, functools
+        mode = building_settings.current()
+        detail='minimum' if getattr(self,'building_quality',None)=='minimum' and mode=='v2' and kind!='brfar' else 'full'
+        build_far=functools.partial(self.s.build_far_geo,building_detail=detail) if detail=='minimum' else self.s.build_far_geo
+        def build(gx,gy):
+            if kind=='bldfar':
+                roads=getattr(self,'roads',None)
+                ref=(roads.plan_reference((gx,gy)) if hasattr(roads,'plan_reference') else
+                     getattr(roads,'info',{}).get((gx,gy),{}).get('acceptedPlan'))
+                if ref is not None:return build_far(kind,gx,gy,plan_ref=ref)
+            elif kind=='bldsky':
+                roads=getattr(self,'roads',None)
+                refs=roads.sky_references(gx,gy) if hasattr(roads,'sky_references') else {}
+                if refs:return build_far(kind,gx,gy,plan_refs=refs)
+            return build_far(kind,gx,gy)
+        return functools.partial(building_settings.run, mode, build)
 
     def build_veg_geo(self, gx, gy):
         """Server.build_veg_geo in this mod's format (veg_flat): the geotile tracker's worker threads."""
@@ -4517,7 +4656,18 @@ class Connection:
 
     def dispatch(self, msg):
         kind = msg["type"]
+        if getattr(self, "building_chunks_blocked", False) and kind != "hello":
+            self.status("Building generator v2 needs the matching mod's building chunk support. Update the mod and reconnect.")
+            return
         if kind == "hello":
+            import building_settings
+            self.building_chunks_supported = msg.get("buildingChunks") == roadsmod.BUILDING_CHUNKS
+            self.building_progress_supported = msg.get("buildingProgress") == 1
+            self.building_chunks_blocked = (building_settings.current() == "v2"
+                                            and msg.get("buildingChunks") != roadsmod.BUILDING_CHUNKS)
+            if self.building_chunks_blocked:
+                self.status("Building generator v2 needs the matching mod's building chunk support. Update the mod and reconnect.")
+                return
             lay = self.s.layout
             fmt = msg.get("format", lay.format)
             if msg.get("protocol") != PROTOCOL:
@@ -4528,7 +4678,8 @@ class Connection:
             m = {"type": "hello", "protocol": PROTOCOL, "format": lay.format, "serverVersion": SERVER_VERSION,
                  "runtimeProfiler": 2, "appVersion": updatesmod.local_version() or "",     # the release (VERSION): the players' reports
                  "sessionId": self.s.sid, "farFormat": self.s.far_format, "material": farfield.MATERIAL,
-                 "nearVisual": self.s.near_visual, "attribution": self.s.attribution()}
+                 "nearVisual": self.s.near_visual, "attribution": self.s.attribution(),
+                 "buildingGenerator": building_settings.current(), "buildingGeneratorSwitch": 1}
             if self.s.imagery is not None:      # the world map credits the sources its view shows
                 m["imageryCredits"] = self.s.imagery.credits_by_area()
                 m["otherCredits"] = self.s.attribution_rest()
@@ -4586,6 +4737,15 @@ class Connection:
                 self.roads = road_tracker(self)
             if road_geo:
                 m["roadGeo"] = roadsmod.ROAD_GEO
+            import sector
+            if sector.negotiated(road_geo, msg.get('sectorManifest')):
+                m['sectorManifest'] = sector.VERSION
+            if msg.get("buildingChunks") == roadsmod.BUILDING_CHUNKS:
+                m["buildingChunks"] = roadsmod.BUILDING_CHUNKS
+            self.building_progress = road_geo and msg.get("buildingProgress") == 1 \
+                and building_settings.current() == "v2"
+            if self.building_progress:
+                m["buildingProgress"] = 1
             # ... and the far buildings, skyline and far bridges when it places those too (hello.farGeo: roads.lua's
             # FAR_GEO; a far tile and the road geotile of the same key hold the same buildings: one shows them)
             far_geo = road_geo and msg.get("farGeo") == buildingsmod.FAR_GEO and self.s.far_geo_ok()
@@ -4689,6 +4849,8 @@ class Connection:
             self.signs = signstream.Tracker()
         elif kind == "highway_signs":           # the settings page's switch: no sign tiles built while it is off
             self.signs_on = bool(msg.get("on", True))
+        elif kind == "building_generator":
+            self.change_building_generator(msg.get("value"))
         elif kind == "graphics":                # the settings page's graphics knobs (set_graphics)
             self.set_graphics(msg)
         elif kind == "gas_stations":            # the settings page's switch: the road tiles again, with or without
@@ -4697,6 +4859,41 @@ class Connection:
                 self.roads = road_tracker(self)
         else:
             log.debug("ignoring message type %r", kind)
+
+    def change_building_generator(self, mode):
+        """Change building products in place; anchors, ground and other trackers survive."""
+        import building_settings
+        error = None
+        if mode not in building_settings.GENERATORS:
+            error = 'Choose Simple or Advanced building generation.'
+        elif not getattr(self, 'road_geo', False) or not getattr(self, 'building_chunks_supported', False):
+            error = 'Live building switching needs the matching Earth mod and global road tiles.'
+        elif any(c.active is not None and (not getattr(c, 'road_geo', False)
+                 or not getattr(c, 'building_chunks_supported', False)) for c in self.s.connections):
+            error = 'A connected older mod does not support live building switching.'
+        elif mode == 'v2':
+            try:
+                from buildgen.topology import check_runtime
+                check_runtime()
+            except (RuntimeError, ValueError, OSError) as exc:
+                error = str(exc)
+        if error:
+            self.send(dict(type='building_generator', value=building_settings.current(), error=error,
+                           sessionId=getattr(self.s, 'sid', None), anchorId=self.active))
+            return False
+        if mode != building_settings.current():
+            building_settings.set_default(mode)
+            for conn in self.s.connections:
+                if hasattr(conn.roads, 'change_generator'):conn.roads.change_generator(conn)
+                for tracker in (conn.bldfar, conn.bldsky):
+                    if tracker is not None:tracker.change_generator()
+                conn.building_progress = (getattr(conn, 'road_geo', False)
+                    and getattr(conn, 'building_progress_supported', False) and mode == 'v2')
+                conn.send(dict(type='building_generator', value=mode, sessionId=getattr(self.s, 'sid', None), anchorId=conn.active))
+            log.info('Building generation changed live to %s; refreshing building products', building_settings.LABELS[mode])
+        else:
+            self.send(dict(type='building_generator', value=mode, sessionId=getattr(self.s, 'sid', None), anchorId=self.active))
+        return True
 
     def set_graphics(self, msg):
         """The settings page's graphics (the user, 2026-10-28: "give player much more control in the graphics settings
@@ -4715,6 +4912,30 @@ class Connection:
             return min(GRAPHICS_SCALE[1], max(GRAPHICS_SCALE[0], float(v)))
         lod, tree, bld = (scale("lodScale", self.lod_scale), scale("treeScale", self.tree_scale),
                           scale("buildingScale", self.building_scale))
+        from buildgen.quality import NAMES
+        was_minimum=getattr(self,'building_quality',None)=='minimum'
+        if msg.get('buildingQuality') in NAMES + ('adaptive','lite','full'):
+            self.building_quality=msg['buildingQuality']
+        if was_minimum != (getattr(self,'building_quality',None)=='minimum'):
+            # Retain visible coverage while cancelling obsolete work and queuing
+            # replacements. This is the existing generation-switch handover.
+            for name in ('bldfar','bldsky'):
+                tracker=getattr(self,name,None)
+                if hasattr(tracker,'change_generator'):tracker.change_generator()
+        if getattr(self,'building_quality',None) in NAMES:
+            self.building_adaptive=self.building_quality!='minimum'
+        elif type(msg.get('buildingAdaptive')) is bool:
+            self.building_adaptive=msg['buildingAdaptive']  # compatibility with unnamed legacy modes
+        grounds=msg.get('groundsQuality')
+        if grounds in NAMES:
+            prior=getattr(self,'grounds_quality',None)
+            self.grounds_quality=grounds
+            tracker=getattr(self,'roads',None)
+            if prior!=grounds and (prior is not None or getattr(tracker,'sent',None) or getattr(tracker,'building',None)):
+                if hasattr(tracker,'change_generator'):tracker.change_generator(self)
+        detail_m=msg.get('buildingDetailM')
+        if type(detail_m) in (int,float) and math.isfinite(detail_m):
+            self.building_detail_m=min(640.,max(100.,float(detail_m)))
         far = lod != self.lod_scale
         self.lod_scale = lod
         if tree != self.tree_scale:
@@ -4739,9 +4960,12 @@ class Connection:
             cap = max(VIEW_CAP_MIN_M, float(v)) if v > 0 else None
             far = far or cap != self.view_cap
             self.view_cap = cap
-        log.info("graphics: terrain detail x%.2f, trees to %.0f m, far buildings to %.0f m, ground photo %d px, view %s",
+        log.info("graphics: terrain detail x%.2f, trees to %.0f m, far buildings to %.0f m, ground photo %d px, view %s; "
+                 "buildingQuality=%s, buildingAdaptive=%s, buildingDetailM=%s, groundsQuality=%s",
                  self.lod_scale, self.veg.send_m, self.bldfar.send_m, self.s.base_px,
-                 "to the horizon" if self.view_cap is None else f"{self.view_cap / 1000:.0f} km")
+                 "to the horizon" if self.view_cap is None else f"{self.view_cap / 1000:.0f} km",
+                 getattr(self, 'building_quality', None), getattr(self, 'building_adaptive', None),
+                 getattr(self, 'building_detail_m', None),getattr(self,'grounds_quality',None))
         if far and self.active is not None:
             self.update_far()
 
@@ -5173,6 +5397,20 @@ class Connection:
             return done < want
         return False
 
+    def hold_boost(self, holding):
+        """While the edge guard holds the car for its ground (pose.guardHold), the server on every core and the game on
+        its few (Server.split_boost, the full priority split): the game is paused then, and the block it waits for
+        came 36 s after a first visit's start at 100 mph with the server's own cores, ~8 s with every core
+        (nyc_speed.py --cold 2026-11-02). Back as before HOLD_BOOST_CALM_S after the hold ends."""
+        now = time.monotonic()
+        if holding:
+            self.hold_seen = now
+            if not getattr(self, "hold_split", False):
+                self.hold_split = self.s.split_boost(True, "edge hold")
+        elif getattr(self, "hold_split", False) and now - getattr(self, "hold_seen", 0.0) > HOLD_BOOST_CALM_S:
+            self.s.split_boost(False, "hold over")
+            self.hold_split = False
+
     def catch_up(self, speed):
         """The loading boost (Server.load_boost: half of the game's cores lent) while the world is behind a driving
         player, off CATCHUP_CALM_S after it caught up. Not over a teleport's own boost."""
@@ -5189,15 +5427,28 @@ class Connection:
             if not self.catchup:
                 self.s.load_boost(True, "catching up", half_only=True)
                 self.catchup = self.s.boost_on
+                self.catchup_since, self.catchup_more = now, False
                 if self.catchup:
                     log.info("catch-up boost on (%.0f mph; next block asked %.1f s ago)", speed * 2.237,
                              now - self.pending_at if self.pending_at else -1)
+            elif not getattr(self, "catchup_more", False) and now - getattr(self, "catchup_since", now) > CATCHUP_MORE_S \
+                    and self.s.boost_cpus and not getattr(self.s, "split_on", False):
+                # (behind all along: the larger lend, cpupin.boosted's half. A first visit at 100 mph on one core more:
+                # the road tiles were never ahead of the car, 216 of 232 polls, nyc_speed.py 2026-11-02)
+                try:
+                    cpupin.pin_tree(self.s.boost_cpus)
+                    self.catchup_more = True
+                    log.info("catch-up boost: more cores (behind for %.0f s): CPUs %s", now - self.catchup_since,
+                             ",".join(map(str, sorted(self.s.boost_cpus))))
+                except OSError as e:
+                    log.warning("catch-up boost: %s", e)
+                    self.catchup_more = True
         elif self.catchup:
             if self.caught_up_at is None:
                 self.caught_up_at = now
             elif now - self.caught_up_at > CATCHUP_CALM_S:
                 self.s.load_boost(False, "caught up")
-                self.catchup = False
+                self.catchup, self.catchup_more = False, False
                 log.info("catch-up boost off (caught up)")
 
     def commit_terrain(self, msg):
@@ -5272,6 +5523,7 @@ class Connection:
         if math.hypot(vx, vy) > FAST_BASE_V:
             self.s.fast_at = now
         self.s.fast = now - getattr(self.s, "fast_at", -1e9) < FAST_KEEP_S
+        self.hold_boost(msg.get("guardHold") is True)
         self.catch_up(math.hypot(vx, vy))
         if self.s.boost_on and not self.catchup:
             since = time.monotonic() - getattr(self, "boost_t0", 0.0)
@@ -5347,20 +5599,27 @@ class Connection:
             self.s.warm_roads(self.s.anchors[aid], *self.focus, *self.vel)
             self.s.warm_imagery(self.s.anchors[aid], *self.focus, *self.vel)
             self.s.download_ahead(self.s.anchors[aid], *self.focus, *self.vel)
+            self.s.bake_sync(self.s.anchors[aid], *self.focus)
             self.base_refresh(aid)
             self.pads_refresh(aid)
             self.roads_refresh(aid)
         if self.s.mapdata is not None and aid == self.active:
             if getattr(self.roads, "geo", False):
                 anchor = self.s.anchors.get(aid)
-                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), self.s.build_roads_geo,
+                import functools
+                road_builder=functools.partial(self.s.build_roads_geo,
+                    grounds_quality=getattr(self,'grounds_quality',None))
+                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), road_builder,
                                    vel=self.vel, ground_busy=self.terrain_wait > 0, view=self.view_at,
                                    foci=self.foci, frame=anchor.frame if anchor is not None else None)
                 # (the sign tiles stay the anchor's: each once the road geotiles under it are in)
                 ready = self.roads.ready_tiles(anchor.frame, *self.focus, roadsmod.SEND_M) if anchor is not None \
                     else set()
             else:
-                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), self.s.build_roads_tile,
+                import functools
+                road_builder=functools.partial(self.s.build_roads_tile,
+                    grounds_quality=getattr(self,'grounds_quality',None))
+                self.roads.on_pose(self, aid, *self.focus, asyncio.get_running_loop(), road_builder,
                                    vel=self.vel, ground_busy=self.terrain_wait > 0, view=self.view_at,
                                    foci=self.foci)
                 ready = self.roads.sent
@@ -6221,13 +6480,15 @@ async def main_async(args):
     ROUTE_AHEAD_ON = args.route_prefetch == "on" and args.route_prefetch_km > 0
     ROUTE_AHEAD_MAX_M = args.route_prefetch_km * 1000.0
     block_pools, far_pool, photo_pool = [], None, None
+    import budget
     plancachemod.start_run(args.cache_dir)      # (before the workers: they inherit the run's id)
     if args.block_process == "on":
         ctx = multiprocessing.get_context("spawn")
         for _ in (LANE_REQUEST, LANE_PREFETCH):
             warm_q = ctx.Queue(maxsize=64)
             block_pools.append((poolsmod.RespawningPool(
-                "block", 1, mp_context=ctx, initializer=blockworker.init,
+                "block", 1,
+                mp_context=ctx, initializer=blockworker.init,
                 initargs=(args.cache_dir, args.offline, args.roads == "on",
                           args.grading == "on" and args.roads == "on",
                           args.road_widths == "on" and args.roads == "on", args.surface == "on", warm_q,
@@ -6236,14 +6497,16 @@ async def main_async(args):
         if args.near_visual == "detail" and (os.cpu_count() or 0) >= PHOTO_PROCESS_MIN_CPUS:
             # requested blocks' photos and stand-ins in a process of their own (Server._base_process / _stand_in)
             photo_pool = poolsmod.RespawningPool(
-                "photo", 1, mp_context=ctx, initializer=blockworker.init,
+                "photo", 1,
+                mp_context=ctx, initializer=blockworker.init,
                 initargs=(args.cache_dir, args.offline, args.roads == "on",
                           args.grading == "on" and args.roads == "on",
                           args.road_widths == "on" and args.roads == "on", args.surface == "on", None,
                           logging.getLogger().level, args.airports == "on", args.sea == "on", 0,
                           roadsmod.ROADS_IN_GROUND, args.gas_stations == "on" and args.roads == "on"))
         far_pool = poolsmod.RespawningPool(
-            "far tile", args.workers, mp_context=ctx, initializer=blockworker.init,
+            "far tile", args.workers,
+            mp_context=ctx, initializer=blockworker.init,
             initargs=(args.cache_dir, args.offline, args.roads == "on",
                       args.grading == "on" and args.roads == "on",
                       args.road_widths == "on" and args.roads == "on", False, None,
@@ -6268,14 +6531,16 @@ async def main_async(args):
     road_pool = None
     if args.block_process == "on" and args.roads == "on" and args.road_processes > 0:
         road_pool = poolsmod.RespawningPool(      # road tiles (blockworker.roads_tile)
-            "road tile", args.road_processes, mp_context=ctx, initializer=blockworker.init,
+            "road tile", args.road_processes,
+            mp_context=ctx, initializer=blockworker.init,
             initargs=(args.cache_dir, args.offline, True, args.grading == "on", args.road_widths == "on",
                       args.surface == "on", None, logging.getLogger().level,
                       args.airports == "on", args.sea == "on", NICE_ROADS, roadsmod.ROADS_IN_GROUND))
     far_bld_pool = None
     if road_pool is not None and args.buildings == "on":
         far_bld_pool = poolsmod.RespawningPool(   # far building tiles (blockworker.far_buildings_tile)
-            "far building", 1, mp_context=ctx, initializer=blockworker.init,
+            "far building", 1,
+            mp_context=ctx, initializer=blockworker.init,
             initargs=(args.cache_dir, args.offline, True, args.grading == "on", args.road_widths == "on",
                       args.surface == "on", None, logging.getLogger().level,
                       args.airports == "on", args.sea == "on", NICE_FAR_BUILDINGS, roadsmod.ROADS_IN_GROUND))
@@ -6720,9 +6985,23 @@ def main():
     ap.add_argument("--bridge-profile", choices=("curve", "legacy"), default="curve",
                     help="bridge decks: curve (grades of 5 %% up to what they must clear, joined by vertical curves, "
                          "a chain solved as one line) or legacy (deck_heights' line, tents, smoothing)")
+    ap.add_argument("--building-generator", choices=("legacy", "v2"),
+                    default=None,
+                    help="building generator override: legacy (Simple) or v2 (Advanced); otherwise use "
+                         "BNE_BUILDING_GENERATOR, then the mod's saved Building generation setting, then legacy")
     ap.add_argument("--offline", action="store_true",
                     help="no network: serve elevation and imagery from the disk cache only (uncached tiles get "
                          "the palette, uncached terrain fails); the status says 'Offline - using cached data'")
+    ap.add_argument('--building-roof-colours', default=os.environ.get('BNE_BUILDING_ROOF_COLOURS'),
+                    help='pinned imagery colour catalogue from tools/sample_roof_colours.py (v2)')
+    ap.add_argument('--building-zones', default=os.environ.get('BNE_BUILDING_ZONES'),
+                    help='pinned normalized zoning GeoJSON (v2); restart after changing either catalogue')
+    ap.add_argument('--building-sites', default=os.environ.get('BNE_BUILDING_SITES'),
+                    help='sourced property polygons and measured access ports (v2); restart after changes')
+    ap.add_argument('--shared-sites', default=os.environ.get('BNE_SHARED_SITE_RECORDS'),
+                    help='source-linked canonical shared-site SiteGraph with measured interfaces (v2); restart after changes')
+    ap.add_argument('--building-paths',choices=('auto','off'),default=os.environ.get('BNE_BUILDING_PATHS','auto'),
+                    help='infer short frontage/driveway paths, or omit inferred paths (v2)')
     ap.add_argument("--roads", choices=("on", "off"), default="on",
                     help="Overture roads near the player (roads.py): DecalRoads in the mod (paved asphalt, "
                          "gravel / dirt tracks) within ~640 m, in 256 m tiles; off = none")
@@ -6800,6 +7079,34 @@ def main():
                          "never what this session used within the hour, the gravity model or netstats/")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
+    import building_settings
+    try:
+        args.building_generator = building_settings.resolve(args.user_dir, args.building_generator)
+    except ValueError as error:
+        ap.error(str(error))
+    os.environ["BNE_BUILDING_GENERATOR"] = args.building_generator
+    os.environ['BNE_BUILDING_PATHS'] = args.building_paths
+    for option, env in ((args.building_roof_colours, 'BNE_BUILDING_ROOF_COLOURS'),
+                        (args.building_zones, 'BNE_BUILDING_ZONES'), (args.building_sites, 'BNE_BUILDING_SITES'),
+                        (args.shared_sites, 'BNE_SHARED_SITE_RECORDS')):
+        if option:
+            os.environ[env] = os.path.abspath(os.path.expanduser(option))
+    if args.building_generator == "v2":
+        from buildgen.topology import check_runtime
+        try:
+            check_runtime()
+            from buildgen import roof_colours, zones
+            roof_colours.catalogue()
+            zones.catalogue()
+            from buildgen import site_data
+            site_data.catalogue()
+            if args.shared_sites:
+                from sitegen import shared_courts
+                _,_,unsupported=shared_courts.catalogue()
+                if unsupported:
+                    raise ValueError('Unsupported shared sites: '+', '.join(sorted({why for _,why in unsupported})))
+        except (RuntimeError, ValueError, OSError, KeyError, TypeError) as exc:
+            ap.error(str(exc))
     os.environ["BNE_BRIDGE_PROFILE"] = args.bridge_profile     # read by roads.py here and in the block workers
     args.cells = resolve_cells(args.cells, args.near_visual)
     args.block = resolve_block(args.block, args.near_visual)
@@ -6813,6 +7120,7 @@ def main():
         ap.error("--horizon needs --near-visual mesh (terrain mode is frozen at the v1.3.1 layout)")
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    log.info("Building generation: %s (%s)", building_settings.LABELS[args.building_generator], args.building_generator)
     raise_open_files()
     import fast
     try:

@@ -24,7 +24,8 @@
           0,
           0,
           0
-        ]
+        ],
+        "normalMapStrength": 0.65
       },
       {},
       {},
@@ -57,7 +58,8 @@
           0,
           0,
           0
-        ]
+        ],
+        "normalMapStrength": 0.6
       },
       {},
       {},
@@ -90,7 +92,8 @@
           0,
           0,
           0
-        ]
+        ],
+        "normalMapStrength": 0.6
       },
       {},
       {},
@@ -115,7 +118,19 @@
           1
         ],
         "vertColor": true,
-        "roughnessFactor": 0.9
+        "roughnessFactor": 1.0,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.312,
+        "normalMap": "/assets/materials/tileable/roofing/asphalt_roof/t_asphalt_roof_nm.normal.png",
+        "ambientOcclusionMap": "/assets/materials/tileable/roofing/asphalt_roof/t_asphalt_roof_ao.data.png",
+        "normalMapStrength": 1.35,
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
+        "roughnessMapUseUV": 1
       },
       {},
       {},
@@ -133,7 +148,7 @@
       {
         "baseColorMap": "/assets/materials/tileable/roofing/m_roof_slates_square/t_roof_slates_square_b.color.png",
         "normalMap": "/assets/materials/tileable/roofing/m_roof_slates_square/t_roof_slates_square_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/roofing/m_roof_slates_square/t_roof_slates_square_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/roofing/m_roof_slates_square/t_roof_slates_square_ao.data.png",
         "metallicFactor": 0,
         "baseColorFactor": [
@@ -142,7 +157,17 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.312,
+        "normalMapStrength": 1.35,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0
       },
       {},
       {},
@@ -160,7 +185,7 @@
       {
         "baseColorMap": "/assets/materials/baked_props/utah_roof_shingles/utah_roof_shingles_d.dds",
         "normalMap": "/assets/materials/baked_props/utah_roof_shingles/utah_roof_shingles_n.dds",
-        "roughnessFactor": 0.85,
+        "roughnessFactor": 1.0,
         "metallicFactor": 0,
         "baseColorFactor": [
           1,
@@ -168,7 +193,17 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.312,
+        "normalMapStrength": 1.35,
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
+        "roughnessMapUseUV": 1
       },
       {},
       {},
@@ -186,7 +221,7 @@
       {
         "baseColorMap": "/assets/materials/tileable/wood/weatherboards/t_weatherboards_b.color.png",
         "normalMap": "/assets/materials/tileable/wood/weatherboards/t_weatherboards_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/wood/weatherboards/t_weatherboards_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/wood/weatherboards/t_weatherboards_ao.data.png",
         "metallicFactor": 0,
         "baseColorFactor": [
@@ -195,7 +230,17 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMapStrength": 0.65,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0
       },
       {},
       {},
@@ -237,7 +282,7 @@
       {
         "baseColorMap": "/assets/materials/tileable/plaster/m_stucco_white/t_stucco_white_b.color.png",
         "normalMap": "/assets/materials/tileable/plaster/m_stucco_white/t_stucco_white_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/plaster/m_stucco_white/t_stucco_white_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/plaster/m_stucco_white/t_stucco_white_ao.data.png",
         "metallicFactor": 0,
         "baseColorFactor": [
@@ -246,7 +291,17 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMapStrength": 0.35,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0
       },
       {},
       {},
@@ -264,16 +319,26 @@
       {
         "baseColorMap": "/assets/materials/tileable/metal/cladding_zinc/t_metal_cladded_zinc_b.color.png",
         "normalMap": "/assets/materials/tileable/metal/cladding_zinc/t_metal_cladded_zinc_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/metal/cladding_zinc/t_metal_cladded_zinc_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/metal/cladding_zinc/t_metal_cladded_zinc_ao.data.png",
-        "metallicMap": "/assets/materials/tileable/metal/cladding_zinc/t_metal_cladded_zinc_m.data.png",
         "baseColorFactor": [
           1,
           1,
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.312,
+        "normalMapStrength": 1.5,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 0.96,
+        "metallicFactor": 0.08
       },
       {},
       {},
@@ -290,7 +355,7 @@
     "Stages": [
       {
         "baseColorMap": "/assets/materials/tileable/concrete/concrete_precast1/t_concrete_precast1_b.color.png",
-        "roughnessFactor": 0.85,
+        "roughnessFactor": 1.0,
         "metallicFactor": 0,
         "baseColorFactor": [
           1,
@@ -298,7 +363,19 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMap": "/assets/materials/tileable/concrete/concrete_precast1/t_concrete_precast1_nm.normal.png",
+        "ambientOcclusionMap": "/assets/materials/tileable/concrete/concrete_precast1/t_concrete_precast1_ao.data.png",
+        "normalMapStrength": 0.5,
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
+        "roughnessMapUseUV": 1
       },
       {},
       {},
@@ -315,7 +392,7 @@
     "Stages": [
       {
         "baseColorMap": "/assets/materials/tileable/metal/m_metal_wall_corrugate/t_metal_wall_corrugated_b.color.png",
-        "roughnessFactor": 0.85,
+        "roughnessFactor": 1.0,
         "metallicFactor": 0,
         "baseColorFactor": [
           1,
@@ -323,7 +400,19 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMap": "/assets/materials/tileable/metal/m_metal_wall_corrugate/t_metal_wall_corrugated_nm.normal.png",
+        "ambientOcclusionMap": "/assets/materials/tileable/metal/m_metal_wall_corrugate/t_metal_wall_corrugated_ao.data.png",
+        "normalMapStrength": 0.25,
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
+        "roughnessMapUseUV": 1
       },
       {},
       {},
@@ -366,7 +455,7 @@
       {
         "baseColorMap": "/assets/materials/tileable/brick/stone_brick_irregular/t_stone_brick_irregular_b.color.png",
         "normalMap": "/assets/materials/tileable/brick/stone_brick_irregular/t_stone_brick_irregular_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/brick/stone_brick_irregular/t_stone_brick_irregular_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/brick/stone_brick_irregular/t_stone_brick_irregular_ao.data.png",
         "metallicFactor": 0,
         "baseColorFactor": [
@@ -375,7 +464,17 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMapStrength": 0.8,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0
       },
       {},
       {},
@@ -393,7 +492,7 @@
       {
         "baseColorMap": "/assets/materials/tileable/stone/m_marble_cut/t_marble_cut_b.color.png",
         "normalMap": "/assets/materials/tileable/stone/m_marble_cut/t_marble_cut_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/stone/m_marble_cut/t_marble_cut_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/stone/m_marble_cut/t_marble_cut_ao.data.png",
         "metallicFactor": 0,
         "baseColorFactor": [
@@ -402,7 +501,17 @@
           1,
           1
         ],
-        "vertColor": true
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMapStrength": 0.2,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0
       },
       {},
       {},
@@ -420,7 +529,7 @@
       {
         "baseColorMap": "/assets/materials/tileable/brick/brick_plain/t_bricks_red_01_b.color.png",
         "normalMap": "/assets/materials/tileable/brick/brick_plain/t_bricks_red_01_nm.normal.png",
-        "roughnessMap": "/assets/materials/tileable/brick/brick_plain/t_bricks_red_01_r.data.png",
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
         "ambientOcclusionMap": "/assets/materials/tileable/brick/brick_plain/t_bricks_red_01_ao.data.png",
         "metallicFactor": 0,
         "baseColorFactor": [
@@ -429,6 +538,114 @@
           1,
           1
         ],
+        "vertColor": true,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.338,
+        "normalMapStrength": 0.7,
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_lawn": {
+    "name": "bne_land_lawn",
+    "mapTo": "bne_land_lawn",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/terrain/grass/t_grass_01/t_grass_01_b.png",
+        "normalMap": "/assets/materials/terrain/grass/t_grass_01/t_grass_01_nm.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
+        "vertColor": true
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_soil": {
+    "name": "bne_land_soil",
+    "mapTo": "bne_land_soil",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/terrain/soil/dirt_crumbly/t_dirt_crumbly_b.png",
+        "normalMap": "/assets/materials/terrain/soil/dirt_crumbly/t_dirt_crumbly_nm.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
+        "vertColor": true
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_gravel": {
+    "name": "bne_land_gravel",
+    "mapTo": "bne_land_gravel",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/terrain/soil/t_gravel/t_gravel_b.png",
+        "normalMap": "/assets/materials/terrain/soil/t_gravel/t_gravel_nm.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
+        "vertColor": true
+      },
+      {},
+      {},
+      {}
+    ],
+    "translucent": false
+  },
+  "bne_land_foliage": {
+    "name": "bne_land_foliage",
+    "mapTo": "bne_land_foliage",
+    "class": "Material",
+    "version": 1.5,
+    "Stages": [
+      {
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 1,
+        "metallicFactor": 0,
         "vertColor": true
       },
       {},
@@ -466,5 +683,145 @@
       {}
     ],
     "translucent": false
+  },
+  "bne_minimum_sash": {
+    "name": "bne_minimum_sash",
+    "mapTo": "bne_minimum_sash",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "033e0ef6-1353-51c6-9568-6356de237be1",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_sash.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_sash_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_tall": {
+    "name": "bne_minimum_tall",
+    "mapTo": "bne_minimum_tall",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "b52e7675-0c79-5ce0-a448-5e32b8fe37ec",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_tall.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_tall_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_wide": {
+    "name": "bne_minimum_wide",
+    "mapTo": "bne_minimum_wide",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "dab76ecb-ecce-5a2e-8511-ee65a05fe370",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_wide.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_wide_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_modern": {
+    "name": "bne_minimum_modern",
+    "mapTo": "bne_minimum_modern",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "abc7d498-5c4e-523d-b5bb-cab87c8bb24b",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_modern.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": false,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_modern_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": true,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
+  },
+  "bne_minimum_glass": {
+    "name": "bne_minimum_glass",
+    "mapTo": "bne_minimum_glass",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "f3478298-2126-55ac-8afb-6a5f23d29d0a",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_glass.png",
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "roughnessFactor": 0.45,
+        "metallicFactor": 0.05,
+        "vertColor": true,
+        "opacityMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_minimum_glass_opacity.data.png",
+        "opacityFactor": 1.0
+      }
+    ],
+    "alphaTest": false,
+    "alphaRef": 128,
+    "translucent": false,
+    "doubleSided": false,
+    "castShadows": false
   }
 }

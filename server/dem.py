@@ -915,6 +915,20 @@ class Dem:
     def tiles(self, keys, progress=None):
         """Fetch many tiles concurrently (deduplicated across callers)."""
         keys = list(dict.fromkeys(keys))
+        import inputwatch
+        if inputwatch.ACTIVE.get() is not None:
+            dependencies=[]
+            for z,x,y in keys:
+                # Parent fallback and negative-cache decisions are dependencies
+                # too, including on memory hits. A later completed download or
+                # regenerated terrain mirror invalidates the accepted plan.
+                for level in range(z,max(0,min(z,GLOBAL_ZOOM)-2)-1,-1):
+                    key=(level,x>>(z-level),y>>(z-level))
+                    dependencies.append(self._mirror_path(key))
+                    for source in (MAPTERHORN,AWS):
+                        dependencies.append(self._path(source,*key))
+                        dependencies.append(os.path.splitext(self._path(source,*key))[0]+'.404')
+            inputwatch.paths(dependencies)
         out, futs, new = {}, {}, []
         urgent = getattr(self._local, "urgent", False)
         pool = self.urgent_pool if urgent else self.pool

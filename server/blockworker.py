@@ -12,10 +12,12 @@ init(...) runs once in the process (ProcessPoolExecutor initializer); build(...)
 far_geometry(...) (the far-tile workers, the same state) are its jobs. warm_q (a multiprocessing queue) carries the road cells to plan ahead of the player: (anchor id, lat,
 lon, [mapcells.CellKey]), the latest list replacing the earlier one.
 """
+from buildgen import font_bootstrap  # Spawned workers load FriBidi before Pillow.
 from runtimeprofiler import step as profile_step
 import logging
 import os
 import queue
+import re
 import threading
 import time
 
@@ -376,7 +378,8 @@ def build(aid, lat, lon, hm_zoom, q, cx, cy, size, out_dir, name, ter_name=None,
             return z
     info = heightmap.generate(frame, gen, os.path.join(out_dir, name), cx, cy, q=q, size=size, keep=keep,
                               chunks=chunks)
-    stages = {"heights": time.perf_counter() - t0, "grading": grade_s[0], **part_s, "anchor": anchor_s, "plan": plan_s}
+    stages = {"heights": time.perf_counter() - t0, "grading": grade_s[0], **part_s, "anchor": anchor_s, "plan": plan_s,
+              "newShare": float(keep.get("new_share", 1.0))}
     idx = None
     if _s.surface is not None:
         t1 = time.perf_counter()
@@ -530,17 +533,20 @@ def terrain_patch(aid, lat, lon, zoom, box, path):
 
 
 def roads_tile(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks, lift, buildings=False, left_hand=False,
-               mph=True, q=None, gas_stations=False, buried=0.0, lamp_region=None, country=None):
+               mph=True, q=None, gas_stations=False, buried=0.0, lamp_region=None, country=None, grounds_quality=None):
     """earthd.Server.build_roads_tile here (road-tile pool): the anchor's road tile (tx, ty) built and
     written; returns roads.write_tile's (vfs path, chunks) and its stations' pads (gasstations.tile_sites pads: the
     server keeps them for the ground's painters). In the server's process its Python made up
     ~80 % of the main process's busy threads (in-game profile 2026-10-13): the block photos and far
     textures waited for the GIL. A tile built in this anchor's place before comes from the revisit cache."""
     watch = _stack_watch(f"road tile {tx}_{ty}")
+    from buildgen import grounds_quality as grounds
+    grounds_state=grounds.CURRENT.set(grounds_quality)
     try:
         return _roads_tile_cached(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks, lift, buildings,
                                   left_hand, mph, q, gas_stations, buried, lamp_region, country)
     finally:
+        grounds.CURRENT.reset(grounds_state)
         watch.cancel()
 
 
@@ -590,7 +596,8 @@ def _roads_tile_cached(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks,
     import revisit
     k = revisit.key("roads", round(float(lat), 7), round(float(lon), 7), zoom, tx, ty, bool(sidewalks), float(lift),
                     bool(buildings), bool(left_hand), bool(mph), None if q is None else float(q), bool(gas_stations),
-                    _s.md.versions() if _s.md is not None else None, float(buried), lamp_region, country)
+                    _s.md.versions() if _s.md is not None else None, float(buried), lamp_region, country,
+                    __import__('buildgen.grounds_quality',fromlist=['recipe_identity']).recipe_identity())
     wh = _where_enu(lat, lon, *roadsmod_tile_bbox(tx, ty),
                     sidewalks=bool(sidewalks), lift=float(lift), buildings=bool(buildings),
                     gas_stations=bool(gas_stations), md=_md_versions())
@@ -634,6 +641,7 @@ def _revisit_tile(kind, k, aid, tx, ty, out_dir, vfs_dir, name, build, extra_of,
     kept with it; result_of(vfs path of name, that data): the result again on a hit. The session's names (vfs_dir, the
     anchor id) are taken out of the kept files and put back."""
     import revisit
+    _stages, mark = _stage_clock()
     mine = [(f"{vfs_dir}/", "@V@/"), (f"_{aid}_{tx}_{ty}", f"_@A@_{tx}_{ty}")]
     got = revisit.load(_s.cache_dir, kind, k)
     if got is not None:
@@ -643,7 +651,9 @@ def _revisit_tile(kind, k, aid, tx, ty, out_dir, vfs_dir, name, build, extra_of,
             if g.endswith(".json"):
                 data = revisit.swap(data.decode("utf-8"), back).encode("utf-8")
             _write_bytes(os.path.join(out_dir, revisit.swap(g, back)), data)
-        return result_of(f"{vfs_dir}/{name}", extra or {})
+        result = result_of(f"{vfs_dir}/{name}", extra or {})
+        mark("cache_restore")
+        return result
     f0 = revisit.faults()
     res = build()
     if res is not None and revisit.ON and revisit.faults() == f0:     # (complete: nothing it read failed or was missing)
@@ -672,7 +682,8 @@ def _write_bytes(path, data):
 # depend on the anchor but for its placement (buildings, decks, tunnels, walls, wires, rails, props, guardrails,
 # parking, fuel, wells, sound); "skin" stages follow the anchor's 2 m lattice and height quantum (the draped road mesh,
 # plazas, sidewalks / walk collision in write_tile); "shared" are the stores both read (grading plans, chain profiles).
-TILE_STAGE_KIND = {"warm": "shared", "anchor": "shared", "profiles": "shared", "fuel": "content", "items": "content",
+TILE_STAGE_KIND = {"warm": "shared", "anchor": "shared", "profiles": "shared", "decks": "shared",
+                   "cache_lookup": "shared", "cache_restore": "shared", "fuel": "content", "items": "content",
                    "build_tile": "content", "rails": "content", "airports": "content", "doors_park": "content",
                    "markings": "content", "guardrails": "content", "medians": "content", "mesh": "skin",
                    "plazas": "skin", "deck_mesh": "content", "tunnel_mesh": "content", "railways": "content",
@@ -681,7 +692,7 @@ _tile_stages = threading.local()
 
 
 def last_tile_stages():
-    """{stage: s} of the last road tile this thread built (_roads_tile; {} before one or on a revisit hit)."""
+    """{stage: s} of this thread's last road operation; revisit hits report cache_restore only."""
     return dict(getattr(_tile_stages, "last", {}))
 
 
@@ -694,6 +705,7 @@ def _stage_clock():
         t = time.perf_counter()
         stages[name] = stages.get(name, 0.0) + t - clock[0]
         clock[0] = t
+        _tile_stages.last = stages      # a skin can have called content() while obtaining its inputs
     return stages, mark
 
 
@@ -715,6 +727,7 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
     import roads as roadsmod
     tx, ty = (tile, None) if hasattr(tile, "box") else tile
     P = _Parts()
+    P.plans=()
     # everything the tile will ask for, fetched at once (one after another, a fresh place's first tile took ~1 min)
     _s.md.warm(roadsmod.tile_needs(frame, tx, ty, buildings, _s.widths is not None,
                                    1 + seacarvemod.LINE_CELLS if _s.sea is not None else 0))
@@ -751,8 +764,9 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         import buildings as buildingsmod
         # (on the graded ground, the one the terrain is drawn with: on the raw elevation a building beside a road's
         # cutting stood over the cut; hashk014's PR #69)
-        items = buildingsmod.road_tile_items(frame, tx, ty, _s.md, elev, decks=_tile_decks(bridges, cells, tx, ty),
-                                             skip=skip)
+        decks = _tile_decks(bridges, cells, tx, ty)
+        mark("decks")
+        items = buildingsmod.road_tile_items(frame, tx, ty, _s.md, elev, decks=decks, skip=skip)
         town = buildingsmod.coverage(items, side) < buildingsmod.POLES_COVERAGE
     mark("items")
     rwalls = []
@@ -784,15 +798,39 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         chunks += _s.airports.tile_chunks(frame, tx, ty, elev, roadsmod.tile_bbox)
     mark("airports")
     x0, y0, _, _ = box
+    drives = []
+    lot_context = parkingmod.prepare_lot_context(frame, tx, ty, _s.md)
     if items is not None:               # front doors and shopfronts, driveways into the road mesh
         props[:] = furniture.off_buildings(props, buildingsmod.near_rings(frame, tx, ty, _s.md, skip=skip))     # (no street tree in a house)
-        drives = []
-        props.extend(buildingsmod.doors(items, lines, x0, y0, drives))
+        from buildgen.road_conflicts import filter_items
+        clip_notes = []
+        items = filter_items(items, [*chunks, *cover], origin=(x0, y0),
+                             roads=near_roads, walks=walks,
+                             ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q),
+                             diagnostics=clip_notes)
+        if clip_notes:
+            from collections import Counter
+            log.debug('Building street clearance %s_%s: %s', tx, ty,
+                      dict(Counter(n['reason'] for n in clip_notes)))
+        # Publish only the final street-cleared envelope, including early shells.
+        from buildgen.progressive import ACTIVE
+        if ACTIVE.get() is not None:
+            ACTIVE.get().shells(items)
+        props.extend(buildingsmod.doors(items, lines, x0, y0, drives,
+                                       ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q),
+                                       walks=walks if walks is not None else [],raw_walks=walks_raw))
         props.extend(buildingsmod.toll_booth_rows(items, x0, y0))
-        drives.extend(buildingsmod.garage_drives(items, lines, x0, y0))
-        chunks += drives
+        from sitegen.site_obstacles import for_items as site_inventory
+        drives.extend(buildingsmod.garage_drives(items, lines, x0, y0,
+                      ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q),
+                      walks=walks, raw_walks=walks_raw, bounds=box,
+                      site_obstacles=site_inventory(items,_s.md,frame,box,chunks=chunks,
+                          fuel_pads=fuel_pads,surface=getattr(_s,'surface',None),cells=cells,
+                          drives=drives,keys=roadsmod.cells_of_tile(frame,tx,ty))))
+        props.extend(buildingsmod.landscape_props(items, x0, y0))
+        chunks += [d for d in drives if not d.get('bne_access_only')]
         park = parkingmod.clear_of(park, props, drives)
-        park = parkingmod.tile_lot_spots(frame, tx, ty, _s.md, elev, items, park)
+        park = parkingmod.tile_lot_spots(frame, tx, ty, _s.md, elev, items, park, lot_context=lot_context)
         if fuel:
             import gasstations
             park = gasstations.clear_park(park, fuel)
@@ -800,7 +838,7 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         if walks_raw is not None:
             buildingsmod.brick_walks(walks_raw, items, centre[0], centre[1], side)
     mark("doors_park")
-    chunks += parkingmod.finish_markings(frame, tx, ty, _s.md, elev, items, marks)
+    chunks += parkingmod.finish_markings(frame, tx, ty, _s.md, elev, items, marks, lot_context=lot_context)
     mark("markings")
     # Share the bridge mesh's exact parapet geometry with the tile builder.
     # (the junction pads on the bridges round the tile: their decks' parapets stop at them; the tile draws its own:
@@ -863,6 +901,8 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
     if buildings:
         import buildings as buildingsmod
         import oilwells
+        from buildgen import freeze_items
+        P.plans=freeze_items(items)
         bld = buildingsmod.road_tile(frame, tx, ty, _s.md, elev, None, None, items)
         mark("bld")
         garage_sound = buildingsmod.garage_sound_boxes(items, *box[:2], roadsmod.SOUND_GARAGE)
@@ -877,9 +917,64 @@ def _tile_parts(mark, frame, tile, zoom, g, buildings, left_hand, mph, gas_stati
         garage_sound = (garage_sound + industry.refinery_sound_rows(frame, tx, ty, _s.md, elev)
                         + industry.power_plant_sound_rows(frame, tx, ty, _s.md, elev))
         mark("powerlines")
+    import roadside_clearance
+    furniture_areas = roadside_clearance.keepouts(walks=walks, items=items,
+                             drives=drives, lines=lines, chunks=chunks, origin=(x0,y0))
+    props = roadside_clearance.clear(props, wires=wires, areas=furniture_areas,
+        walks=walks,items=items,lines=lines,origin=(x0,y0),bounds=box,
+        ground=lambda xy: roadmeshmod.drawn_ground(frame,drawn,xy,q))
+    import streetplanters
+    streetplanters.attach(walks,props,walks_raw)
+    mark("furniture_clearance")
     P.chunks, P.ctx, P.walks, P.box, P.origin = chunks, ctx, walks, box, (x0, y0, 0.0)
     P.bld, P.props, P.wires, P.park, P.fuel, P.fuel_pads = bld, props, wires, park, fuel, fuel_pads
     P.guardrail_rows, P.garage_sound, P.wells = guardrail_rows, garage_sound, oil_wells
+    from sitegen.hardscape import collect
+    from sitegen.mapped_surfaces import collect as mapped_surfaces
+    P.vegetation_exclusions = collect(items, drives, walks, chunks=chunks, origin=(x0,y0), bounds=box,
+        ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q), frame=frame, fuel_pads=fuel_pads,
+        mapped_polygons=mapped_surfaces(frame,box,getattr(_s,'surface',None)),clearance=furniture_areas)
+    P.shared_courts = ()
+    if (buildings and hasattr(tile, 'key') and os.environ.get('BNE_SHARED_SITE_RECORDS')
+            and __import__('building_settings').current() == 'v2'):
+        from sitegen import shared_courts
+        def shared_obstacles():
+            return collect(items, drives, walks, chunks=chunks, origin=(x0,y0), bounds=box,
+                ground=lambda xy: roadmeshmod.drawn_ground(frame, drawn, xy, q),
+                frame=frame, fuel_pads=fuel_pads)['polygons']
+        P.shared_courts, notes = shared_courts.build_tile(tile, frame, elev, items=items,
+            obstacle_factory=shared_obstacles, origin=(x0,y0,0.))
+        if notes: log.debug('Shared court fitting %s: %s', tile.key, notes)
+        if P.shared_courts:
+            P.dmesh = shared_courts.combine(P.dmesh, shared_courts.compile(P.shared_courts, frame, (x0,y0,0.)))
+            _, _, masks = shared_courts.metadata(P.shared_courts, frame)
+            P.vegetation_exclusions = shared_courts.extend_masks(P.vegetation_exclusions, masks, box)
+            from shapely.geometry import Polygon
+            common = [Polygon(r['rings'][0], r['rings'][1:]) for r in masks]
+            P.props = roadside_clearance.clear(P.props, wires=wires, areas=[*furniture_areas,*common],
+                walks=walks,items=items,lines=lines,origin=(x0,y0),bounds=box,
+                ground=lambda xy: roadmeshmod.drawn_ground(frame,drawn,xy,q))
+            from sitegen import shared_layouts
+            from shapely.geometry import LineString
+            from shapely.ops import unary_union
+            shared=[c for c in P.shared_courts if isinstance(c,shared_layouts.SharedLayout)]
+            if shared:
+                import math
+                occupied=unary_union(common)
+                def parked_shape(row):
+                    angle=math.radians(row[3]);u=np.array([math.cos(angle),math.sin(angle)])*3.
+                    v=np.array([-math.sin(angle),math.cos(angle)])*1.25;p=np.array(row[:2])
+                    return Polygon([p-u-v,p+u-v,p+u+v,p-u+v])
+                P.park=[p for p in P.park or () if not occupied.intersects(parked_shape(p))]
+                # Existing marking emitters retain ownership outside shared sites.
+                P.chunks=[c for c in P.chunks if c.get('m')!='line_white' or len(c.get('n',()))<2
+                          or not occupied.intersects(LineString(np.asarray(c['n'])[:,:2]))]
+                for layout in shared:
+                    parking,paint,planting=shared_layouts.additions(layout,frame,elev)
+                    P.park.extend(parking);P.chunks.extend(paint);P.props.extend(planting)
+    import streetplanters
+    streetplanters.attach(P.walks,P.props,walks_raw)
+    mark('shared_courts')
     return P
 
 
@@ -901,7 +996,8 @@ def _roads_tile(aid, lat, lon, zoom, tx, ty, out_dir, vfs_dir, sidewalks, lift, 
     out = roadsmod.write_tile(out_dir, vfs_dir, aid, tx, ty, P.chunks, P.walks if sidewalks else None, mesh, P.dmesh,
                               P.bld, P.props, P.wires, P.park, tunnel_mesh=P.tmesh, fuel=P.fuel, rail_mesh=P.rmesh,
                               guardrail_rows=P.guardrail_rows, garage_sound=P.garage_sound,
-                              wells=P.wells) + (P.fuel_pads,)
+                              wells=P.wells,vegetation_exclusions=P.vegetation_exclusions,
+                              sidewalk_ground=lambda x,y: roadmeshmod.drawn_ground(frame, P.drawn, np.c_[x,y], q)) + (P.fuel_pads,)
     mark("write")
     return out
 
@@ -946,13 +1042,18 @@ def _frame_grader(frame):
     return got
 
 
-def geo_names(key, aid=None):
+def geo_names(key, aid=None, parts=None):
     """The session files of geotile key: {"json", "skin", what -> shape} of its content (aid None) or of anchor aid's
     skin ("json", "road", "walk", "walkcol")."""
     import roads as roadsmod
+    import building_settings
+    key = str(key) + '_' + building_settings.current()
     if aid is None:
         out = {"json": f"rg_{key}.json", "inputs": f"rg_{key}.skin.pkl"}
         for what in roadsmod.shape_files(0, 0, 0):
+            if what not in ("road", "walk", "walkcol"):
+                out[what] = f"rg_{key}_{what}.cdae"
+        for what in parts or ():
             if what not in ("road", "walk", "walkcol"):
                 out[what] = f"rg_{key}_{what}.cdae"
         return out
@@ -986,6 +1087,7 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
     skin's inputs (rg_<key>.skin.pkl: the chunks, their deck context and the sidewalk pieces). Returns (vfs path of
     the JSON, chunk count, its info for the tracker: {"h", "parts": {what: {pivot, relief, col}}})."""
     import json
+    import hashlib
     import pickle
     import roads as roadsmod
     names = geo_names(tile.key)
@@ -997,14 +1099,37 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
     os.makedirs(tmpdir, exist_ok=True)
     try:
         # (roads.write_tile writes the shapes and the rows; its names are the anchor tile's: written aside, renamed)
-        _, n = roadsmod.write_tile(tmpdir, vfs_dir, 0, tile, None, P.chunks, None, None, P.dmesh, P.bld, P.props,
+        bld = P.bld
+        material_manifest = None
+        # Optional props are render-only and require the separate lean collider.
+        if bld is not None and len(bld) > 2 and bld[2] is not None and getattr(P, 'plans', ()):
+            from buildgen.products import property_visuals, add_property_group, property_part_names
+            extra, material_manifest, _ = property_visuals(P.plans, getattr(P, 'shared_courts', ()),
+                                                            tile, out_dir, vfs_dir)
+            if extra:
+                original = bld[0] if isinstance(bld[0], list) else [bld[0]]
+                tail = list(bld[1:])
+                if len(tail) > 2:
+                    tail[2] = add_property_group(tail[2], len(original), len(extra))
+                if material_manifest:
+                    material_manifest['parts'] = property_part_names(len(original), len(extra))
+                bld = (list(original) + extra,) + tuple(tail)
+        _, n = roadsmod.write_tile(tmpdir, vfs_dir, 0, tile, None, P.chunks, None, None, P.dmesh, bld, P.props,
                                    P.wires, P.park, tunnel_mesh=P.tmesh, fuel=P.fuel, rail_mesh=P.rmesh,
                                    guardrail_rows=P.guardrail_rows, garage_sound=P.garage_sound, wells=P.wells,
-                                   decals=False)
+                                   decals=False,vegetation_exclusions=getattr(P,'vegetation_exclusions',None))
         with open(os.path.join(tmpdir, f"roads_0_{tile}_None.json"), encoding="utf-8") as f:
             data = json.loads(f.read())
-        files = roadsmod.shape_files(0, tile, None)
-        parts = {}
+        if material_manifest:
+            data['propertyMaterials'] = material_manifest
+        if getattr(P, 'shared_courts', ()):
+            from sitegen import shared_courts
+            sites, boxes, _ = shared_courts.metadata(P.shared_courts, tile.frame)
+            data['sharedSites'] = dict(v=1, host=tile.key, lifetime='closed-sector', sites=sites)
+            data.setdefault('colliders', {}).setdefault('deck', []).extend(boxes)
+        files = roadsmod.shape_files(0, tile, None, data=data)
+        names.update(geo_names(tile.key, parts=roadsmod.building_chunk_names(data)))
+        parts = {}; shape_hashes = {}
         for what, fname in files.items():
             e = data.get(what)
             src = os.path.join(tmpdir, fname)
@@ -1013,7 +1138,9 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
             info = _shape_info(src, e["pos"], what)
             dst = names[what]
             with open(src, "rb") as fh:
-                _write_bytes(os.path.join(out_dir, dst), fh.read())
+                blob=fh.read()
+                shape_hashes[what]=hashlib.sha256(blob).hexdigest()
+                _write_bytes(os.path.join(out_dir, dst), blob)
             e["shape"] = f"{vfs_dir}/{dst}"
             e.update(info)
             parts[what] = dict(info)
@@ -1030,10 +1157,26 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
             data.pop("colliders", None)
         lean = "bldcol" in parts
         for what, info in parts.items():
-            info["col"] = what in GEO_COLLIDING or (what.startswith("bld") and not lean)
+            info["col"] = what in GEO_COLLIDING or what.startswith("bldcol") or (what.startswith("bld") and not lean)
         data["key"] = tile.key
         data["frame"] = [float(tile.frame.lat0), float(tile.frame.lon0)]
         data["box"] = [round(float(v), 4) for v in tile.box]
+        from buildgen.progressive import ACTIVE, DETAIL
+        data['buildingDetail']=ACTIVE.get().detail if ACTIVE.get() else DETAIL.get()
+        # With separate collision meshes, per-visual-chunk collider boxes are
+        # redundant. Their repeated keys vary with facade chunk count; exclude
+        # them from physical identity so dense full/lite swaps still reuse it.
+        visual=set((data.get('buildingChunks') or {}).get('visual',[])) if lean else set()
+        physical={k:v for k,v in data.items() if k not in visual
+                  and k not in ('buildingChunks','buildingGroups','buildingDetail','propertyMaterials')}
+        if 'colliders' in physical:
+            physical['colliders']={k:v for k,v in physical['colliders'].items() if k not in visual}
+        physical['shapeHashes']={k:v for k,v in shape_hashes.items() if k not in visual}
+        data['physicalHash']=_content_hash(json.dumps(physical,sort_keys=True,separators=(',',':')),vfs_dir)
+        # Bounds alone do not identify a mesh (e.g. full and lite facades).
+        data['shapeHashes']=shape_hashes
+        import sector
+        data['sectorManifest']=sector.manifest(data)
         text = json.dumps(data, separators=(",", ":"), sort_keys=True)
         h = _content_hash(text, vfs_dir)
         data["h"] = h
@@ -1042,21 +1185,73 @@ def _write_geo_content(out_dir, vfs_dir, tile, P):
         inputs = {"chunks": P.chunks, "ctx": P.ctx, "walks": P.walks_raw, "h": h}
         _write_bytes(os.path.join(out_dir, names["inputs"]), pickle.dumps(inputs, protocol=4))
         with _geo_lock:
-            _geo_inputs[tile.key] = inputs
+            _geo_inputs[names['inputs']] = inputs
             while len(_geo_inputs) > GEO_INPUTS_KEPT:
                 _geo_inputs.pop(next(iter(_geo_inputs)))
-        return f"{vfs_dir}/{names['json']}", n, {"h": h, "parts": parts}
+        return f"{vfs_dir}/{names['json']}", n, {"h": h, "parts": parts,
+                                               "buildingDetail":data['buildingDetail']}
     finally:
         import shutil
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def _geo_content_key(key, zoom, buildings, left_hand, mph, gas_stations, buried, lamp_region, country, md=None):
+def _geo_content_key(key, zoom, buildings, left_hand, mph, gas_stations, buried, lamp_region, country, md=None,
+                     building_detail='full'):
     """The revisit key of a geotile's content (md: the map data's versions, when not this worker's: the server's own
     check, earthd.Server.geo_prebuilt)."""
     import revisit
     return revisit.key("roadsg", str(key), int(zoom), bool(buildings), bool(left_hand), bool(mph), bool(gas_stations),
-                       _md_versions() if md is None else md, float(buried), lamp_region, country, GEO_SKIN_MARGIN_M)
+                       _md_versions() if md is None else md, float(buried), lamp_region, country, GEO_SKIN_MARGIN_M,
+                       building_detail, __import__('buildgen.grounds_quality',fromlist=['recipe_identity']).recipe_identity())
+
+
+def _property_cache_files(data, out_dir, vfs_dir):
+    """Validate the tile's bounded material inventory before caching its files."""
+    import json, re
+    from pathlib import Path
+    manifest = data.get('propertyMaterials')
+    if manifest is None:
+        return {}
+    if not isinstance(manifest, dict) or not isinstance(manifest.get('path'), str):
+        raise ValueError('invalid property material manifest')
+    prefix = vfs_dir.rstrip('/')+'/'
+    path = manifest['path']
+    if not path.startswith(prefix):
+        raise ValueError('property material path outside session')
+    name = path[len(prefix):]
+    if not re.fullmatch(r'property_[a-f0-9]{16}\.materials\.json', name):
+        raise ValueError('invalid property material filename')
+    names = manifest.get('names')
+    if not isinstance(names, list) or not 0 < len(names) <= 40 or len(set(names)) != len(names):
+        raise ValueError('invalid property material inventory')
+    if any(not isinstance(n,str) or not re.fullmatch(r'bne_(?:fascia|directory)_[a-z0-9_]+_face', n) for n in names):
+        raise ValueError('invalid property material name')
+    material_file = Path(out_dir)/name
+    if material_file.stat().st_size > 256*1024:
+        raise ValueError('oversized property material file')
+    raw = material_file.read_bytes()
+    definitions = json.loads(raw)
+    if not isinstance(definitions, dict) or set(definitions) != set(names):
+        raise ValueError('property material inventory mismatch')
+    files = {name: raw.replace(prefix.encode(), b'@V@/')}
+    total = len(raw)
+    for key in names:
+        record=definitions[key]
+        stages=record.get('Stages') if isinstance(record, dict) else None
+        texture=stages[0].get('baseColorMap') if isinstance(stages,list) and stages and isinstance(stages[0],dict) else None
+        if not isinstance(texture,str) or not texture.startswith(prefix):
+            raise ValueError('invalid property texture path')
+        texture_name=texture[len(prefix):]
+        if not re.fullmatch(r'bne_(?:fascia|directory)_[a-z0-9_]+\.png',texture_name):
+            raise ValueError('invalid property texture filename')
+        image_file=Path(out_dir)/texture_name
+        size=image_file.stat().st_size
+        total += size
+        if size>8*1024*1024 or total>64*1024*1024:
+            raise ValueError('property texture budget exceeded')
+        image=image_file.read_bytes()
+        files[texture_name]=image
+    return files
 
 
 def prebuild_geo(gx, gy, zoom, scratch, buildings, left_hand, mph, gas_stations, buried=0.0, lamp_region=None,
@@ -1076,13 +1271,21 @@ def prebuild_geo(gx, gy, zoom, scratch, buildings, left_hand, mph, gas_stations,
             _geo_content(gx, gy, zoom, scratch, "/x", buildings, left_hand, mph, gas_stations, buried, lamp_region,
                          country)
         finally:
-            for name in geo_names(tile_key).values():
+            names = geo_names(tile_key)
+            try:
+                import json
+                import roads as roadsmod
+                with open(os.path.join(scratch, names["json"]), encoding="utf-8") as fh:
+                    names.update(geo_names(tile_key, parts=roadsmod.building_chunk_names(json.load(fh))))
+            except (OSError, ValueError):
+                pass
+            for name in names.values():
                 try:
                     os.remove(os.path.join(scratch, name))
                 except OSError:
                     pass
             with _geo_lock:
-                _geo_inputs.pop(tile_key, None)
+                _geo_inputs.pop(geo_names(tile_key)['inputs'], None)
     return k if os.path.exists(path) else None
 
 
@@ -1093,10 +1296,23 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
     code; no anchor, no height quantum, no lift) or built in its own frame. (vfs path, chunks, info, fuel pads)."""
     import geotiles
     import revisit
+    import json
+    from buildgen import products
+    from buildgen.progressive import ACTIVE, DETAIL
+    _stages, mark = _stage_clock()
     tile = geotiles.geobox(gx, gy)
     names = geo_names(tile.key)
-    k = _geo_content_key(tile.key, zoom, buildings, left_hand, mph, gas_stations, buried, lamp_region, country)
+    requested_detail=DETAIL.get()
+    k = _geo_content_key(tile.key, zoom, buildings, left_hand, mph, gas_stations, buried, lamp_region, country,
+                         building_detail=requested_detail)
     got = revisit.load(_s.cache_dir, "roadsg", k)
+    if got is not None:
+        ref=(got[1].get('info') or {}).get('acceptedPlan')
+        if products.valid_reference(ref):
+            from productcache import Store
+            accepted=products.load_accepted(Store(_s.cache_dir),tile,ref['key'])
+            if accepted is not None and accepted.revision!=ref['revision']:
+                got=None
     if got is not None:
         blobs, extra = got
         for name, data in blobs.items():
@@ -1104,19 +1320,46 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
                 data = data.decode("utf-8").replace("@V@/", f"{vfs_dir}/").encode("utf-8")
             _write_bytes(os.path.join(out_dir, name), data)
         _geo_stats["content_hits"] += 1
+        mark("cache_restore")
         return (f"{vfs_dir}/{names['json']}", int(extra.get("n", 0)), extra.get("info") or {},
                 [(sid, [(np.asarray(la), np.asarray(lo)) for la, lo in rs]) for sid, rs in extra.get("pads", [])])
-    _stages, mark = _stage_clock()
+    mark("cache_lookup")
+    import sys,inputwatch
+    product_key,dependencies=products.address(tile,_geo_content_key(tile.key,zoom,buildings,left_hand,mph,
+                    gas_stations,buried,lamp_region,country,building_detail='accepted-plan-v1'))
+    if buildings:
+        refined=products.refine(sys.modules[__name__],tile,product_key,out_dir,vfs_dir,requested_detail)
+        if refined is not None:return refined
     f0 = revisit.faults()
     g = _frame_grader(tile.frame)
     walks_raw = []
-    P = _tile_parts(mark, tile.frame, tile, zoom, g, buildings, left_hand, mph, gas_stations, buried, lamp_region,
-                    country, None, ("g", tile.key), geotiles.centre(gx, gy), GEO_SKIN_MARGIN_M, walks_raw)
+    with inputwatch.capture() as watched:
+        P = _tile_parts(mark, tile.frame, tile, zoom, g, buildings, left_hand, mph, gas_stations, buried, lamp_region,
+                        country, None, ("g", tile.key), geotiles.centre(gx, gy), GEO_SKIN_MARGIN_M, walks_raw)
     P.walks_raw = walks_raw
     path, n, info = _write_geo_content(out_dir, vfs_dir, tile, P)
+    names.update(geo_names(tile.key, parts=info.get("parts")))
     mark("write")
     _geo_stats["content_built"] += 1
-    if revisit.ON and revisit.faults() == f0:     # (complete: nothing it read failed or was missing)
+    # A running full job can be downgraded after acceleration or passing the
+    # tile. Its mixed groups must never poison the deterministic full cache.
+    detail=(ACTIVE.get().detail if ACTIVE.get() else requested_detail)
+    if buildings and revisit.faults()==f0:
+        try:
+            # Lazy feed manifests can become known while planning. Retain under
+            # the revisions actually consumed, rather than the initial lookup.
+            product_key,dependencies=products.address(tile,_geo_content_key(tile.key,zoom,buildings,left_hand,mph,
+                            gas_stations,buried,lamp_region,country,building_detail='accepted-plan-v1'))
+            retained=products.retain(sys.modules[__name__],tile,product_key,dependencies,P,out_dir,vfs_dir,n,info,
+                                     inputwatch.snapshot(watched))
+            if not retained:
+                # A concurrent cold producer may have accepted the same source
+                # first. Publish that exact physical authority with our visuals.
+                accepted=products.refine(sys.modules[__name__],tile,product_key,out_dir,vfs_dir,requested_detail)
+                if accepted is not None:return accepted
+        except (OSError,ValueError,TypeError,KeyError) as ex:
+            log.debug('Accepted geometry product not retained: %s',ex)
+    if revisit.ON and revisit.faults() == f0 and detail == requested_detail:
         try:
             blobs = {}
             for what, name in names.items():
@@ -1127,6 +1370,8 @@ def _geo_content(gx, gy, zoom, out_dir, vfs_dir, buildings, left_hand, mph, gas_
                     if name.endswith(".json"):
                         data = data.decode("utf-8").replace(f"{vfs_dir}/", "@V@/").encode("utf-8")
                     blobs[name] = data
+            with open(os.path.join(out_dir, names['json']), encoding='utf-8') as fh:
+                blobs.update(_property_cache_files(json.load(fh), out_dir, vfs_dir))
             s, w, nn, e = geotiles.info(gx, gy)[2:]
             wh = revisit.where(*geotiles.centre(gx, gy), s, w, nn, e,
                                revisit.sig(buildings=bool(buildings), gas_stations=bool(gas_stations),
@@ -1144,8 +1389,9 @@ def _skin_inputs(key, out_dir, content):
     """The skin inputs of geotile key (_write_geo_content): kept in memory, else its session file, else content()
     (its content built or loaded again, which writes the file). None when there are none."""
     import pickle
+    cache_key = geo_names(key)['inputs']
     with _geo_lock:
-        got = _geo_inputs.get(key)
+        got = _geo_inputs.get(cache_key)
     if got is not None:
         return got
     p = os.path.join(out_dir, geo_names(key)["inputs"])
@@ -1157,7 +1403,7 @@ def _skin_inputs(key, out_dir, content):
     except (OSError, EOFError, pickle.UnpicklingError):
         return None
     with _geo_lock:
-        _geo_inputs[key] = got
+        _geo_inputs[cache_key] = got
         while len(_geo_inputs) > GEO_INPUTS_KEPT:
             _geo_inputs.pop(next(iter(_geo_inputs)))
     return got
@@ -1214,13 +1460,20 @@ def _map_walks(src, dst, walks):
         wk = dict(wk)
         if "corner" in wk:
             c = dict(wk["corner"])
+            old_arc = np.asarray(c['arc'], np.float64)
             c["arc"] = mp(c["arc"])
+            if c.get('outer_stations') is not None:
+                old_stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(old_arc[:, :2], axis=0), axis=1))]
+                new_stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(c['arc'][:, :2], axis=0), axis=1))]
+                c['outer_stations'] = np.interp(c['outer_stations'], old_stations, new_stations)
             c["outer"] = [tuple(v) for v in mp(np.asarray(c["outer"], np.float64).reshape(-1, 3))]
             inw = np.asarray(c["inward"], np.float64).reshape(-1, 2) @ r2.T
             c["inward"] = inw / np.maximum(np.hypot(*inw.T), 1e-12)[:, None]
             wk["corner"] = c
         else:
             wk["pts"] = mp(wk["pts"])
+        if wk.get('tree_gardens'):
+            wk['tree_gardens']=[dict(g,ring=mp(g['ring']).tolist()) for g in wk['tree_gardens']]
         out.append(wk)
     return out
 
@@ -1293,7 +1546,7 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
     mesh = _with_plazas(mesh, frame, bbox, elev, origin, getattr(_s, "surface", None), quad=quad)
     mark("plazas")
     names = geo_names(tile.key, aid)
-    data = {"v": roadsmod.VERSION, "key": tile.key, "anchorId": aid, "lift": round(float(lift), 3),
+    data = {"v": roadsmod.VERSION, "key": tile.key, "anchorId": aid, "contentHash": inputs.get('h'), "lift": round(float(lift), 3),
             "q": float(q) if q else 0.0}
     # its pivot: the quad's centre at the median height of its road mesh (the mod moves a kept skin there at a rebase)
     pz = float(np.median(np.asarray(mesh[0], np.float64)[:, 2])) if mesh is not None and len(mesh[0]) else 0.0
@@ -1309,16 +1562,18 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
         roadsmod.drape_walks(frame, elev, walks,
                              lambda x, y: roadmeshmod.drawn_ground(frame, drawn, np.c_[x, y], q))
         mark("drape")
-        b = sidewalksmod.Builder(origin, collision=True)
+        from buildgen.grounds_quality import current as grounds_quality
+        b = sidewalksmod.Builder(origin, collision=True, quality=grounds_quality(),
+            ground=lambda x,y: roadmeshmod.drawn_ground(frame, drawn, np.c_[x,y], q))
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]
-                b.add_corner(c["arc"], c["inward"], c["outer"], ramps=c.get("ramps", ()))
+                b.add_corner(c["arc"], c["inward"], sidewalksmod.corner_outer(c), h=wk.get("curb_h", sidewalksmod.CURB_H), ramps=c.get("ramps", ()), slab=sidewalksmod.slab_material(wk), outer_stations=c.get('outer_stations'))
                 continue
             ww = wk.get("w", roadsmod.SIDEWALK["w"])
             curb, outv = sidewalksmod.run_geometry(wk["pts"], wk["side"], ww)
-            b.add_run(curb, outv, ww, caps=wk["caps"], ramps=wk.get("ramps", ()),
-                      slab=sidewalksmod.BRICK if wk.get("brick") else 1)
+            b.add_run(curb, outv, ww, h=wk.get("curb_h", sidewalksmod.CURB_H), caps=wk["caps"], ramps=wk.get("ramps", ()),
+                      slab=sidewalksmod.slab_material(wk),driveways=wk.get('driveways',()), verge=wk.get('verge',False),gardens=wk.get('tree_gardens',()))
         mark("walks")
         if not b.empty():
             P_, T_, UV_, M_ = b.arrays()
@@ -1335,6 +1590,7 @@ def _geo_skin(aid, lat, lon, zoom, gx, gy, out_dir, vfs_dir, sidewalks, lift, q,
                     data["walkcol"] = {"shape": f"{vfs_dir}/{names['walkcol']}", "pos": list(origin)}
                 boxes = roadsmod.collider_boxes(walks, None)
                 if boxes.get("walk"):
+                    sidewalksmod.extend_collider_heights(boxes["walk"], b.arrays(), origin)
                     data["colliders"] = {"walk": boxes["walk"]}
                     if "walkcol" in data:
                         data["colliders"]["walkcol"] = boxes["walk"]
@@ -1369,6 +1625,7 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
             data = json.loads(f.read())
     except (OSError, ValueError):
         return out
+    names.update(geo_names(tile.key, parts=parts))
     for what, info in parts.items():
         e = data.get(what)
         src = os.path.join(out_dir, names.get(what, ""))
@@ -1379,7 +1636,8 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
         s = r.T @ c
         with open(src, "rb") as f:
             blob = fast._ef.cdae_shear(f.read(), float(e["pos"][2]), float(s[0]), float(s[1]), float(s[2]), piv)
-        name = f"rx_{aid}_{tile.key}_{what}.cdae"
+        import building_settings
+        name = f"rx_{aid}_{tile.key}_{building_settings.current()}_{what}.cdae"
         _write_bytes(os.path.join(out_dir, name), blob)
         out[what] = f"{vfs_dir}/{name}"
         _geo_stats["exact"] += 1
@@ -1387,14 +1645,31 @@ def _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, parts):
 
 
 def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, lift, buildings, left_hand, mph, q,
-              gas_stations, buried=0.0, lamp_region=None, country=None, content=True, skin=True, exact=None):
+              gas_stations, buried=0.0, lamp_region=None, country=None, content=True, skin=True, exact=None,
+              progress_token=None, building_detail='full', building_view=None, submitted_at=None, grounds_quality=None):
     """earthd.Server.build_roads_geo here (road-tile pool): geotile (gx, gy)'s content (content: built in its own
     frame, or from the revisit cache; gzoom its DEM zoom, the rules its own place's), anchor aid's skin (skin) and its
     parts' exact variants for that anchor (exact: {what: {pivot}}, or "auto": those of the content built here that its
     rigid placement would leave off, roads.geo_exact_auto). Returns {"content": (vfs path, chunks, info,
     fuel pads) or None, "skin": (vfs path, info) or None, "exact": {what: vfs path}, "stages": {...}}."""
+    started = time.perf_counter()        # actual process entry, not Future.running() in the executor call queue
+    stats = getattr(getattr(_s, "md", None), "cell_stats", lambda: {})
+    before = stats()
     watch = _stack_watch(f"road geotile {gx}_{gy}")
+    from buildgen.progressive import ACTIVE, DETAIL, Publisher
+    import geotiles
+    from buildgen.quality import WORKER_VALUES
+    detail_state = DETAIL.set(building_detail if isinstance(building_detail,str) and building_detail in WORKER_VALUES else 'full')
+    from buildgen import grounds_quality as grounds
+    if grounds_quality is not None and grounds_quality not in grounds.NAMES:
+        DETAIL.reset(detail_state)
+        watch.cancel()
+        raise ValueError('invalid grounds quality')
+    grounds_state=grounds.CURRENT.set(grounds_quality)
+    progress_state = None
     try:
+        progress_state = ACTIVE.set(Publisher(out_dir,vfs_dir,geotiles.geobox(gx,gy),progress_token,building_view)
+                                    if progress_token else None)
         out = {"content": None, "skin": None, "exact": {}, "stages": {}}
         t0 = time.perf_counter()
         c0 = time.process_time()
@@ -1419,8 +1694,15 @@ def roads_geo(aid, lat, lon, zoom, gx, gy, gzoom, out_dir, vfs_dir, sidewalks, l
             out["exact"] = _geo_exact(aid, lat, lon, gx, gy, out_dir, vfs_dir, exact)
         out["time"] = {"content_s": t1 - t0, "content_cpu": c1 - c0, "skin_s": t2 - t1, "skin_cpu": c2 - c1,
                        "exact_s": time.perf_counter() - t2}
+        out["worker"] = {"pid": os.getpid(), "started_at": started, "finished_at": time.perf_counter(),
+                         "submitted_at": submitted_at,
+                         "queue_s": None if submitted_at is None else max(0.0, started - submitted_at)}
+        out["dependencies"] = {k: v - before.get(k, 0) for k, v in stats().items()}
         return out
     finally:
+        if progress_state is not None:ACTIVE.reset(progress_state)
+        grounds.CURRENT.reset(grounds_state)
+        DETAIL.reset(detail_state)
         watch.cancel()
 
 
@@ -1607,10 +1889,19 @@ def far_geo_zoom(kind):
     return {"bldfar": geotiles.FAR_Z, "bldsky": geotiles.SKY_Z, "brfar": geotiles.BRIDGE_Z}[kind]
 
 
-def far_geo_names(kind, key):
+def far_geo_names(kind, key, plan_revision=None):
     """The session file names of far geotile key: {"json": ..., "shape": ...} (a far buildings or skyline tile's mesh);
     a far bridge tile's pieces are <prefix>_<key>_<road geotile key>.cdae (far_geo_piece)."""
     pre = FAR_GEO[kind]
+    if kind in ('bldfar', 'bldsky'):
+        import building_settings
+        pre += '_' + building_settings.current()
+        from buildgen.minimum import enabled as minimum_enabled
+        if minimum_enabled():pre += '_minimum'
+    if plan_revision is not None:
+        if not isinstance(plan_revision,str) or not re.fullmatch(r'[a-f0-9]{64}',plan_revision):
+            raise ValueError('invalid far accepted-plan revision')
+        pre += '_p'+plan_revision[:24]
     return {"json": f"{pre}_{key}.json", "shape": f"{pre}_{key}.cdae"}
 
 
@@ -1640,7 +1931,7 @@ def _lamps_by_geotile(frame, lamps):
     return out
 
 
-def _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region):
+def _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_plan=None, plan_refs=None):
     """Far geotile tile's content written to out_dir: (JSON data, {what: file name} of its shapes, count) or None
     when its cells are not at hand (asked again later)."""
     import buildings as buildingsmod
@@ -1652,23 +1943,43 @@ def _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region):
     def raw(la, lo):
         return ground(None, la, lo, _s.dem.sample(la, lo, gzoom))
     data = {"v": 1, "key": tile.key, "frame": [float(frame.lat0), float(frame.lon0)]}
-    names = far_geo_names(kind, tile.key)
+    names = far_geo_names(kind, tile.key, accepted_plan.revision if accepted_plan else None)
     shapes = {}
     if kind == "bldfar":
-        items, lamps, _box = buildingsmod.far_items(frame, tile, None, _s.md, raw, lamp_region)
-        mesh = buildingsmod.build(items, lite=True)
+        if accepted_plan is None:
+            items, lamps, _box = buildingsmod.far_items(frame, tile, None, _s.md, raw, lamp_region)
+        else:
+            items=accepted_plan.value['plans']
+            # Lamps still use their existing raw-ground path. They need only
+            # road records; no building/terrain/access planner runs again.
+            cells=[_s.md.cell(k,layers=('roads',),kind='demand')
+                   for k in roadsmod.cells_of_tile(frame,tile,None,margin=0.)]
+            size=max(x1-x0,y1-y0)
+            lamps=buildingsmod.far_lamps(frame,[c.layers.get('roads') for c in cells],x0,y0,size,
+                buildingsmod.built_squares(items,0.,0.,size),raw,lamp_region,own=tile.box)
+            data['acceptedPlan']=dict(revision=accepted_plan.revision,
+                                      physicalRevision=accepted_plan.value['physical_revision'])
+        mesh = buildingsmod.build(items, lite=True, texture_facades=True)
         n = len(items)
     elif kind == "bldsky":
-        keys = roadsmod.cells_of_tile(frame, tile, None, margin=0.0)
-        got = buildingsmod.sky_items(frame, (x0, y0, x1, y1), sorted(keys, key=str), _s.md, raw, lamp_region,
-                                     own=tile.box)
-        if got is None:
-            return None
-        picked, lamps = got
-        mesh = buildingsmod._sky_mesh(picked) if picked else None
-        n = len(picked) if mesh is not None else 0
-        if mesh is None:
-            lamps = []
+        if plan_refs:
+            from buildgen import distant
+            hybrid=distant.skyline(tile,plan_refs,_s.cache_dir,_s.md,raw,lamp_region)
+            if hybrid is None:return None
+            mesh,lamps,n,revision,metadata=hybrid
+            names=far_geo_names(kind,tile.key,revision)
+            data['representationRevision']=revision;data['acceptedPlan']=metadata
+        else:
+            keys = roadsmod.cells_of_tile(frame, tile, None, margin=0.0)
+            got = buildingsmod.sky_items(frame, (x0, y0, x1, y1), sorted(keys, key=str), _s.md, raw, lamp_region,
+                                         own=tile.box)
+            if got is None:
+                return None
+            picked, lamps = got
+            mesh = buildingsmod._sky_mesh(picked) if picked else None
+            n = len(picked) if mesh is not None else 0
+            if mesh is None:
+                lamps = []
     else:                               # brfar: the slabs in a piece per road geotile under it
         keys = roadsmod.cells_of_tile(frame, tile, None, margin=0.0)
         if not all(_s.md.has(k, "roads") for k in keys):
@@ -1710,7 +2021,7 @@ def _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region):
     return data, shapes, n
 
 
-def far_geo(kind, gx, gy, gzoom, out_dir, vfs_dir, lamp_region=None):
+def far_geo(kind, gx, gy, gzoom, out_dir, vfs_dir, lamp_region=None, plan_ref=None, plan_refs=None):
     """earthd.Server.build_far_geo here (the far buildings' pool): far geotile (gx, gy) of kind ("bldfar": its far
     buildings, the lite mesh of those road geotile (gx, gy) holds, and their streets' lamps; "bldsky": the skyline of a
     SKY_Z square; "brfar": the bridge decks of a BRIDGE_Z square as a piece per road geotile under it), built in its own
@@ -1722,10 +2033,25 @@ def far_geo(kind, gx, gy, gzoom, out_dir, vfs_dir, lamp_region=None):
     import revisit
     z = far_geo_zoom(kind)
     tile = geotiles.geobox(gx, gy, z)
-    names = far_geo_names(kind, tile.key)
-    k = revisit.key(kind, "g", tile.key, int(gzoom), _md_versions(), lamp_region)
+    accepted_plan=None
+    if kind=='bldsky':
+        from buildgen import distant
+        plan_refs=distant.references(tile,plan_refs)
+    else:plan_refs=None
+    if kind=='bldfar':
+        from buildgen import products
+        if products.valid_reference(plan_ref):
+            from productcache import Store
+            accepted_plan=products.load_accepted(Store(_s.cache_dir),tile,plan_ref['key'],plan_ref['revision'])
+    names = far_geo_names(kind, tile.key, accepted_plan.revision if accepted_plan else None)
+    k = revisit.key(kind, "g", tile.key, int(gzoom), _md_versions(), lamp_region,
+                    accepted_plan.revision if accepted_plan else 'source-plan',
+                    __import__('buildgen.minimum',fromlist=['enabled']).enabled())
     frame_ll = (float(tile.frame.lat0), float(tile.frame.lon0))
-    got = revisit.load(_s.cache_dir, kind, k)
+    # Hybrid skyline output depends on the accepted subset actually read plus
+    # unresolved source inputs. Do not address fallback bytes as an all-accepted
+    # cached revision. Session memoization still reuses the completed product.
+    got = None if plan_refs else revisit.load(_s.cache_dir, kind, k)
     if got is not None:
         blobs, extra = got
         for name, data in blobs.items():
@@ -1736,17 +2062,24 @@ def far_geo(kind, gx, gy, gzoom, out_dir, vfs_dir, lamp_region=None):
         return (f"{vfs_dir}/{names['json']}", int(extra.get("n", 0)), frame_ll, float(extra.get("pivot", 0.0)),
                 dict(extra.get("shapes") or {}))
     f0 = revisit.faults()
-    res = _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region)
+    if kind in ('bldfar', 'bldsky'):
+        from buildgen.roofs import service_cache
+        with service_cache():
+            res = _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_plan, plan_refs)
+    else:
+        res = _far_geo_build(kind, tile, gzoom, out_dir, vfs_dir, lamp_region, accepted_plan, plan_refs)
     if res is None:
         return None
     data, shapes, n = res
+    if data.get('representationRevision'):
+        names=far_geo_names(kind,tile.key,data['representationRevision'])
     text = json.dumps(data, separators=(",", ":"), sort_keys=True)
     data["h"] = _content_hash(text, vfs_dir)
     text = json.dumps(data, separators=(",", ":"), sort_keys=True)
     _write_bytes(os.path.join(out_dir, names["json"]), text.encode("utf-8"))
     _far_geo_stats["built"] += 1
     pivot = float(data.get("pivot", 0.0))
-    if revisit.ON and revisit.faults() == f0:     # (complete: nothing it read failed or was missing)
+    if not plan_refs and revisit.ON and revisit.faults() == f0:     # (complete: nothing it read failed or was missing)
         try:
             blobs = {names["json"]: text.replace(f"{vfs_dir}/", "@V@/").encode("utf-8")}
             for fname in shapes.values():

@@ -29,6 +29,22 @@ class _Fetcher:
 
 
 class RailTagsTest(unittest.TestCase):
+    def test_fresh_local_manifest_has_stable_identity_before_first_join(self):
+        from pathlib import Path
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            fetch=_Fetcher({});tags=railtags.RailTags(folder,fetch)
+            self.assertIsNone(tags.known())
+            pin=Path(tags.dir)/'manifest.json';pin.parent.mkdir(parents=True)
+            pin.write_text(json.dumps({'built':'source-revision'}))
+            self.assertEqual(tags.known(),'source-revision')
+            self.assertEqual(tags.checked,0.)
+            self.assertEqual(fetch.asked,[])
+            self.assertEqual(tags.version(),tags.known())
+            new=railtags.RailTags(folder,fetch)
+            with patch('railtags.time.time',return_value=pin.stat().st_mtime+railtags.MANIFEST_TTL_S+1):
+                self.assertIsNone(new.known())
+
     def test_join_by_way_id_and_nodes(self):
         f = features([[(0.0, 100.0), (250.0, 100.0)], [(0.0, 120.0), (250.0, 120.0)], [(0.0, 0.0), (5.0, 5.0)]],
                      ["unknown", "standard_gauge", "residential"], subtypes=["rail", "rail", "road"])

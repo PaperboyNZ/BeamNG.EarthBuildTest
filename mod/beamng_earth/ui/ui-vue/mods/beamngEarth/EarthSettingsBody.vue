@@ -6,6 +6,10 @@
     <BngCardHeading>{{ category.name }}</BngCardHeading>
     <div v-if="category.intro" class="earth-intro">{{ category.intro }}</div>
 
+    <div v-if="config.buildingGenerator === 'v2' && category.name === 'Graphics'" class="earth-intro">
+      Advanced defaults to Minimum quality. Quality levels above Minimum are experimental and costly: they increase generation time and resource use.
+    </div>
+
     <!-- Quality presets: one press sets every setting below; changing one makes it Custom -->
     <template v-if="category.presets">
       <div class="earth-presets">
@@ -29,6 +33,8 @@
       v-for="item in rows"
       :key="item.id"
       class="earth-row"
+      :disabled="isItemDisabled(item)"
+      :title="isItemDisabled(item) ? item.disabledReason : undefined"
       :vertical="item.type === 'text' || item.type === 'path'"
       @mouseenter="setHelp(item)"
       @focusin="setHelp(item)"
@@ -40,6 +46,7 @@
         :value="valueOf(item)"
         :options="item.options"
         :config="optionConfig"
+        :disabled="isItemDisabled(item)"
         @valueChanged="val => selectOption(item, val)"
       />
       <BngSwitch
@@ -119,7 +126,7 @@
 import { computed, reactive } from "vue"
 import { BngButton, BngSwitch, BngSlider, BngInput, BngSelect, BngRow, BngCardHeading, ACCENTS } from "@/common/components/base"
 import {
-  config, dev, help, qualityPresets, devPresets, presetLine, detectedPick, optionConfig, categoryNamed, visibleItems,
+  config, dev, help, qualityPresets, devPresets, presetLine, detectedPick, optionConfig, categoryNamed, visibleItems, isItemDisabled,
   cacheConfirm, cacheBusy, cacheResult, pathText, pathBusy, pathPick, pathMsg,
   setQuality, presetName, valueOf, selectOption, onSwitchChange, onSliderChange, onNumberEnter, onDevChange, infoValue,
   openFeedback,

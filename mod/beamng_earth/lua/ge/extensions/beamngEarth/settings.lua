@@ -54,6 +54,15 @@ M.SCHEMA = {
   -- how far the far buildings, the skyline and the far bridges reach (M.BUILDING_DISTANCE: buildingScale)
   buildingDistance = { kind = 'enum', default = 'normal', values = { 'near', 'normal', 'far', 'max' },
     label = 'Building draw distance' },
+  -- Applied live by the server; independent of the graphics quality presets.
+  buildingGenerator = { kind = 'enum', default = 'legacy', values = { 'legacy', 'v2' },
+    label = 'Building generation' },
+  buildingQuality = { kind = 'enum', default = 'minimum', values = { 'minimum', 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
+    label = 'Building generation quality' },
+  groundsQuality = { kind = 'enum', default = 'minimum', values = { 'minimum', 'very_low', 'low', 'medium', 'high', 'very_high', 'ultra' },
+    label = 'Sidewalks & Property Grounds' },
+  buildingDetailM = { kind = 'number', default = 350, min = 100, max = 640,
+    label = 'Building refinement distance (m)' },
   -- the drawn terrain block's aerial photo (px over the 1 km block; terrain.setPhotoSize, the server's photoPx):
   -- from the next level load
   groundPhoto = { kind = 'enum', default = '2048', values = { '1024', '2048', '4096' }, label = 'Ground photo resolution' },
@@ -125,7 +134,7 @@ M.SCHEMA = {
   updateDismissed = { kind = 'string', default = '', maxLen = 40, label = 'Update notice dismissed (version)' },
   devNoticeSeen = { kind = 'string', default = '', maxLen = 40, label = 'Development build notice seen (version)' },
 }
-M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'objectDetail',
+M.ORDER = { 'quality', 'framePacing', 'terrainDetail', 'groundPhoto', 'trees', 'treeDistance', 'buildingDistance', 'buildingGenerator', 'buildingQuality', 'groundsQuality', 'buildingDetailM', 'objectDetail',
   'grassDistance', 'nightLights', 'rebaseDistance', 'viewDistanceMode', 'viewDistanceKm', 'hazeStrength', 'skyMode', 'clouds',
   'weatherMode', 'realGravity', 'groundCover', 'groundCoverDensity', 'rocks', 'roads', 'highwaySigns', 'dashboardSatellite',
   'hudVisible', 'statusBar', 'profilerMode', 'runtimeProfiler',
@@ -142,23 +151,23 @@ M.HIDDEN = { welcomeSeen = true, updateDismissed = true, devNoticeSeen = true, q
 -- quality setting that puts everything at max quality to the real horizon"): every knob at its most, never picked by
 -- the first run (M.detectQuality).
 M.PRESET_KEYS = { 'trees', 'treeDistance', 'groundCover', 'groundCoverDensity', 'grassDistance', 'rocks', 'nightLights',
-  'viewDistanceMode', 'viewDistanceKm', 'terrainDetail', 'buildingDistance', 'groundPhoto', 'objectDetail' }
+  'viewDistanceMode', 'viewDistanceKm', 'terrainDetail', 'buildingDistance', 'buildingQuality', 'groundsQuality', 'buildingDetailM', 'groundPhoto', 'objectDetail' }
 M.PRESETS = {
   low = { trees = 'low', treeDistance = 'near', groundCover = false, groundCoverDensity = 'low', grassDistance = 'near',
     rocks = true, nightLights = 'few', viewDistanceMode = 'fixed', viewDistanceKm = 40, terrainDetail = 'low',
-    buildingDistance = 'near', groundPhoto = '1024', objectDetail = 'game' },
+    buildingDistance = 'near', buildingQuality = 'low', groundsQuality = 'low', buildingDetailM = 200, groundPhoto = '1024', objectDetail = 'game' },
   medium = { trees = 'medium', treeDistance = 'medium', groundCover = true, groundCoverDensity = 'low',
     grassDistance = 'normal', rocks = true, nightLights = 'few', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'normal', buildingDistance = 'normal', groundPhoto = '2048', objectDetail = 'game' },
+    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'medium', groundsQuality = 'medium', buildingDetailM = 250, groundPhoto = '2048', objectDetail = 'game' },
   high = { trees = 'normal', treeDistance = 'normal', groundCover = true, groundCoverDensity = 'normal',
     grassDistance = 'normal', rocks = true, nightLights = 'normal', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'normal', buildingDistance = 'normal', groundPhoto = '2048', objectDetail = 'game' },
+    terrainDetail = 'normal', buildingDistance = 'normal', buildingQuality = 'high', groundsQuality = 'high', buildingDetailM = 350, groundPhoto = '2048', objectDetail = 'game' },
   ultra = { trees = 'high', treeDistance = 'far', groundCover = true, groundCoverDensity = 'high', grassDistance = 'normal',
     rocks = true, nightLights = 'many', viewDistanceMode = 'horizon', viewDistanceKm = 100, terrainDetail = 'high',
-    buildingDistance = 'far', groundPhoto = '2048', objectDetail = 'game' },
+    buildingDistance = 'far', buildingQuality = 'very_high', groundsQuality = 'very_high', buildingDetailM = 500, groundPhoto = '2048', objectDetail = 'game' },
   extreme = { trees = 'extreme', treeDistance = 'max', groundCover = true, groundCoverDensity = 'high',
     grassDistance = 'far', rocks = true, nightLights = 'many', viewDistanceMode = 'horizon', viewDistanceKm = 100,
-    terrainDetail = 'extreme', buildingDistance = 'max', groundPhoto = '4096', objectDetail = 'extreme' },
+    terrainDetail = 'extreme', buildingDistance = 'max', buildingQuality = 'ultra', groundsQuality = 'ultra', buildingDetailM = 640, groundPhoto = '4096', objectDetail = 'extreme' },
 }
 M.PRESET_ORDER = { 'low', 'medium', 'high', 'ultra', 'extreme' }
 
@@ -188,7 +197,7 @@ end
 -- Old values that still load (and set) as their replacement, without a warning: 'auto' weather
 -- (real unless BWM_Weather was changing the weather) is Real now, which switches itself to Manual
 -- when anyone changes the weather.
-M.MIGRATE = { weatherMode = { auto = 'real' }, cacheCapGb = { unlimited = 0 } }
+M.MIGRATE = { buildingQuality = { lite = 'low', adaptive = 'ultra', full = 'ultra' }, weatherMode = { auto = 'real' }, cacheCapGb = { unlimited = 0 } }
 
 local values = {}       -- the settings in use (always complete and valid)
 local cachePolls = 0    -- uiState calls (the cache usage is asked every CACHE_POLL-th)
@@ -206,7 +215,7 @@ values = defaults() -- until load(): the defaults (= today's behaviour)
 
 -- Settings no longer on the page, left in older files: ignored without a warning (gasStations: gas stations are
 -- always on since the user's 2026-10-25 "make gas station always enabled and remove the toggle")
-M.RETIRED = { gasStations = true }
+M.RETIRED = { gasStations = true, buildingAdaptive = true }
 
 -- A valid value for key, or nil + error. Numbers are clamped to the range; strings that read as a
 -- number or boolean are accepted (the page sends what its controls hold).
@@ -265,7 +274,9 @@ function M.fillNewKnobs(data)
   local preset = M.PRESETS[values.quality]
   for _, k in ipairs(M.PRESET_KEYS) do
     if data[k] == nil then
-      if preset then values[k] = preset[k]
+      if k == 'buildingQuality' then values[k] = M.SCHEMA[k].default
+      elseif k == 'groundsQuality' then values[k] = values.buildingQuality
+      elseif preset then values[k] = preset[k]
       elseif k == 'treeDistance' and data.trees ~= nil then values[k] = M.TREE_DISTANCE_OF[values.trees] or values[k] end
     end
   end
@@ -302,8 +313,10 @@ function M.resolveAuto(gpu)
   if changed then
     values.quality = M.matchingPreset() or 'custom'
   else
-    for _, k in ipairs(M.PRESET_KEYS) do values[k] = M.PRESETS[pick][k] end
-    values.quality = pick
+    for _, k in ipairs(M.PRESET_KEYS) do
+      if k ~= 'buildingQuality' and k ~= 'groundsQuality' then values[k] = M.PRESETS[pick][k] end
+    end
+    values.quality = M.matchingPreset() or 'custom'
   end
   log('I', 'beamngEarth', 'settings: quality ' .. values.quality .. ' (detected ' .. values.qualityDetected .. ')')
   if rawget(_G, 'jsonWriteFile') then M.save() end
@@ -403,6 +416,12 @@ function M.serverGraphics()
     lodScale = M.TERRAIN_DETAIL[values.terrainDetail] or 1.0,
     treeScale = okT and trees.distanceScale and trees.distanceScale(values.treeDistance) or 1.0,
     buildingScale = M.BUILDING_DISTANCE[values.buildingDistance] or 1.0,
+    buildingQuality = values.buildingQuality,
+    -- Compatibility wire field for older servers. Each quality mode owns this
+    -- policy; it is no longer an independently saved or editable preference.
+    buildingAdaptive = values.buildingQuality ~= 'minimum',
+    groundsQuality = values.groundsQuality,
+    buildingDetailM = values.buildingDetailM,
     photoPx = okR and terrain.photoSize and terrain.photoSize() or tonumber(values.groundPhoto),
     -- a fixed view distance: the far field's radius at most (nothing past it is drawn); 0 = the real horizon
     viewM = values.viewDistanceMode == 'fixed' and values.viewDistanceKm * 1000 or 0,
@@ -454,6 +473,12 @@ M.APPLY = {
   end,
   terrainDetail = sendGraphics,
   buildingDistance = sendGraphics,
+  buildingQuality = sendGraphics,
+  groundsQuality = sendGraphics,
+  buildingGenerator = function()
+    net.send({ type = 'building_generator', value = values.buildingGenerator })
+  end,
+  buildingDetailM = sendGraphics,
   groundPhoto = function(v)
     require('beamngEarth/terrain').setPhotoSize(tonumber(v))
     sendGraphics()
@@ -589,6 +614,8 @@ function M.uiState()
   status.gravity = w and w.gravityLine and w.gravityLine() or nil
   status.deshadow = st and st.deshadow or 'off'
   status.colormatch = st and st.colormatch or 'off'
+  status.buildingGenerator = st and st.buildingGenerator or nil
+  status.buildingGeneratorError = st and st.buildingGeneratorError or nil
   -- the download cache: the server's last numbers, fresh ones asked every CACHE_POLL-th call (the page
   -- polls every 2 s while it is open)
   cachePolls = cachePolls + 1

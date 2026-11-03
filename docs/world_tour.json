@@ -1,0 +1,2361 @@
+{
+  "version": 1,
+  "about": "128 candidate neighbourhood anchors: one per implemented regional theme plus 64 stress cases. Coordinates and cameras require in-game scouting; routing is checked separately. Stretch tags identify unsupported-form probes, not promised replicas.",
+  "defaults": {
+    "date": "2026-09-22",
+    "hour": 12.0,
+    "weather": "clear",
+    "views": [
+      {
+        "name": "street_north",
+        "agl": 2.2,
+        "heading": 0,
+        "pitch": 0,
+        "fov": 75
+      },
+      {
+        "name": "street_east",
+        "agl": 2.2,
+        "heading": 90,
+        "pitch": 0,
+        "fov": 75
+      },
+      {
+        "name": "street_south",
+        "agl": 2.2,
+        "heading": 180,
+        "pitch": 0,
+        "fov": 75
+      },
+      {
+        "name": "street_west",
+        "agl": 2.2,
+        "heading": 270,
+        "pitch": 0,
+        "fov": 75
+      },
+      {
+        "name": "district",
+        "agl": 180,
+        "heading": 45,
+        "pitch": -55,
+        "fov": 85
+      }
+    ]
+  },
+  "places": [
+    {
+      "id": "boston_dorchester",
+      "name": "Dorchester, Boston",
+      "country": "USA",
+      "lat": 42.3005,
+      "lon": -71.0615,
+      "theme": "us_northeast",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "timber"
+      ],
+      "why": "Triple-decker proportions, closely spaced timber houses and party-wall assumptions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "us_northeast",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "charleston_cannonborough",
+      "name": "Cannonborough, Charleston",
+      "country": "USA",
+      "lat": 32.7912,
+      "lon": -79.945,
+      "theme": "us_southeast",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "historic"
+      ],
+      "why": "Narrow lots, low houses, porch-like recesses and doors facing tight streets.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "us_southeast",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "chicago_bungalows",
+      "name": "Portage Park, Chicago",
+      "country": "USA",
+      "lat": 41.9535,
+      "lon": -87.765,
+      "theme": "us_midwest",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "brick"
+      ],
+      "why": "Brick bungalows, repeated setbacks, low roofs and garage access.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "us_midwest",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "tucson_barrio",
+      "name": "Barrio Viejo, Tucson",
+      "country": "USA",
+      "lat": 32.213,
+      "lon": -110.973,
+      "theme": "us_southwest",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "arid"
+      ],
+      "why": "Low rendered walls, parapets, muted colours and street-edge alignment.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "us_southwest",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "portland_sellwood",
+      "name": "Sellwood, Portland",
+      "country": "USA",
+      "lat": 45.465,
+      "lon": -122.653,
+      "theme": "us_pacific",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low",
+        "timber"
+      ],
+      "why": "Detached gabled homes, planted plots and varied driveway widths.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "us_pacific",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "halifax_north_end",
+      "name": "North End, Halifax",
+      "country": "Canada",
+      "lat": 44.658,
+      "lon": -63.597,
+      "theme": "canada_atlantic",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "timber"
+      ],
+      "why": "Narrow painted houses, trim rhythm and infill between older buildings.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "canada_atlantic",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "winnipeg_wolseley",
+      "name": "Wolseley, Winnipeg",
+      "country": "Canada",
+      "lat": 49.879,
+      "lon": -97.176,
+      "theme": "canada_prairie",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low"
+      ],
+      "why": "Detached houses, rear lanes, pitched roofs and mature planting.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "canada_prairie",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "vancouver_mount_pleasant",
+      "name": "Mount Pleasant, Vancouver",
+      "country": "Canada",
+      "lat": 49.262,
+      "lon": -123.1,
+      "theme": "canada_pacific",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium"
+      ],
+      "why": "Older houses beside apartments; height transitions and material restraint.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "canada_pacific",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "iqaluit",
+      "name": "Iqaluit residential edge",
+      "country": "Canada",
+      "lat": 63.752,
+      "lon": -68.516,
+      "theme": "arctic_north_america",
+      "group": "core",
+      "tags": [
+        "residential",
+        "sparse",
+        "polar"
+      ],
+      "why": "Isolated compact buildings, exposed ground and limited vegetation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arctic_north_america",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "mexico_coyoacan",
+      "name": "Coyoacan, Mexico City",
+      "country": "Mexico",
+      "lat": 19.349,
+      "lon": -99.162,
+      "theme": "latin_american_local",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "courtyard"
+      ],
+      "why": "Rendered street walls, enclosed plots, colour variation and courtyards.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "latin_american_local",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "havana_centro",
+      "name": "Centro Habana",
+      "country": "Cuba",
+      "lat": 23.137,
+      "lon": -82.368,
+      "theme": "caribbean_creole",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic"
+      ],
+      "why": "Continuous attached fronts, narrow streets and tall window proportions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "caribbean_creole",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "san_jose_barrio_amon",
+      "name": "Barrio Amon, San Jose",
+      "country": "Costa Rica",
+      "lat": 9.939,
+      "lon": -84.075,
+      "theme": "central_america",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium"
+      ],
+      "why": "Small older houses, commercial conversion, roof and frontage variation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_america",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "quito_san_marcos",
+      "name": "San Marcos, Quito",
+      "country": "Ecuador",
+      "lat": -0.225,
+      "lon": -78.507,
+      "theme": "andean_highlands",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "slope"
+      ],
+      "why": "Stepped streets, attached courtyard buildings and foundations on grade.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "andean_highlands",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "recife_santo_antonio",
+      "name": "Santo Antonio, Recife",
+      "country": "Brazil",
+      "lat": -8.065,
+      "lon": -34.878,
+      "theme": "brazil_coastal",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "water"
+      ],
+      "why": "Historic commercial blocks, river edges and irregular footprints.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "brazil_coastal",
+      "routing_method": "shoreline_500m"
+    },
+    {
+      "id": "georgetown_queenstown",
+      "name": "Queenstown, Georgetown",
+      "country": "Guyana",
+      "lat": 6.813,
+      "lon": -58.151,
+      "theme": "amazon_guianas",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low",
+        "tropical"
+      ],
+      "why": "Timber-influenced houses, deep plots, roof silhouettes and drainage edges.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "amazon_guianas",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "buenos_aires_san_telmo",
+      "name": "San Telmo, Buenos Aires",
+      "country": "Argentina",
+      "lat": -34.621,
+      "lon": -58.373,
+      "theme": "southern_cone",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic"
+      ],
+      "why": "Masonry street walls, shop bases, inner courts and roof-height variation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_cone",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "valparaiso_cerro_alegre",
+      "name": "Cerro Alegre, Valparaiso",
+      "country": "Chile",
+      "lat": -33.043,
+      "lon": -71.627,
+      "theme": "chile_pacific",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "steep"
+      ],
+      "why": "Colourful hillside buildings, retaining edges and access on steep lanes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "chile_pacific",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/959/"
+    },
+    {
+      "id": "london_kentish_town",
+      "name": "Kentish Town, London",
+      "country": "United Kingdom",
+      "lat": 51.55,
+      "lon": -0.14,
+      "theme": "eu_atlantic",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "terrace"
+      ],
+      "why": "Brick terraces, party walls, small front gardens and rear extensions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "eu_atlantic",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "lisbon_graca",
+      "name": "Graca, Lisbon",
+      "country": "Portugal",
+      "lat": 38.717,
+      "lon": -9.13,
+      "theme": "eu_mediterranean",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "slope"
+      ],
+      "why": "Rendered and tiled fronts, pitched roofs and stepped street alignment.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "eu_mediterranean",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "bergen_sandviken",
+      "name": "Sandviken, Bergen",
+      "country": "Norway",
+      "lat": 60.405,
+      "lon": 5.323,
+      "theme": "nordic_cold",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "timber",
+        "slope"
+      ],
+      "why": "Close timber houses, steep roofs and sloping plots.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "nordic_cold",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "lyon_croix_rousse",
+      "name": "Croix-Rousse, Lyon",
+      "country": "France",
+      "lat": 45.775,
+      "lon": 4.832,
+      "theme": "france_regional",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "slope"
+      ],
+      "why": "Tall masonry blocks, repetitive windows and hillside streets.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "france_regional",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "amsterdam_jordaan",
+      "name": "Jordaan, Amsterdam",
+      "country": "Netherlands",
+      "lat": 52.374,
+      "lon": 4.881,
+      "theme": "low_countries",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "canal"
+      ],
+      "why": "Narrow attached fronts, roof variation, canal margins and tiny courtyards.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "low_countries",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "berlin_prenzlauer_berg",
+      "name": "Prenzlauer Berg, Berlin",
+      "country": "Germany",
+      "lat": 52.539,
+      "lon": 13.42,
+      "theme": "central_europe",
+      "group": "core",
+      "tags": [
+        "residential",
+        "dense",
+        "courtyard"
+      ],
+      "why": "Perimeter blocks, courtyard holes, repetitive floors and corner entrances.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_europe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "chur_old_town",
+      "name": "Old town, Chur",
+      "country": "Switzerland",
+      "lat": 46.848,
+      "lon": 9.532,
+      "theme": "alpine",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "historic"
+      ],
+      "why": "Compact alpine masonry, pitched roofs and irregular street corners.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "alpine",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "bologna_santo_stefano",
+      "name": "Santo Stefano district, Bologna",
+      "country": "Italy",
+      "lat": 44.491,
+      "lon": 11.35,
+      "theme": "italy_regional",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic"
+      ],
+      "why": "Terracotta roofs, attached blocks, courtyard preservation and arcade limits.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "italy_regional",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "zagreb_lower_town",
+      "name": "Lower Town, Zagreb",
+      "country": "Croatia",
+      "lat": 45.807,
+      "lon": 15.978,
+      "theme": "adriatic_balkans",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "courtyard"
+      ],
+      "why": "Masonry perimeter blocks, internal yards and broad street frontages.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "adriatic_balkans",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "athens_kypseli",
+      "name": "Kypseli, Athens",
+      "country": "Greece",
+      "lat": 38.002,
+      "lon": 23.738,
+      "theme": "aegean",
+      "group": "core",
+      "tags": [
+        "residential",
+        "dense"
+      ],
+      "why": "Apartment blocks, flat roofs, narrow gaps and balcony-support limitations.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "aegean",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "riga_avoti",
+      "name": "Avoti, Riga",
+      "country": "Latvia",
+      "lat": 56.95,
+      "lon": 24.138,
+      "theme": "eastern_europe",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "historic"
+      ],
+      "why": "Timber and masonry neighbours, mixed heights and deep urban plots.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "eastern_europe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "moscow_cheryomushki",
+      "name": "Cheryomushki, Moscow",
+      "country": "Russia",
+      "lat": 55.672,
+      "lon": 37.555,
+      "theme": "russia_north",
+      "group": "core",
+      "tags": [
+        "residential",
+        "high-rise",
+        "estate"
+      ],
+      "why": "Apartment slabs, repeated floor bands, spacing and planted communal ground.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "russia_north",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "accra_osu",
+      "name": "Osu, Accra",
+      "country": "Ghana",
+      "lat": 5.556,
+      "lon": -0.182,
+      "theme": "african_local",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "tropical"
+      ],
+      "why": "Compound walls, low roofs, retail conversions and irregular setbacks.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "african_local",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "casablanca_habous",
+      "name": "Habous, Casablanca",
+      "country": "Morocco",
+      "lat": 33.578,
+      "lon": -7.606,
+      "theme": "maghreb",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "courtyard"
+      ],
+      "why": "Courtyard blocks, pale render, arches and narrow pedestrian passages.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "maghreb",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "bamako_badialan",
+      "name": "Badialan, Bamako",
+      "country": "Mali",
+      "lat": 12.653,
+      "lon": -8.018,
+      "theme": "sahel",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low",
+        "compound"
+      ],
+      "why": "Low compounds, dusty open ground and sparse source-detail fallback.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "sahel",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "cairo_shubra",
+      "name": "Shubra, Cairo",
+      "country": "Egypt",
+      "lat": 30.075,
+      "lon": 31.246,
+      "theme": "nile_valley",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense"
+      ],
+      "why": "Dense concrete and masonry blocks, flat roofs and tight road clearance.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "nile_valley",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "addis_piazza",
+      "name": "Piazza, Addis Ababa",
+      "country": "Ethiopia",
+      "lat": 9.032,
+      "lon": 38.754,
+      "theme": "horn_africa",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "slope"
+      ],
+      "why": "Older low commercial fronts beside larger buildings on changing grades.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "horn_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "dar_kariakoo",
+      "name": "Kariakoo, Dar es Salaam",
+      "country": "Tanzania",
+      "lat": -6.819,
+      "lon": 39.276,
+      "theme": "swahili_east_africa",
+      "group": "core",
+      "tags": [
+        "commercial",
+        "dense",
+        "tropical"
+      ],
+      "why": "Market blocks, closely packed shops and mixed building heights.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "swahili_east_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "yaounde_messa",
+      "name": "Messa, Yaounde",
+      "country": "Cameroon",
+      "lat": 3.872,
+      "lon": 11.5,
+      "theme": "central_africa",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "slope"
+      ],
+      "why": "Irregular hillside housing, metal roofs and vegetation encroachment.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "johannesburg_melville",
+      "name": "Melville, Johannesburg",
+      "country": "South Africa",
+      "lat": -26.176,
+      "lon": 28.009,
+      "theme": "southern_africa",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low"
+      ],
+      "why": "Detached houses, walled plots, pitched roofs and gently sloping driveways.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "antananarivo_isoraka",
+      "name": "Isoraka, Antananarivo",
+      "country": "Madagascar",
+      "lat": -18.912,
+      "lon": 47.52,
+      "theme": "indian_ocean_africa",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "steep"
+      ],
+      "why": "Tall narrow houses, steep roofs, stairs and retaining-ground relationships.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "indian_ocean_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "muscat_muttrah",
+      "name": "Muttrah, Muscat",
+      "country": "Oman",
+      "lat": 23.619,
+      "lon": 58.565,
+      "theme": "arid_warm",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "coastal"
+      ],
+      "why": "Pale flat-roof buildings, compact lanes and mountain-to-coast constraints.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arid_warm",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "amman_jabal",
+      "name": "Jabal Amman",
+      "country": "Jordan",
+      "lat": 31.949,
+      "lon": 35.926,
+      "theme": "levant",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "slope"
+      ],
+      "why": "Pale masonry apartment buildings, flat roofs and steep access changes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "levant",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "tbilisi_sololaki",
+      "name": "Sololaki, Tbilisi",
+      "country": "Georgia",
+      "lat": 41.689,
+      "lon": 44.798,
+      "theme": "anatolia_caucasus",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "courtyard"
+      ],
+      "why": "Courtyard housing, irregular old blocks, slopes and balcony limits.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "anatolia_caucasus",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "tehran_yousefabad",
+      "name": "Yousefabad, Tehran",
+      "country": "Iran",
+      "lat": 35.735,
+      "lon": 51.405,
+      "theme": "iran_plateau",
+      "group": "core",
+      "tags": [
+        "residential",
+        "dense"
+      ],
+      "why": "Mid-rise apartments, flat roofs, walled plots and narrow infill gaps.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "iran_plateau",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "baghdad_karrada",
+      "name": "Karrada, Baghdad",
+      "country": "Iraq",
+      "lat": 33.302,
+      "lon": 44.428,
+      "theme": "mesopotamia",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "arid"
+      ],
+      "why": "Low courtyard plots, commercial strips and new taller infill.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "mesopotamia",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "samarkand_old_quarter",
+      "name": "Old quarter east of Registan, Samarkand",
+      "country": "Uzbekistan",
+      "lat": 39.654,
+      "lon": 66.984,
+      "theme": "central_asia_oases",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "courtyard"
+      ],
+      "why": "Low enclosed courts, roof combinations and tight irregular lanes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_asia_oases",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "almaty_tastak",
+      "name": "Tastak, Almaty",
+      "country": "Kazakhstan",
+      "lat": 43.255,
+      "lon": 76.879,
+      "theme": "central_asia_steppe",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium"
+      ],
+      "why": "Detached plots beside apartment blocks; roof and density transitions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_asia_steppe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "ahmedabad_pols",
+      "name": "Old-city pols, Ahmedabad",
+      "country": "India",
+      "lat": 23.026,
+      "lon": 72.588,
+      "theme": "indus_gangetic",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "courtyard"
+      ],
+      "why": "Very narrow attached houses, internal courts and intricate street edges.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "indus_gangetic",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/1551/"
+    },
+    {
+      "id": "bengaluru_malleswaram",
+      "name": "Malleswaram, Bengaluru",
+      "country": "India",
+      "lat": 13.003,
+      "lon": 77.57,
+      "theme": "india_peninsular",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium"
+      ],
+      "why": "Older houses beside apartments, flat roofs, retail bases and tree cover.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "india_peninsular",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "dhaka_shankhari",
+      "name": "Shankhari Bazar, Old Dhaka",
+      "country": "Bangladesh",
+      "lat": 23.71,
+      "lon": 90.41,
+      "theme": "bengal_delta",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense"
+      ],
+      "why": "Extremely narrow frontages, irregular footprints and little road clearance.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "bengal_delta",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "kathmandu_asan",
+      "name": "Asan, Kathmandu",
+      "country": "Nepal",
+      "lat": 27.708,
+      "lon": 85.312,
+      "theme": "himalayan",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic"
+      ],
+      "why": "Brick and rendered blocks, small courts and complex intersections.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "himalayan",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "colombo_kotahena",
+      "name": "Kotahena, Colombo",
+      "country": "Sri Lanka",
+      "lat": 6.948,
+      "lon": 79.864,
+      "theme": "sri_lanka_maldives",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "medium",
+        "tropical"
+      ],
+      "why": "Low tiled roofs, compact plots and religious-building classification.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "sri_lanka_maldives",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "tokyo_yanaka",
+      "name": "Yanaka, Tokyo",
+      "country": "Japan",
+      "lat": 35.726,
+      "lon": 139.766,
+      "theme": "jp_temperate",
+      "group": "core",
+      "tags": [
+        "residential",
+        "dense"
+      ],
+      "why": "Small detached houses, tight gaps, roof diversity and narrow lanes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "jp_temperate",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "beijing_hutongs",
+      "name": "Dongsi hutongs, Beijing",
+      "country": "China",
+      "lat": 39.935,
+      "lon": 116.419,
+      "theme": "china_north",
+      "group": "core",
+      "tags": [
+        "residential",
+        "dense",
+        "courtyard"
+      ],
+      "why": "Low courtyard compounds, shared walls and preservation of open interiors.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_north",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "taipei_datong",
+      "name": "Datong, Taipei",
+      "country": "Taiwan",
+      "lat": 25.058,
+      "lon": 121.513,
+      "theme": "china_south",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense"
+      ],
+      "why": "Narrow shop-house plots, mid-rise infill and covered-frontage limits.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "seoul_bukchon",
+      "name": "Bukchon, Seoul",
+      "country": "South Korea",
+      "lat": 37.582,
+      "lon": 126.985,
+      "theme": "korea",
+      "group": "core",
+      "tags": [
+        "residential",
+        "dense",
+        "slope"
+      ],
+      "why": "Compact courtyard houses, tiled roof envelopes and sloping lanes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "korea",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "lhasa_barkhor",
+      "name": "Barkhor neighbourhood, Lhasa",
+      "country": "China",
+      "lat": 29.651,
+      "lon": 91.133,
+      "theme": "tibetan_plateau",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "high-altitude"
+      ],
+      "why": "Thick-looking walls, flat roofs, bounded trim and narrow old-town passages.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tibetan_plateau",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "singapore_joo_chiat",
+      "name": "Joo Chiat and Koon Seng Road, Singapore",
+      "country": "Singapore",
+      "lat": 1.31,
+      "lon": 103.902,
+      "theme": "tropical_humid",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "shophouse"
+      ],
+      "why": "Attached colourful shophouses, repetitive bays and covered-walkway limits.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tropical_humid",
+      "routing_method": "polygon",
+      "reference": "https://www.ura.gov.sg/guidelines/conservation/"
+    },
+    {
+      "id": "hanoi_old_quarter",
+      "name": "Old Quarter, Hanoi",
+      "country": "Vietnam",
+      "lat": 21.035,
+      "lon": 105.85,
+      "theme": "mainland_southeast_asia",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "shophouse"
+      ],
+      "why": "Very narrow deep tube-house plots, shop bases and mixed roof heights.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "mainland_southeast_asia",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "yogyakarta_kotagede",
+      "name": "Kotagede, Yogyakarta",
+      "country": "Indonesia",
+      "lat": -7.827,
+      "lon": 110.399,
+      "theme": "indonesian_archipelago",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "courtyard"
+      ],
+      "why": "Tiled roofs, walled compounds and tightly interwoven lanes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "indonesian_archipelago",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "manila_sampaloc",
+      "name": "Sampaloc, Manila",
+      "country": "Philippines",
+      "lat": 14.609,
+      "lon": 120.996,
+      "theme": "philippines",
+      "group": "core",
+      "tags": [
+        "mixed",
+        "dense",
+        "tropical"
+      ],
+      "why": "Small irregular plots, mixed roof materials and taller infill.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "philippines",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "wellington_newtown",
+      "name": "Newtown, Wellington",
+      "country": "New Zealand",
+      "lat": -41.313,
+      "lon": 174.779,
+      "theme": "nz_temperate",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "slope"
+      ],
+      "why": "Timber villas, close side yards and changing driveway grades.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "nz_temperate",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "melbourne_carlton",
+      "name": "Carlton, Melbourne",
+      "country": "Australia",
+      "lat": -37.797,
+      "lon": 144.968,
+      "theme": "au_southeast",
+      "group": "core",
+      "tags": [
+        "residential",
+        "medium",
+        "terrace"
+      ],
+      "why": "Attached terraces, rear lanes, parapets and restrained facade variation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "au_southeast",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "darwin_parap",
+      "name": "Parap, Darwin",
+      "country": "Australia",
+      "lat": -12.431,
+      "lon": 130.843,
+      "theme": "au_tropical_arid",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low",
+        "tropical"
+      ],
+      "why": "Wide plots, metal roofs, strong vegetation and raised-house limitations.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "au_tropical_arid",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "suva_samabula",
+      "name": "Samabula, Suva",
+      "country": "Fiji",
+      "lat": -18.118,
+      "lon": 178.443,
+      "theme": "pacific_islands",
+      "group": "core",
+      "tags": [
+        "residential",
+        "low",
+        "tropical",
+        "slope"
+      ],
+      "why": "Detached metal-roof housing, tropical planting and sloping plot access.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "pacific_islands",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "davis_station",
+      "name": "Davis research station",
+      "country": "Antarctica",
+      "lat": -68.5763,
+      "lon": 77.9688,
+      "theme": "antarctic_stations",
+      "group": "core",
+      "tags": [
+        "special",
+        "sparse",
+        "polar"
+      ],
+      "why": "Coloured service modules, bare ground, coastline routing and missing-data handling.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "antarctic_stations",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "fez_medina",
+      "name": "Fes el Bali medina",
+      "country": "Morocco",
+      "lat": 34.064,
+      "lon": -4.975,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic",
+        "stretch"
+      ],
+      "why": "Connected irregular roofs, courtyard holes and alleys narrower than ordinary roads.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "maghreb",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/170/"
+    },
+    {
+      "id": "sanaa_old_city",
+      "name": "Old city, Sanaa",
+      "country": "Yemen",
+      "lat": 15.354,
+      "lon": 44.214,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic",
+        "stretch"
+      ],
+      "why": "Tall decorated masonry houses; test silhouette without expecting bespoke ornament.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arid_warm",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "shibam",
+      "name": "Walled city, Shibam",
+      "country": "Yemen",
+      "lat": 15.926,
+      "lon": 48.626,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "dense",
+        "arid",
+        "stretch"
+      ],
+      "why": "Tall earthen tower houses; height and spacing matter even without earth-wall assets.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arid_warm",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/192/"
+    },
+    {
+      "id": "varanasi_bengali_tola",
+      "name": "Bengali Tola, Varanasi",
+      "country": "India",
+      "lat": 25.304,
+      "lon": 83.008,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "river",
+        "stretch"
+      ],
+      "why": "Narrow lanes descending toward stepped riverfront; footprint and grade stress.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "indus_gangetic",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "bhaktapur",
+      "name": "Old town, Bhaktapur",
+      "country": "Nepal",
+      "lat": 27.672,
+      "lon": 85.429,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic",
+        "stretch"
+      ],
+      "why": "Courtyard blocks, brick texture balance and specialist temple fallbacks.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "himalayan",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "georgetown_penang",
+      "name": "George Town, Penang",
+      "country": "Malaysia",
+      "lat": 5.417,
+      "lon": 100.337,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "shophouse"
+      ],
+      "why": "Attached shop fronts, deep narrow lots, rear courts and party walls.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tropical_humid",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "hoi_an",
+      "name": "Old town, Hoi An",
+      "country": "Vietnam",
+      "lat": 15.877,
+      "lon": 108.328,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "medium",
+        "historic",
+        "river"
+      ],
+      "why": "Low yellow shop houses, tiled roofs and river-edge exclusions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "mainland_southeast_asia",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "salvador_pelourinho",
+      "name": "Pelourinho, Salvador",
+      "country": "Brazil",
+      "lat": -12.973,
+      "lon": -38.51,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "historic",
+        "slope"
+      ],
+      "why": "Colourful attached fronts, steep streets and large church neighbours.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "brazil_coastal",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "hong_kong_mong_kok",
+      "name": "Mong Kok, Hong Kong",
+      "country": "China",
+      "lat": 22.319,
+      "lon": 114.17,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "high-rise",
+        "dense"
+      ],
+      "why": "Tall narrow blocks, tiny setbacks and extreme facade-detail budgets.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "shanghai_lujiazui",
+      "name": "Lujiazui, Shanghai",
+      "country": "China",
+      "lat": 31.237,
+      "lon": 121.503,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "office",
+        "high-rise",
+        "dense"
+      ],
+      "why": "Curtain-wall towers, podiums, skyline LOD and large-building chunk limits.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "shenzhen_futian",
+      "name": "Futian CBD, Shenzhen",
+      "country": "China",
+      "lat": 22.538,
+      "lon": 114.055,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "office",
+        "high-rise",
+        "dense"
+      ],
+      "why": "Tower clusters, broad roads, plazas and podium access.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "dubai_marina",
+      "name": "Dubai Marina",
+      "country": "United Arab Emirates",
+      "lat": 25.08,
+      "lon": 55.14,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "high-rise",
+        "water"
+      ],
+      "why": "Closely packed towers beside water, long sight lines and complex podium footprints.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arid_warm",
+      "routing_method": "shoreline_500m"
+    },
+    {
+      "id": "kuala_lumpur_klcc",
+      "name": "KLCC, Kuala Lumpur",
+      "country": "Malaysia",
+      "lat": 3.156,
+      "lon": 101.713,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "office",
+        "high-rise",
+        "tropical"
+      ],
+      "why": "Glass towers beside lower blocks, park boundaries and tropical planting exclusions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tropical_humid",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "seoul_yeouido",
+      "name": "Yeouido, Seoul",
+      "country": "South Korea",
+      "lat": 37.522,
+      "lon": 126.925,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "office",
+        "high-rise"
+      ],
+      "why": "Large office footprints, regular bays, wide roads and skyline continuity.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "korea",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "sao_paulo_paulista",
+      "name": "Avenida Paulista, Sao Paulo",
+      "country": "Brazil",
+      "lat": -23.563,
+      "lon": -46.654,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "office",
+        "high-rise",
+        "dense"
+      ],
+      "why": "Older and newer office towers, narrow plot widths and varied material evidence.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "brazil_coastal",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "santiago_providencia",
+      "name": "Providencia, Santiago",
+      "country": "Chile",
+      "lat": -33.421,
+      "lon": -70.61,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "high-rise"
+      ],
+      "why": "Tower-to-low-rise transitions, planted streets and facade-family selection.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "chile_pacific",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "saitama_urawa",
+      "name": "Urawa residential streets, Saitama",
+      "country": "Japan",
+      "lat": 35.856,
+      "lon": 139.645,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low"
+      ],
+      "why": "Small detached homes, compact parking, tiled and metal roof variation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "jp_temperate",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "kajang_housing",
+      "name": "Taman Kajang Utama, Kajang",
+      "country": "Malaysia",
+      "lat": 2.976,
+      "lon": 101.803,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "medium",
+        "terrace"
+      ],
+      "why": "Long terrace-house rows, individual driveways and party-wall consistency.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tropical_humid",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "gaborone_extension",
+      "name": "Extension 9, Gaborone",
+      "country": "Botswana",
+      "lat": -24.643,
+      "lon": 25.925,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low",
+        "arid"
+      ],
+      "why": "Detached walled plots, generous spacing and low vegetation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "windhoek_klein",
+      "name": "Klein Windhoek",
+      "country": "Namibia",
+      "lat": -22.568,
+      "lon": 17.108,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low",
+        "slope",
+        "arid"
+      ],
+      "why": "Large hillside plots, long driveways and dry landscaping.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "lusaka_olympia",
+      "name": "Olympia, Lusaka",
+      "country": "Zambia",
+      "lat": -15.386,
+      "lon": 28.316,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low",
+        "tropical"
+      ],
+      "why": "Large compounds, varied roof plans and dense planting around low houses.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "stellenbosch_jamestown",
+      "name": "Jamestown, Stellenbosch",
+      "country": "South Africa",
+      "lat": -33.984,
+      "lon": 18.849,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "sparse",
+        "rural"
+      ],
+      "why": "Small houses merging into agricultural plots; zoning and edge transitions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "punta_arenas",
+      "name": "Residential edge, Punta Arenas",
+      "country": "Chile",
+      "lat": -53.155,
+      "lon": -70.916,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low",
+        "cold"
+      ],
+      "why": "Small coloured houses, metal roofs, exposed open ground and repetitive grids.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "chile_pacific",
+      "routing_method": "shoreline_500m"
+    },
+    {
+      "id": "ulaanbaatar_ger_edge",
+      "name": "Northern ger-district edge, Ulaanbaatar",
+      "country": "Mongolia",
+      "lat": 47.958,
+      "lon": 106.914,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low",
+        "compound",
+        "stretch"
+      ],
+      "why": "Fenced plots, simple houses and circular dwellings; source gaps and shape fallbacks.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_asia_steppe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "osaka_dotonbori",
+      "name": "Dotonbori, Osaka",
+      "country": "Japan",
+      "lat": 34.669,
+      "lon": 135.502,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "dense",
+        "canal"
+      ],
+      "why": "Continuous retail fronts, canal edge, narrow alleys and limited sign representation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "jp_temperate",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "bangkok_siam",
+      "name": "Siam Square, Bangkok",
+      "country": "Thailand",
+      "lat": 13.745,
+      "lon": 100.534,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "dense",
+        "mall"
+      ],
+      "why": "Large malls against small shops, overhead infrastructure and constrained access.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "mainland_southeast_asia",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "istanbul_istiklal",
+      "name": "Istiklal Avenue, Istanbul",
+      "country": "Turkey",
+      "lat": 41.033,
+      "lon": 28.977,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "dense",
+        "historic"
+      ],
+      "why": "Tall attached retail blocks, pedestrian streets and sloping cross lanes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "anatolia_caucasus",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "nairobi_eastleigh",
+      "name": "Eastleigh, Nairobi",
+      "country": "Kenya",
+      "lat": -1.274,
+      "lon": 36.848,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "dense"
+      ],
+      "why": "Dense retail and apartment mix, irregular heights and narrow loading access.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "swahili_east_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "lagos_balogun",
+      "name": "Balogun Market district, Lagos",
+      "country": "Nigeria",
+      "lat": 6.454,
+      "lon": 3.389,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "dense"
+      ],
+      "why": "Intense market fabric, small footprints and uncertain usage tags.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "",
+      "routing_method": "unresolved"
+    },
+    {
+      "id": "johannesburg_sandton",
+      "name": "Sandton commercial district",
+      "country": "South Africa",
+      "lat": -26.108,
+      "lon": 28.053,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "mall",
+        "high-rise"
+      ],
+      "why": "Large shopping complex, hotel towers, parking and access classification.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "cairo_nasr_city",
+      "name": "Nasr City commercial corridor, Cairo",
+      "country": "Egypt",
+      "lat": 30.062,
+      "lon": 31.344,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "mall",
+        "arid"
+      ],
+      "why": "Large retail footprints, apartment neighbours, broad roads and sparse planting.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "nile_valley",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "riyadh_tahlia",
+      "name": "Tahlia Street, Riyadh",
+      "country": "Saudi Arabia",
+      "lat": 24.697,
+      "lon": 46.684,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "commercial",
+        "low",
+        "arid"
+      ],
+      "why": "Low retail strips, forecourts, multiple road accesses and broad setbacks.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arid_warm",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "rotterdam_waalhaven",
+      "name": "Waalhaven, Rotterdam",
+      "country": "Netherlands",
+      "lat": 51.882,
+      "lon": 4.443,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "port",
+        "water"
+      ],
+      "why": "Warehouse sheds, quays, paved yards and false residential facade avoidance.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "low_countries",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "duisburg_ruhrort",
+      "name": "Ruhrort harbour, Duisburg",
+      "country": "Germany",
+      "lat": 51.455,
+      "lon": 6.737,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "port",
+        "rail"
+      ],
+      "why": "Industrial roofs, rail-served yards and water boundaries.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_europe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "hamburg_speicherstadt",
+      "name": "Speicherstadt, Hamburg",
+      "country": "Germany",
+      "lat": 53.544,
+      "lon": 9.993,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "historic",
+        "canal"
+      ],
+      "why": "Brick warehouses, repetitive tall bays and canal-side wall placement.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_europe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "antwerp_port",
+      "name": "Noorderlaan port corridor, Antwerp",
+      "country": "Belgium",
+      "lat": 51.285,
+      "lon": 4.41,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "port",
+        "logistics"
+      ],
+      "why": "Long warehouses, service roads, rail crossings and huge paved plots.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "low_countries",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "durban_bayhead",
+      "name": "Bayhead, Durban",
+      "country": "South Africa",
+      "lat": -29.895,
+      "lon": 30.991,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "port",
+        "rail"
+      ],
+      "why": "Large sheds, rail sidings, waterfront exclusions and vegetation-free yards.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "southern_africa",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "tema_industrial",
+      "name": "Industrial area, Tema",
+      "country": "Ghana",
+      "lat": 5.666,
+      "lon": 0.014,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "logistics",
+        "tropical"
+      ],
+      "why": "Large simple sheds, mixed source coverage and wide unbuilt gaps.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "african_local",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "jebel_ali",
+      "name": "Jebel Ali industrial area, Dubai",
+      "country": "United Arab Emirates",
+      "lat": 24.991,
+      "lon": 55.104,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "logistics",
+        "arid"
+      ],
+      "why": "Very large roofs, loading yards and repeating warehouse geometry.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "arid_warm",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "kaohsiung_port",
+      "name": "Port-side industry, Kaohsiung",
+      "country": "Taiwan",
+      "lat": 22.596,
+      "lon": 120.307,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "industrial",
+        "port",
+        "water"
+      ],
+      "why": "Dense industrial footprints, quays and factory-to-city transitions.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "frankfurt_airport",
+      "name": "Terminal frontage, Frankfurt Airport",
+      "country": "Germany",
+      "lat": 50.051,
+      "lon": 8.572,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "airport",
+        "transport"
+      ],
+      "why": "Large terminal shapes, access roads and inappropriate ordinary-building fallback.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "central_europe",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "changi_terminal",
+      "name": "Terminal 3 frontage, Changi Airport",
+      "country": "Singapore",
+      "lat": 1.357,
+      "lon": 103.987,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "airport",
+        "tropical"
+      ],
+      "why": "Huge terminal envelope, covered access, landscaping and parking separation.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tropical_humid",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "incheon_airport",
+      "name": "Terminal 1 frontage, Incheon Airport",
+      "country": "South Korea",
+      "lat": 37.447,
+      "lon": 126.452,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "airport",
+        "coastal"
+      ],
+      "why": "Long terminal facade, multilane approaches and coastline routing.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "korea",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "barcelona_sants",
+      "name": "Sants station district, Barcelona",
+      "country": "Spain",
+      "lat": 41.379,
+      "lon": 2.141,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "rail",
+        "commercial"
+      ],
+      "why": "Broad station footprint against dense city blocks and public forecourts.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "eu_mediterranean",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "bologna_fiera",
+      "name": "Bologna exhibition district",
+      "country": "Italy",
+      "lat": 44.511,
+      "lon": 11.362,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "exhibition",
+        "parking"
+      ],
+      "why": "Large halls, repetitive roofs, huge parking areas and service-road access.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "italy_regional",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "singapore_nuh",
+      "name": "National University Hospital district, Singapore",
+      "country": "Singapore",
+      "lat": 1.294,
+      "lon": 103.783,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "hospital",
+        "tropical"
+      ],
+      "why": "Linked institutional blocks, mixed heights, access roads and planted slopes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "tropical_humid",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "mexico_unam",
+      "name": "University City, UNAM, Mexico City",
+      "country": "Mexico",
+      "lat": 19.332,
+      "lon": -99.187,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "special",
+        "campus",
+        "modernist"
+      ],
+      "why": "Separate institutional slabs, large open grounds and site-scale relationships.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "latin_american_local",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "brasilia_superquadra",
+      "name": "Superquadra 308 Sul, Brasilia",
+      "country": "Brazil",
+      "lat": -15.817,
+      "lon": -47.906,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "estate",
+        "modernist",
+        "stretch"
+      ],
+      "why": "Slabs in shared green space; raised ground floors and shared-site limitations.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "brazil_coastal",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/445/"
+    },
+    {
+      "id": "la_paz_sopocachi",
+      "name": "Sopocachi, La Paz",
+      "country": "Bolivia",
+      "lat": -16.51,
+      "lon": -68.127,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "steep"
+      ],
+      "why": "Tall and low neighbours on steep streets; foundations, stairs and driveway rejection.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "andean_highlands",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "medellin_comuna13",
+      "name": "San Javier hillside, Medellin",
+      "country": "Colombia",
+      "lat": 6.249,
+      "lon": -75.621,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "dense",
+        "steep"
+      ],
+      "why": "Tightly packed irregular houses, stair streets and terrain clipping.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "andean_highlands",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "funchal_santa_maria",
+      "name": "Santa Maria slopes, Funchal",
+      "country": "Portugal",
+      "lat": 32.65,
+      "lon": -16.899,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "medium",
+        "steep"
+      ],
+      "why": "Tiled-roof houses, narrow lanes and strong elevation changes.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "eu_atlantic",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "chongqing_yuzhong",
+      "name": "Yuzhong, Chongqing",
+      "country": "China",
+      "lat": 29.557,
+      "lon": 106.575,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "high-rise",
+        "steep",
+        "stretch"
+      ],
+      "why": "Towers on ridges, layered roads, bridges and grade-separation ambiguity.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "riomaggiore",
+      "name": "Riomaggiore, Cinque Terre",
+      "country": "Italy",
+      "lat": 44.099,
+      "lon": 9.738,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "dense",
+        "steep",
+        "coastal"
+      ],
+      "why": "Tall attached houses squeezed into a valley; coast and cliff boundaries.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "italy_regional",
+      "routing_method": "shoreline_500m"
+    },
+    {
+      "id": "rio_rocinha",
+      "name": "Rocinha hillside, Rio de Janeiro",
+      "country": "Brazil",
+      "lat": -22.988,
+      "lon": -43.248,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "dense",
+        "steep"
+      ],
+      "why": "Irregular attached roofs, extreme density and incomplete source attribution.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "brazil_coastal",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "tai_o",
+      "name": "Tai O, Hong Kong",
+      "country": "China",
+      "lat": 22.253,
+      "lon": 113.863,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "water",
+        "stretch"
+      ],
+      "why": "Stilt-house settlement; unsupported raised structures and shoreline routing.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "china_south",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "venice_cannaregio",
+      "name": "Cannaregio, Venice",
+      "country": "Italy",
+      "lat": 45.445,
+      "lon": 12.326,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "canal",
+        "stretch"
+      ],
+      "why": "Buildings against canals, pedestrian bridges and no invented road driveways.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "italy_regional",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "shirakawa_ogimachi",
+      "name": "Ogimachi, Shirakawa-go",
+      "country": "Japan",
+      "lat": 36.257,
+      "lon": 136.906,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "sparse",
+        "rural",
+        "stretch"
+      ],
+      "why": "Very steep gassho roof forms, farm spacing and unsupported thatch detail.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "jp_temperate",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/734/"
+    },
+    {
+      "id": "alberobello",
+      "name": "Rione Monti, Alberobello",
+      "country": "Italy",
+      "lat": 40.782,
+      "lon": 17.237,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "dense",
+        "historic",
+        "stretch"
+      ],
+      "why": "Conical trulli roofs and grouped small footprints; safe roof fallback.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "italy_regional",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "matmata",
+      "name": "Old Matmata",
+      "country": "Tunisia",
+      "lat": 33.543,
+      "lon": 9.968,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "sparse",
+        "arid",
+        "stretch"
+      ],
+      "why": "Sunken courtyard dwellings; heightfield and underground-building limitations.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "maghreb",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "ganvie",
+      "name": "Ganvie lakeside settlement",
+      "country": "Benin",
+      "lat": 6.466,
+      "lon": 2.415,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "water",
+        "stretch"
+      ],
+      "why": "Stilt dwellings and water lanes; missing roads and incomplete building coverage.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "african_local",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "longyearbyen",
+      "name": "Longyearbyen residential edge",
+      "country": "Norway",
+      "lat": 78.218,
+      "lon": 15.65,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "sparse",
+        "polar"
+      ],
+      "why": "Bright simple houses, sparse vegetation and high-latitude lighting.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "nordic_cold",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "male",
+      "name": "Central Male",
+      "country": "Maldives",
+      "lat": 4.175,
+      "lon": 73.509,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "dense",
+        "island"
+      ],
+      "why": "Dense mid-rise blocks on a tiny island, coast clipping and small-island routing.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "sri_lanka_maldives",
+      "routing_method": "polygon"
+    },
+    {
+      "id": "funafuti",
+      "name": "Fongafale, Funafuti",
+      "country": "Tuvalu",
+      "lat": -8.519,
+      "lon": 179.199,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "residential",
+        "low",
+        "island"
+      ],
+      "why": "Very narrow atoll, runway neighbours and sea on both sides.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "",
+      "routing_method": "unresolved"
+    },
+    {
+      "id": "asmara_centre",
+      "name": "Harnet Avenue district, Asmara",
+      "country": "Eritrea",
+      "lat": 15.337,
+      "lon": 38.938,
+      "theme": "",
+      "group": "stress",
+      "tags": [
+        "mixed",
+        "medium",
+        "modernist"
+      ],
+      "why": "Modernist commercial forms, restrained horizontal facades and varied low-rise blocks.",
+      "camera_status": "candidate_not_game_scouted",
+      "routed_theme": "horn_africa",
+      "routing_method": "polygon",
+      "reference": "https://whc.unesco.org/en/list/1550/"
+    }
+  ]
+}

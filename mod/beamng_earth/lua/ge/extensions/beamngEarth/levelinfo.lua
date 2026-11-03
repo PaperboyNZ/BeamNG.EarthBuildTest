@@ -148,9 +148,15 @@ function M.hookSpawnPois()
   local orig = levels.onGetRawPoiListForLevel
   poiOrig = orig
   poiWrap = function(levelIdentifier, ...)
-    local info = type(levelIdentifier) == 'string' and levelIdentifier:lower() == M.LEVEL
-      and levels.getLevelByName(levelIdentifier) or nil
-    local all = type(info) == 'table' and info.spawnPoints or nil
+    if type(levelIdentifier) ~= 'string' or levelIdentifier:lower() ~= M.LEVEL then
+      return orig(levelIdentifier, ...)
+    end
+    local info = levels.getLevelByName(levelIdentifier)
+    -- During a mod remount the level list can temporarily omit Earth. The stock hook dereferences
+    -- levelInfo unconditionally; calling it here also leaves gameplay's marker quadtree half-built.
+    -- Other POI providers can still run, and a later gathering retries the level lookup normally.
+    if type(info) ~= 'table' then return end
+    local all = info.spawnPoints
     if type(all) ~= 'table' then return orig(levelIdentifier, ...) end
     local kept = {}
     for _, sp in ipairs(all) do

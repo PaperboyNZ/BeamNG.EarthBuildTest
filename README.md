@@ -47,6 +47,10 @@ You can help support development by reporting [issues](https://github.com/TecnaG
   wood, Mediterranean stucco, East Asian and Latin American looks), real heights, roofs, windows, shopfronts,
   porches, churches with steeples, glass towers. Buildings show out to about 3 miles: simpler versions past 1 mile,
   and a light skyline beyond that; bridges show out to about 3 miles too.
+- Optional **Advanced** building generation under Pause > BeamNG.Earth > World adds
+  richer regional architecture and building sites. Simple remains the default;
+  Advanced defaults to Minimum quality. Higher quality levels are experimental
+  and costly. See [quality settings and current limits](docs/ADVANCED_BUILDINGS_REVIEW.md).
 - Roads painted into the ground itself (no floating road surface), with lane markings, sidewalks and curbs, curb ramps, storm drains, cobblestone streets,
   traffic islands, roundabouts, rural motorways with shoulders and toll booths; the ground graded under them, with
   retaining walls where a road is cut into a hill (dry stone in the mountains and towns, concrete along major roads)
@@ -105,10 +109,13 @@ You can help support development by reporting [issues](https://github.com/TecnaG
   `BNE_LIDAR_DECKS=off` (the US lidar only) turn it off.
 - Fast teleports: right after a teleport, while you wait, the world server may borrow some of the game's
   CPU cores (at idle priority) to build the world faster (Linux; `--load-boost off` turns it off). It builds
-  2 to 4 road pieces at once, by your computer's CPU threads and memory.
+  2 to 4 road pieces at once, by your computer's CPU threads and memory. While you drive and the world falls
+  behind, it borrows a quarter of the game's cores until it has caught up (`BNGE_CATCHUP_LEND=0` turns that off,
+  `0.5` borrows half).
 - Places you've been load much faster the next time: what was built around you (roads, buildings, the levelled
   ground, the distant land) is kept on disk, up to 2 GB (the oldest go first; the environment variable
-  `BNE_REVISIT_MB` sets the size, `BNE_REVISIT=off` turns it off).
+  `BNE_REVISIT_MB` sets the size, `BNE_REVISIT=off` turns it off). It is kept across app updates unless the
+  update changes how that part of the world is built.
 - **AI support**: the mod builds BeamNG's road graph (the AI's map) from the real roads around you, with
   lanes, one-way streets, speed limits (mapped, or the country's defaults), the country's driving side and
   road rules, and traffic signals at real junctions. The stock AI, traffic, police and the AI modes in the
@@ -205,6 +212,10 @@ You can help support development by reporting [issues](https://github.com/TecnaG
   elevation, imagery and map data, builds terrain, roads, buildings and the rest in a local flat frame around a
   moving origin, and streams them to the game over a local socket. The game's Lua cannot reach the internet, so the
   server is required.
+- Road preparation reuses lane inputs, shares each cell's bridge endpoint index and reuses decoded map layers
+  between concurrent requests. Road-job diagnostics separate queueing, dependency preparation and revisit-cache
+  restoration; see [the consolidated performance notes](docs/ROAD_GENERATION_PERFORMANCE.md) and
+  [map-loading measurements](docs/ROAD_PREPARATION_STAGE_ONE.md) for scope and reproducible comparisons.
 - The **mod** (`mod/beamng_earth/`) loads the tiles as meshes, keeps an invisible physics terrain
   under the car, moves the world origin as you drive (floating origin), and blends level-of-detail
   changes so nothing pops.

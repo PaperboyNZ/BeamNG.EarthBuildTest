@@ -108,6 +108,13 @@ local mpsession = require('beamngEarth/mpsession')     -- BeamMP sessions (the p
 local mpanchor = require('beamngEarth/mpanchor')       -- BeamMP: other players' positions into our frame (PR #88)
 local seasonlook = require('beamngEarth/seasonlook')   -- the trees' leaves in the season (hello.season) -- the AI road graph for the stock traffic and AI (map.reset)
 local perflog = require('beamngEarth/perflog')         -- hitches and frame-rate drops into server.log (perflog.lua)
+function M.heldSessions()
+  local seen={}
+  for _,list in ipairs({farfield.heldSessions(),roads.heldSessions()}) do
+    for _,s in ipairs(list) do seen[s]=true end
+  end
+  local out={};for s in pairs(seen) do out[#out+1]=s end;table.sort(out);return out
+end
 
 local LEVEL_ID = 'beamng_earth'
 local MOD_VERSION = '0.4.0'
@@ -890,10 +897,13 @@ local function onMessage(msg)
     end
     -- vegFlat: the vegetation tiles may come as one flat array of numbers (trees.lua onTile), no table per tree
     net.send({ type = 'hello', protocol = PROTOCOL, format = FORMAT, modVersion = MOD_VERSION,
-      sessions = roads.allHeldSessions(), slotSession = farfield.session(), slotsHeld = held, vegFlat = true,
+      sessions = M.heldSessions(), slotSession = farfield.session(), slotsHeld = held, vegFlat = true,
       geoTiles = require('beamngEarth/geotile').Z,
       -- (geotiles: vegetation in the global tiles' frames: trees.lua)
       roadGeo = roads.ROAD_GEO,        -- (road tiles as geotiles too: roads.lua)
+      buildingChunks = roads.BUILDING_CHUNKS,
+      buildingProgress = roads.BUILDING_PROGRESS,
+      sectorManifest = roads.SECTOR_MANIFEST,
       farGeo = roads.FAR_GEO,          -- (and the far buildings, skyline and far bridges: roads.lua)
       globalFar = farfield.GLOBAL_FAR,    -- (and the far field from level 3 up as global tiles: farfield.lua)
       readySet = 1 })      -- (it takes a built block near its target: follow.preferReady, 'terrain_ready_set')
@@ -923,6 +933,7 @@ local function onMessage(msg)
     -- at 1) never drops the old session's tiles, so they stayed forever (2026-10-11: meshes of four
     -- sessions in the scene, some built by older code)
     roads.setGeo(msg.roadGeo == roads.ROAD_GEO)     -- (road tiles as geotiles: roads.lua)
+    roads.setSectorManifest(msg.sectorManifest)
     roads.setFarGeo(msg.farGeo == roads.FAR_GEO)    -- (... and the far buildings, skyline and far bridges)
     if roadsSession ~= msg.sessionId then
       -- (road geotiles stay: the new session's content with the same hash keeps them, the rest go once far or old)
@@ -936,6 +947,8 @@ local function onMessage(msg)
     if w and w.clearGravity then w.clearGravity() end
     st.deshadow = msg.deshadow -- server-side imagery de-shadowing ('lambert' / 'full'; nil = off), shown on the settings page
     st.colormatch = msg.colormatch -- server-side imagery colour-seam removal ('s2'; nil = off), likewise
+    st.buildingGenerator = msg.buildingGenerator
+    st.buildingGeneratorError = nil
     seasonlook.setMode(msg.season) -- the imagery's season (server --season): the leaves follow it
     st.mapPort = msg.mapPort -- the world map's tile endpoint on 127.0.0.1 (server/maptiles.py; nil = an older server)
     -- the download cache: the new server's usage follows its hello; it gets the page's size cap (the
@@ -943,6 +956,10 @@ local function onMessage(msg)
     cacheInfo = nil
     local settings = rawget(_G, 'beamngEarth_settings')
     if settings and settings.cacheCapGb then net.send({ type = 'cache', capGb = settings.cacheCapGb() }) end
+    if msg.buildingGeneratorSwitch == 1 and settings and settings.get then
+      local chosen = settings.get('buildingGenerator')
+      if chosen and chosen ~= msg.buildingGenerator then net.send({ type = 'building_generator', value = chosen }) end
+    end
     -- gas stations on, after every hello (a server started without them too; this comes before any tile request)
     net.send({ type = 'gas_stations', on = true })
     -- the highway signs' switch (settings highwaySigns): no sign tiles built while it is off
@@ -1004,6 +1021,9 @@ local function onMessage(msg)
     st.serverBacklog = tonumber(msg.backlog)
     -- M1h: the far-field radius rides on every status in horizon mode (the view distance follows it)
     if msg.radius ~= nil then M.setFarRadius(msg.radius) end
+  elseif t == 'building_generator' then
+    st.buildingGenerator = msg.value
+    st.buildingGeneratorError = msg.error
   elseif t == 'load_progress' then      -- the loading line's counts (server Connection.send_progress)
     st.loadProgress = msg
   -- elseif t == 'share' then           -- our world server serving our BeamMP group (shared world building,
@@ -1072,6 +1092,8 @@ local function onMessage(msg)
     st.terrainPending, st.terrainRetryAt = nil, st.clock + follow.RETRY_S
     st.terrainErrorAt = st.clock -- the edge guard holds the car meanwhile
     setStatus('Terrain request failed: ' .. tostring(msg.error))
+  elseif t == 'building_progress' then
+    roads.onBuildingProgress(msg, st.anchorId)
   elseif t == 'roads_tile' then
     roads.onTile(msg, st.anchorId, st.anchor)
   elseif t == 'roads_skin' then           -- a road geotile's draped surfaces for this anchor (roads.lua)
@@ -1458,9 +1480,11 @@ local function updateWorld(dt)
     net.send({ type = 'pose', anchorId = st.anchorId, x = pl.x, y = pl.y, z = pl.z, vx = pl.vx, vy = pl.vy,
       lat = pl.lat, lon = pl.lon, speed = pl.speed, follow = not st.followHeld,
       held = (farfield.session() == st.sessionId) and farfield.heldAnchors() or {},
-      sessions = roads.allHeldSessions(),
+      sessions = M.heldSessions(),
       slotsGone = slotsGoneNow(), -- pooled shape slots let go (server/matslots.py)
       foci = poseFoci(),          -- other vehicles' collision islands (collisionfoci.lua; earthd parse_foci)
+      -- the edge guard holds the car for its ground: the server takes every core meanwhile (earthd hold_boost)
+      guardHold = st.guard.mode == 'hold' or nil,
       cam = c and { x = c.x, y = c.y, z = c.z, fx = c.fx, fy = c.fy, fz = c.fz, fovDeg = c.fovDeg, h = c.h } or nil })
   end
 
@@ -2123,7 +2147,8 @@ local function onUpdate(dtReal, dtSim)
     -- the roads before the far tiles: they share the governor's budget and the first to ask gets it; after a
     -- teleport the far field's hundreds of tiles took it frame after frame and the road meshes under the car
     -- came after it had passed (Brasov, Sinaia 2026-10-15: the car drove bare ground)
-    roads.update(gov, st.anchorId, st.player, M.viewAway(), st.anchor)
+    roads.update(gov, st.anchorId, st.player, M.viewAway(), st.anchor, st.cam)
+    if roads.takeResync() then net.send({type='roads_reset'}) end
     gasstations.update(gov)
     t = mark('roads', t)
     farfield.update(gov, (gov.w1 or dtReal * 1000) / 1000, st.cam, st.player)
@@ -2216,7 +2241,7 @@ end
 -- level lifecycle
 
 local function onLevelStart()
-  -- the connection outlives levels: keep its session and the request id sequence
+  -- A main-menu connection can precede the level: keep its hello and request sequence.
   local sessionId, nextRequestId, mapPort = st.sessionId, st.nextRequestId, st.mapPort
   resetState()
   st.sessionId, st.nextRequestId, st.mapPort = sessionId, nextRequestId, mapPort   -- the connection's (hello)
@@ -2308,9 +2333,10 @@ local function onClientEndMission()
   nightlights.reset()
   parking.reset()
   navgraph.reset()
-  local sessionId, nextRequestId, mapPort = st.sessionId, st.nextRequestId, st.mapPort
+  -- The scene is gone: reconnect so the server's new client streams it in full.
+  -- Also discard old queued requests, partial replies and connection events.
+  net.close()
   resetState()
-  st.sessionId, st.nextRequestId, st.mapPort = sessionId, nextRequestId, mapPort   -- the connection's (hello)
 end
 
 local function onExtensionLoaded()
@@ -2529,7 +2555,7 @@ function M.status()
     cells = crossover.cells(), blockSize = blockSize, anchorLatency = st.anchorLatency,
     terrainLatency = st.terrainLatency, horizon = horizonOn, farRadius = farRadius,
     visibleDistance = st.visibleDistance or VISIBLE_DISTANCE, banner = banner.current().id, guard = st.guard.mode,
-    sessions = roads.allHeldSessions(), tileSession = farfield.session(), sea = sea.status(), trees = trees.status(), ambience = ambience.status() })
+    sessions = M.heldSessions(), tileSession = farfield.session(), sea = sea.status(), trees = trees.status(), ambience = ambience.status() })
 end
 
 -- The connection state line (the settings page shows it): the banner's { id, level, text } (text
@@ -2733,18 +2759,20 @@ function M.setRoadsEnabled(on)
   if roads.setEnabled(on) then net.send({ type = 'roads_reset' }) end
 end
 -- The settings page's graphics the server serves (settings.serverGraphics: { lodScale, treeScale, buildingScale,
--- photoPx, viewM }), after every hello and when one changes (sent only when it differs from the last one sent: applyAll
+-- buildingQuality, buildingAdaptive, buildingDetailM, photoPx, viewM }), after every hello and when one changes
+-- (sent only when it differs from the last one sent: applyAll
 -- runs every knob at a level's start). Whether it went out.
 M.graphicsSent = nil          -- (a field: core.lua is near Lua's 200-local limit)
 function M.sendGraphics()
   local settings = rawget(_G, 'beamngEarth_settings')
   local g = settings and settings.serverGraphics and settings.serverGraphics()
   if type(g) ~= 'table' or not net.isConnected() or not st.sessionId then return false end
-  local sig = string.format('%s/%s/%s/%s/%s', tostring(g.lodScale), tostring(g.treeScale), tostring(g.buildingScale),
-    tostring(g.photoPx), tostring(g.viewM))
+  local sig = string.format('%s/%s/%s/%s/%s/%s/%s/%s/%s', tostring(g.lodScale), tostring(g.treeScale), tostring(g.buildingScale),
+    tostring(g.photoPx), tostring(g.viewM), tostring(g.buildingQuality), tostring(g.buildingAdaptive), tostring(g.buildingDetailM), tostring(g.groundsQuality))
   if sig == M.graphicsSent then return false end
   net.send({ type = 'graphics', lodScale = g.lodScale, treeScale = g.treeScale, buildingScale = g.buildingScale,
-    photoPx = g.photoPx, viewM = g.viewM })
+    photoPx = g.photoPx, viewM = g.viewM, buildingQuality = g.buildingQuality,
+    buildingAdaptive = g.buildingAdaptive, buildingDetailM = g.buildingDetailM, groundsQuality = g.groundsQuality })
   M.graphicsSent = sig
   return true
 end

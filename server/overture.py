@@ -673,7 +673,11 @@ class Reader:
         for c in spec.get("float", ()):
             feats.attrs[c] = mg.float_column([r[at[c]] for r in sel])
         for c in spec.get("bool", ()):
-            feats.attrs[c] = mg.bool_column([r[at[c]] for r in sel])
+            values=[r[at[c]] for r in sel]
+            feats.attrs[c] = mg.bool_column(values)
+            # Keep the established bool arrays for display/dispatch, and retain
+            # nullability separately for evidence. Old caches remain readable.
+            feats.attrs[c+'__known']=np.asarray([v is not None for v in values],bool)
         if layer == "roads":
             self._road_rules(con, feats, keep, fmap)
         sources = {}
@@ -741,6 +745,7 @@ def empty(layer):
         f.attrs[c] = mg.float_column([])
     for c in spec.get("bool", ()):
         f.attrs[c] = mg.bool_column([])
+        f.attrs[c+'__known']=np.zeros(0,bool)
     if layer == "roads":
         for name, (_, _, kind) in spec["rules"].items():
             f.rules[name] = mg.rule_table([], kind)

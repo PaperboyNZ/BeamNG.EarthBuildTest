@@ -52,7 +52,20 @@ class Shards:
 
     def known(self):
         """The build in use as far as known without asking the network (versions(): every tile's cache key)."""
-        return self.built
+        if self.built is not None:return self.built
+        # A new worker must address the same accepted products as its predecessor.
+        # Read only a still-fresh local manifest, just as version() would; do not
+        # mark it network-checked or change the normal refresh/failure policy.
+        pin=os.path.join(self.dir,'manifest.json') if self.dir else None
+        if pin:
+            try:
+                if time.time()-os.path.getmtime(pin)<MANIFEST_TTL_S:
+                    with open(pin,'rb') as stream:raw=stream.read(16385)
+                    if len(raw)<=16384:
+                        built=json.loads(raw).get('built')
+                        if isinstance(built,str) and 0<len(built)<=512:return built
+            except (OSError,ValueError,AttributeError):pass
+        return None
 
     def version(self):
         """The build in use ("built" of its manifest), or None (none reachable yet)."""

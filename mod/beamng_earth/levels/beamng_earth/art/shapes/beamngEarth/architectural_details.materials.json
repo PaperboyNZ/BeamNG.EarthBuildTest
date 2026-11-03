@@ -1,0 +1,36 @@
+{
+  "bne_bld_roof_thatch": {
+    "name": "bne_bld_roof_thatch",
+    "mapTo": "bne_bld_roof_thatch",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "9c2d027f-18e0-5a78-92d5-1d7523de196b",
+    "Stages": [
+      {
+        "baseColorMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_thatch.color.png",
+        "normalMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_thatch.normal.png",
+        "normalMapStrength": 1.35,
+        "roughnessMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_roughness.data.dds",
+        "roughnessMapUseUV": 1,
+        "roughnessFactor": 1.0,
+        "detailMap": "/levels/beamng_earth/art/shapes/beamngEarth/bne_weathering_blend.dds",
+        "detailMapUseUV": 1,
+        "detailScale": [
+          -1.03125,
+          1
+        ],
+        "detailBaseColorMapStrength": 0.312,
+        "metallicFactor": 0.0,
+        "baseColorFactor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "vertColor": true
+      }
+    ],
+    "translucent": false,
+    "doubleSided": false
+  }
+}

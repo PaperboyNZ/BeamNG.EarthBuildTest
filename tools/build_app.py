@@ -147,6 +147,12 @@ def pyinstaller(work, ico, onefile, ver=None, boot=None):
            "--distpath", os.path.join(work, "dist"), "--workpath", os.path.join(work, "build"),
            "--specpath", work, "--paths", server, "--paths", ROOT, "--icon", ico,
            "--collect-submodules", "fsspec",
+           "--collect-submodules", "buildgen",
+           "--collect-data", "buildgen",  # versioned preset recipes and normalized zone overlays
+           "--collect-submodules", "sitegen",
+           "--collect-data", "sitegen",  # shared site contracts and future versioned profiles
+           "--collect-all", "shapely",  # GEOS shared libraries used by the experimental building topology compiler
+           "--copy-metadata", "shapely",  # includes the Shapely and bundled GEOS licence notices
            "--hidden-import", "certifi", "--collect-data", "certifi",   # CA bundle fallback (launcher.ensure_ca_certs)
            "--hidden-import", "truststore",     # Windows: the native certificate store (netfetch.windows_ssl_context, PR #371)
            "--add-data", f"{os.path.join(ROOT, 'mod', 'beamng_earth')}{SEP}mod/beamng_earth",
@@ -165,6 +171,10 @@ def pyinstaller(work, ico, onefile, ver=None, boot=None):
            # the highway signs' lettering metrics and US state outlines (exitsigns.GLYPHS, signstates.DATA)
            "--add-data", f"{os.path.join(server, 'sign_glyphs.json')}{SEP}.",
            "--add-data", f"{os.path.join(server, 'sign_states.geojson')}{SEP}."]
+    if os.name == 'nt':
+        # collect-data excludes shared libraries. Pillow's Windows shaping
+        # backend needs the separately licensed, replaceable FriBidi runtime.
+        cmd += ["--add-binary", f"{os.path.join(server, 'buildgen', 'fonts', 'libfribidi-0.dll')}{SEP}buildgen/fonts"]
     # the sources' fingerprint (peerwork.code_id: compute-sharing helpers build only for the same code)
     sys.path.insert(0, server)
     import peerwork

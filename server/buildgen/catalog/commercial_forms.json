@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "presets": [
+    {"id":"ci_form_glazed_pavilion","use":"commercial","classes":[],"min_area":30,"max_area":4000,"min_floors":1,"max_floors":2,"window_width":2.4,"bay":3.5,"windows":true,"shop":false,"service":false,"garage":false,"shading":false},
+    {"id":"ci_form_display_hall","use":"commercial","classes":[],"min_area":150,"max_area":1000000,"min_floors":1,"max_floors":3,"window_width":2.4,"bay":4.5,"windows":true,"shop":false,"service":false,"garage":false,"shading":false},
+    {"id":"ci_form_pier_frontage","use":"commercial","classes":[],"min_area":20,"max_area":12000,"min_floors":1,"max_floors":6,"window_width":1.7,"bay":3.0,"windows":true,"shop":false,"service":false,"garage":false,"shading":false},
+    {"id":"ci_form_ribbon_block","use":"commercial","classes":[],"min_area":80,"max_area":1000000,"min_floors":1,"max_floors":12,"window_width":2.4,"bay":6.5,"windows":true,"shop":false,"service":false,"garage":false,"shading":false},
+    {"id":"ci_form_service_hall","use":"industrial","classes":[],"min_area":180,"max_area":1000000,"min_floors":1,"max_floors":2,"window_width":1.8,"bay":6.5,"windows":false,"shop":false,"service":true,"garage":false,"shading":false},
+    {"id":"ci_form_clerestory_hall","use":"industrial","classes":[],"min_area":80,"max_area":1000000,"min_floors":1,"max_floors":3,"window_width":2.0,"bay":4.0,"windows":true,"shop":false,"service":true,"garage":false,"shading":false},
+    {"id":"ci_form_glazed_workhall","use":"industrial","classes":[],"min_area":20,"max_area":10000,"min_floors":1,"max_floors":4,"window_width":1.8,"bay":3.2,"windows":true,"shop":false,"service":true,"garage":false,"shading":false},
+    {"id":"ci_form_industrial_grid","use":"industrial","classes":[],"min_area":50,"max_area":1000000,"min_floors":1,"max_floors":12,"window_width":1.5,"bay":3.4,"windows":true,"shop":false,"service":false,"garage":false,"shading":false}
+  ]
+}

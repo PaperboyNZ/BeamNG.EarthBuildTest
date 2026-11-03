@@ -1,0 +1,156 @@
+{
+  "bne_planter_square": {
+    "name": "bne_planter_square",
+    "mapTo": "bne_planter_square",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "186719b3-2ada-5f62-858b-051ce97bde27",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.64,
+          0.61,
+          0.55,
+          1
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.88
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_planter_square_lip": {
+    "name": "bne_planter_square_lip",
+    "mapTo": "bne_planter_square_lip",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "77af3597-7338-537b-93ae-c08b22806342",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.77,
+          0.74,
+          0.67,
+          1
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.88
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_planter_soil": {
+    "name": "bne_planter_soil",
+    "mapTo": "bne_planter_soil",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "ca69fc1a-49b2-55b3-8f8c-1f09a97679b1",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.1,
+          0.075,
+          0.045,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 1
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_planter_octagon": {
+    "name": "bne_planter_octagon",
+    "mapTo": "bne_planter_octagon",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "ef99978d-3c8e-5d19-9d30-cff4875b229a",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.1,
+          0.15,
+          0.16,
+          1
+        ],
+        "metallicFactor": 0.65,
+        "roughnessFactor": 0.48
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_planter_octagon_lip": {
+    "name": "bne_planter_octagon_lip",
+    "mapTo": "bne_planter_octagon_lip",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "993743fd-9717-5f04-b985-f5b104e612df",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.19,
+          0.25,
+          0.25,
+          1
+        ],
+        "metallicFactor": 0.65,
+        "roughnessFactor": 0.48
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_planter_trough": {
+    "name": "bne_planter_trough",
+    "mapTo": "bne_planter_trough",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "f71ac818-bbc7-54c7-8817-e90981b1a10a",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.49,
+          0.44,
+          0.36,
+          1
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.9
+      },
+      {},
+      {},
+      {}
+    ]
+  },
+  "bne_planter_trough_lip": {
+    "name": "bne_planter_trough_lip",
+    "mapTo": "bne_planter_trough_lip",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "f337cc26-0821-51ef-9b3b-1cc491e8bcf5",
+    "Stages": [
+      {
+        "baseColorFactor": [
+          0.66,
+          0.6,
+          0.49,
+          1
+        ],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.9
+      },
+      {},
+      {},
+      {}
+    ]
+  }
+}

@@ -205,6 +205,11 @@ def find(roads_list, is_oneway=lambda spec: bool(getattr(spec, "oneway", False))
         is_roundabout = rnd >= RING_ROUND_ANY or (rnd >= RING_ROUND and oneway_ok)
         if not (is_roundabout or (abs_area <= SMALL_AREA_M2 and oneway_ok)):
             continue
+        # A self-crossing road cycle has no unambiguous inside. Do not suppress
+        # sidewalks or pass it to polygon overlays as if it were an island.
+        from shapely.geometry import Polygon
+        if not Polygon(poly).is_valid:
+            continue
         if any(_inside(poly, c) for c in structures):
             continue                                # a building inside: a city block, not an island
         if any(_crosses(poly, edges[j][2]) for j in range(len(edges)) if j not in key):
@@ -221,7 +226,10 @@ def find(roads_list, is_oneway=lambda spec: bool(getattr(spec, "oneway", False))
         if not ccw:
             poly = poly[::-1]
         z = float(np.mean(np.concatenate([edges[k][2][:, 2] for k, _ in cyc])))
-        ring = _island_ring(poly, [(edges[k][2][:, :2], edges[k][1].width / 2.0) for k, _ in cyc], z)
+        # Entries and nearby carriageways also constrain an island. Testing
+        # only its loop members allowed a wide approach to be pinched by it.
+        ring = _island_ring(poly, [(edges[k][2][:, :2], edges[k][1].width / 2.0) for k, _ in cyc], z,
+                            carriageways=[(p[:, :2], sp.width / 2.0) for _, sp, p, _ in roads_list])
         found.append({"poly": poly, "inner": inner, "ring": ring, "round": is_roundabout})
     # A roundabout's island wins over entry teardrops that reuse its ring edges (those left four short curb
     # scraps and no central island at Chavagnes-en-Paillers).
@@ -257,7 +265,7 @@ def _seg_dist(pts, p):
     return float(np.min(np.hypot(*(q - p).T)))
 
 
-def _island_ring(poly, roads_hw, z):
+def _island_ring(poly, roads_hw, z, carriageways=()):
     """The island's curb line (k, 3) counter-clockwise: from the loop's centre along RAYS rays, the last point
     still clear of every bounding road's carriageway (its centreline +- half width). None for a sliver.
     Ray-traced instead of offsetting each road (offsets spiked where roads meet at sharp angles)."""
@@ -266,7 +274,38 @@ def _island_ring(poly, roads_hw, z):
         return None
     rmax = float(np.max(np.hypot(*(poly - c).T)))
     import fast
-    return _ring_finish(fast.island_ring_rays(poly, roads_hw, c, RAYS, RAY_STEP_M, rmax), z)
+    ring = _ring_finish(fast.island_ring_rays(poly, roads_hw, c, RAYS, RAY_STEP_M, rmax), z)
+    if ring is None:
+        return None
+    # Smoothing and chords between individually safe ray hits can cut across
+    # a concavity into a lane. Clip the complete polygon back to safe ground.
+    from shapely.errors import GEOSException
+    from shapely.geometry import LineString, Point, Polygon
+    from shapely.ops import unary_union
+    loop = Polygon(poly)
+    if not loop.is_valid:
+        return None
+    try:
+        lanes = unary_union([LineString(p).buffer(hw + .06, cap_style=2, join_style=2)
+                             for p, hw in (carriageways or roads_hw)])
+        candidate = Polygon(ring[:, :2])
+        if not candidate.is_valid:
+            candidate = candidate.buffer(0)
+        safe = candidate.intersection(loop).difference(lanes)
+    except GEOSException:
+        # A bad local overlay must not prevent the entire terrain from loading.
+        return None
+    parts = [safe] if safe.geom_type == 'Polygon' else list(getattr(safe, 'geoms', ()))
+    parts = [p for p in parts if p.geom_type == 'Polygon' and p.covers(Point(c)) and not p.interiors]
+    if not parts:
+        return None
+    shape = max(parts, key=lambda p: p.area)
+    if shape.area < MIN_INSET_AREA_M2:
+        return None
+    xy = np.asarray(shape.exterior.coords)[:-1]
+    if _area(xy) < 0:
+        xy = xy[::-1]
+    return np.c_[xy, np.full(len(xy), z)]
 
 
 def _ring_finish(ring, z):

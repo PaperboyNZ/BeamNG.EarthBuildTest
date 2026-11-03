@@ -19,12 +19,14 @@ the file): the code_key, the settings it was built with (sig(): one short hash p
 earthd.Server.world_signature()), kind, key, the anchor and the item's box in degrees. compact() (the server's start)
 folds the files into one and drops the lines whose zip is gone."""
 import hashlib
+import atexit
 import json
 import os
 import re
 import threading
 import time
 import zipfile
+from codefiles import source_files
 
 ON = os.environ.get("BNE_REVISIT", "on") != "off"
 SKIP = {k for k in os.environ.get("BNE_REVISIT_SKIP", "").split(",") if k}     # kinds left out (tests: "roads,far")
@@ -44,13 +46,32 @@ _code = []
 _lock = threading.Lock()
 
 
-def fault():
-    """Something a build may read failed or was not there yet: builds running now are not kept."""
+_tl = threading.local()
+
+
+def fault(lidar=False):
+    """Something a build may read failed or was not there yet: builds running now are not kept. Counted for the process
+    (faults) and, unless lidar (roads.level_ranges' lidar rule: the cell's own, kept for the session), for this thread
+    (thread_faults)."""
     _faults[0] += 1
+    if not lidar:
+        _tl.n = getattr(_tl, "n", 0) + 1
+    else:
+        _tl.lidar = getattr(_tl, "lidar", 0) + 1
 
 
 def faults():
     return _faults[0]
+
+
+def thread_faults():
+    """This thread's faults (fault): what a computation done in this thread alone read short (roads._cell_ranges)."""
+    return getattr(_tl, "n", 0)
+
+
+def thread_lidar_faults():
+    """This thread's lidar rule faults (fault(lidar=True)): built on the rule for want of the lidar."""
+    return getattr(_tl, "lidar", 0)
 
 
 _PRODUCES = re.compile(r"\brevisit\.(?:key|load|store)\(|\b_revisit_tile\(")
@@ -83,7 +104,12 @@ def source_closure(here):
                 if n in srcs and n not in seen:
                     todo.append(n)
     seen.add("revisit")
-    return sorted(f"{m}.py" for m in seen)
+    # Generated geometry also depends on package modules and bundled data.
+    # Keep upstream's root-module dependency closure, while retaining all v2
+    # generator inputs in both development and packaged REVISIT_ID fingerprints.
+    names = {f"{m}.py" for m in seen}
+    names.update(n for n in source_files(here) if "/" in n or not n.endswith(".py"))
+    return sorted(names)
 
 
 def source_id(here):
@@ -122,6 +148,15 @@ def code_key():
             for k in sorted(os.environ):                # (the build switches: BNE_*)
                 if k.startswith("BNE_") and k not in ("BNE_REVISIT", "BNE_REVISIT_MB", "BNE_REVISIT_SKIP"):
                     h.update(f"{k}={os.environ[k]}".encode())
+            if os.environ.get("BNE_BUILDING_GENERATOR", "legacy") == "v2":
+                import shapely
+                from buildgen import roof_colours, zones, site_data
+                h.update(f"building_geometry={shapely.__version__}/{shapely.geos_version_string}".encode())
+                h.update(f"building_evidence={roof_colours.catalogue()[0]}/{zones.catalogue()[0]}".encode())
+                h.update(f"building_sites={site_data.catalogue()[0]}".encode())
+                from sitegen import shared_courts, property_directories
+                h.update(f"shared_site_records={shared_courts.catalogue()[0]}".encode())
+                h.update(f"property_directories={property_directories.catalogue()[0]}".encode())
             _code.append(h.hexdigest()[:16])
         return _code[0]
 
@@ -129,6 +164,9 @@ def code_key():
 def key(kind, *parts):
     """The cache key of an item: its kind, what it was built from (the anchor's lat/lon, the tile, the settings) and
     the code."""
+    if kind in ("roads", "roadsg", "bldfar", "bldsky"):
+        import building_settings
+        parts = (building_settings.cache_identity(), *parts)
     return hashlib.sha1(repr((kind, code_key(), parts)).encode()).hexdigest()
 
 
@@ -168,19 +206,29 @@ def _note(cache_dir, kind, k, wh):
     try:
         lat, lon, s, w, n, e, settings = wh
         line = (f"{code_key()}\t{settings}\t{kind}\t{k}\t{lat:.7f}\t{lon:.7f}\t{s:.6f}\t{w:.6f}\t{n:.6f}\t{e:.6f}\n")
-        fd = _where.get(cache_dir)
-        if fd is None:
-            with _lock:
-                fd = _where.get(cache_dir)
-                if fd is None:
-                    d = os.path.join(cache_dir, SUBDIR, WHERE_DIR)
-                    os.makedirs(d, exist_ok=True)
-                    fd = _where[cache_dir] = os.open(os.path.join(d, f"{os.getpid()}_{_START}.tsv"),
-                                                     os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0),
-                                                     0o644)
-        os.write(fd, line.encode("utf-8"))
+        with _lock:
+            fd = _where.get(cache_dir)
+            if fd is None:
+                d = os.path.join(cache_dir, SUBDIR, WHERE_DIR)
+                os.makedirs(d, exist_ok=True)
+                fd = _where[cache_dir] = os.open(os.path.join(d, f"{os.getpid()}_{_START}.tsv"),
+                                                 os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0),
+                                                 0o644)
+            os.write(fd, line.encode("utf-8"))
     except Exception:
         pass
+
+
+def close(cache_dir=None):
+    """Release sidecar handles when their owner closes (required on Windows)."""
+    with _lock:
+        for directory in list(_where) if cache_dir is None else (cache_dir,):
+            fd = _where.pop(directory, None)
+            if fd is not None:
+                os.close(fd)
+
+
+atexit.register(close)
 
 
 def parse_where(line):

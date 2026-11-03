@@ -34,6 +34,16 @@ sys.path.insert(0, HERE)
 import mcp  # noqa: E402
 
 LOG = os.path.expanduser("~/.cache/beamng-earth/logs/server.log")
+# another machine's game (BNGE_MCP_URL through a tunnel): its server log read over ssh (BNGE_LOG_SSH=user@host)
+LOG_SSH = os.environ.get("BNGE_LOG_SSH")
+
+
+def log_size():
+    if LOG_SSH:
+        r = subprocess.run(["ssh", "-o", "BatchMode=yes", LOG_SSH, "stat -c %s ~/.cache/beamng-earth/logs/server.log"],
+                           capture_output=True, text=True, timeout=30)
+        return int(r.stdout.strip() or 0)
+    return os.path.getsize(LOG)
 POLL_S = 1.0
 MPH = 0.44704
 GRID = 29.0             # Manhattan's avenues run 29 deg east of north
@@ -114,17 +124,24 @@ def gps_path(start, end):
     return [(lat0 + y / 110540.0, pts[0][1] + x / kx) for x, y in xy]
 
 
-def profile(path, mph, km=None):
-    """drive.py's profile following path at a constant speed (km: at most this far)."""
+def profile(path, mph, km=None, accel=0.0):
+    """drive.py's profile following path at a constant speed (km: at most this far); accel (m/s^2): from a near standstill
+    up to it first, as a player sets off (a cold 200 mph start had nothing built yet and ended at once)."""
     total = 0.0
     kx = 111320.0 * math.cos(math.radians(path[0][0]))
     for (la0, lo0), (la1, lo1) in zip(path, path[1:]):
         total += math.hypot((lo1 - lo0) * kx, (la1 - la0) * 110540.0)
     km_ = total / 1000.0 if not km else min(km, total / 1000.0)
     v = mph * MPH
+    pts = [{"s": 0, "speed": v}, {"s": total, "speed": v}]
+    if accel > 0:
+        v0 = min(v, 5.0)
+        ramp = min(total, (v * v - v0 * v0) / (2 * accel))
+        # (piecewise linear in distance: speed^2 linear in distance is constant acceleration; a few knots of it)
+        pts = [{"s": round(ramp * k / 8, 1), "speed": math.sqrt(v0 * v0 + (v * v - v0 * v0) * k / 8)} for k in range(9)]
+        pts.append({"s": total, "speed": v})
     # (clearance: the ride height kept over the ground; measured at install it took a tree or an awning the car stood on)
-    return {"points": [{"s": 0, "speed": v}, {"s": total, "speed": v}], "km": km_, "path": [list(p) for p in path],
-            "clearance": 0.5}
+    return {"points": pts, "km": km_, "path": [list(p) for p in path], "clearance": 0.5}
 
 
 def heading_of(path):
@@ -180,6 +197,11 @@ class Watch(threading.Thread):
 
 
 def log_lines(since_pos):
+    if LOG_SSH:
+        r = subprocess.run(["ssh", "-o", "BatchMode=yes", LOG_SSH,
+                            f"tail -c +{since_pos + 1} ~/.cache/beamng-earth/logs/server.log"],
+                           capture_output=True, timeout=60)
+        return r.stdout.decode("utf-8", "replace").splitlines()
     with open(LOG, "rb") as f:
         f.seek(since_pos)
         return f.read().decode("utf-8", "replace").splitlines()
@@ -229,7 +251,7 @@ def summarize(rows, lines, drive):
     }
     if drive:
         out["drive"] = {k: drive.get(k) for k in ("reason", "error", "km", "wallS", "effectiveRatio", "fpsMean", "p50",
-                                                  "p99", "maxMs", "over50", "rebases", "commitFrameMaxMs")}
+                                                  "p99", "maxMs", "over50", "rebases", "commitFrameMaxMs", "pathJumps")}
     return out
 
 
@@ -258,11 +280,17 @@ def main():
     ap.add_argument("--restart", action="store_true", help="restart the session (warm cache) first")
     ap.add_argument("--warm-first", action="store_true", help="drive the route once at 40 mph first (untimed)")
     ap.add_argument("--label", default=None)
+    ap.add_argument("--bake", action="append", help="with --cold: a baked pack (.bnge) put in the fresh cache first")
+    ap.add_argument("--accel", type=float, default=0.0, help="m/s^2: set off from a near standstill (0: at speed at once)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     if a.cold:
         cache = os.path.join(os.path.abspath(a.out), "cache")
         os.makedirs(cache, exist_ok=True)
+        for pk in a.bake or ():          # (baked packs in the fresh cache: server/bakepack.py)
+            import shutil
+            os.makedirs(os.path.join(cache, "bake"), exist_ok=True)
+            shutil.copy(pk, os.path.join(cache, "bake", os.path.basename(pk)))
         session(a.label or "nyccold", cache)
     elif a.restart:
         session(a.label or "nycwarm")
@@ -279,12 +307,12 @@ def main():
         print(f"{label}: teleport to {start}", flush=True)
         teleport(*start, 0.0)
         path = gps_path(start, end)
-        prof = profile(path, mph, a.km)
+        prof = profile(path, mph, a.km, a.accel)
         with open(os.path.join(d, "profile.json"), "w") as f:
             json.dump(prof, f)
         teleport(*path[0], heading_of(path), wait_s=60)
         print(f"{label}: route {prof['km']:.1f} km, {len(path)} points", flush=True)
-        pos = os.path.getsize(LOG)
+        pos = log_size()
         # (no vehicle-vehicle collisions during the run: traffic and parked cars on the route threw the car off)
         lua("be:setDynamicCollisionEnabled(false) return 1")
         w = Watch(os.path.join(d, "watch.jsonl"))

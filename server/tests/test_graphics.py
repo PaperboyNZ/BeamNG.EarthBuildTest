@@ -59,6 +59,31 @@ class GraphicsMessageTest(unittest.TestCase):
         self.assertEqual((c.veg.send_m, c.bldfar.send_m), (vegetation.SEND_M, buildings.FAR_SEND_M))
         self.assertEqual(self.s.base_px, earthd.BASE_PX)
 
+    def test_minimum_selection_is_received_logged_and_refreshes_far_representations(self):
+        c=self.conn([])
+        far,sky=c.bldfar,c.bldsky
+        far.geo=sky.geo=True
+        far.sent.add((1,2));sky.sent.add((3,4))
+        near=c.roads
+        with self.assertLogs('earthd',level='INFO') as logs:
+            c.dispatch(dict(type='graphics',buildingQuality='minimum',buildingAdaptive=False,buildingDetailM=350))
+        self.assertEqual((c.building_quality,c.building_adaptive,c.building_detail_m),('minimum',False,350.))
+        self.assertTrue(any('buildingQuality=minimum, buildingAdaptive=False, buildingDetailM=350.0' in row for row in logs.output))
+        self.assertEqual((far.generation_epoch,sky.generation_epoch),(1,1))
+        self.assertEqual((far.sent,sky.sent),({(1,2)},{(3,4)}),'resident coverage remains during existing handover')
+        self.assertEqual((set(far.refinements),set(sky.refinements)),({(1,2)},{(3,4)}))
+        self.assertIs(c.roads,near,'graphics selection does not replace accepted near planning state')
+        c.dispatch(dict(type='graphics',buildingQuality='minimum',buildingAdaptive=True,buildingDetailM=200))
+        self.assertEqual((far.generation_epoch,sky.generation_epoch),(1,1),'same physical policy does not reset far trackers')
+        c.dispatch(dict(type='graphics',buildingQuality='low',buildingAdaptive=False))
+        self.assertEqual((far.generation_epoch,sky.generation_epoch),(2,2),'leaving Minimum retains existing policy transition')
+
+    def test_graphics_log_reports_unset_fields_without_inventing_defaults(self):
+        with self.assertLogs('earthd',level='INFO') as logs:
+            c=self.conn([dict(type='graphics',lodScale=1)])
+        self.assertTrue(any('buildingQuality=None, buildingAdaptive=None, buildingDetailM=None' in row for row in logs.output))
+        self.assertFalse(hasattr(c,'building_quality'))
+
     def test_scales(self):
         c = self.conn([{"type": "graphics", "lodScale": 2.0, "treeScale": 2.2, "buildingScale": 1.5, "photoPx": 4096}])
         self.assertEqual(c.kfun()(1), 2.0 * self.s.kfun(1))

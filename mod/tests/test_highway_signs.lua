@@ -12,6 +12,10 @@ jsonDecode = function(text) return assert(load('return '..text))() end
 jsonReadFile = function(path) return files[path] end
 jsonWriteFile = function(path, value) files[path] = value; return true end
 local gov = { try = function() return true end, charge = function() end, chargeMotion = function() end }
+-- Shapes now share the building pipeline's one-import-per-frame budget.
+local function frames(anchor)
+  for _ = 1, 8 do roads.update(gov, anchor) end
+end
 local function shapes()
   local out = {}
   for _, o in pairs(S.objects) do
@@ -31,41 +35,41 @@ roads.setSession('signs')
 roads.onTile(msg,1)
 -- switched off before its queued shapes are made: none is made
 settings.set('highwaySigns',false)
-roads.update(gov,1)
+frames(1)
 T.check(not shapes()[exitPath] and not shapes()[milePath] and not shapes()[mergePath], 'switch cancels queued shapes')
 T.check(files[settings.FILE].highwaySigns == false, 'highway signs preference saved')
 local collisions = S.calls.reloadCollision or 0
 settings.set('highwaySigns',true)
-roads.update(gov,1)
+frames(1)
 local got = shapes()
 T.check(got[exitPath] and got[milePath] and got[mergePath], 'switching on restores the held shapes')
 T.check(got[exitPath].fields.collisionType == 'None' and got[milePath].fields.collisionType == 'None'
   and got[mergePath].fields.collisionType == 'None', 'sign shapes are render only')
 T.check(#roads.slotsHeld('signs') == 3, 'the sign slots stay held')
 settings.set('highwaySigns',false)
-roads.update(gov,1)
+frames(1)
 T.check(next(shapes()) == nil, 'switching off removes the shown signs')
 T.check(#roads.takeSlotsGone('signs') == 0, 'hidden signs keep their slots for switching on again')
 settings.set('highwaySigns',true)
-roads.update(gov,1)
+frames(1)
 T.check((S.calls.reloadCollision or 0) == collisions, 'the switch never rebuilds collision')
 roads.onTile(msg,1)
-roads.update(gov,1)
+frames(1)
 local count = 0
 for _ in pairs(shapes()) do count = count+1 end
 T.check(count == 3, 'a re-sent sign tile replaces its meshes without duplicates')
 roads.takeSlotsGone('signs')
-local xf = {beamngQuat=function() return 0,0,0,1 end,
-  apply=function(_,x,y,z) return x+100,y-50,z or 0 end}
-roads.transform(xf,{quatMul=function(a,b,c,d) return a,b,c,d end})
+local geodesy = require('beamngEarth/geodesy')
+local xf = geodesy.transformOf({1,0,0,0,1,0,0,0,1},{100,-50,0})
+roads.transform(xf,geodesy)
 got = shapes()
 T.check(got[exitPath].pos.x == 120 and got[milePath].pos.y == -20, 'signs follow anchor transforms')
 roads.onDrop({anchorId=1,key='s0_0'})
-roads.update(gov,1)
+frames(1)
 T.check(shapes()[exitPath] and shapes()[milePath], 'an old-anchor drop keeps the moved signs until covered')
 local lifetime = roads.GHOST_MAX_S
 roads.GHOST_MAX_S = -1
-roads.update(gov,2)
+frames(2)
 roads.GHOST_MAX_S = lifetime
 T.check(next(shapes()) == nil, 'ghost retirement removes the moved signs')
 T.check(#roads.takeSlotsGone('signs') == 3, 'their slots are let go after the deletes')
@@ -74,19 +78,18 @@ T.check(#roads.takeSlotsGone('signs') == 3, 'their slots are let go after the de
 roads.reset()
 roads.setSession('signs')
 roads.onTile({anchorId=10,key='s0_0',data={chunks={},exits={shape=exitPath,pos={0,0,0}}}},10)
-roads.update(gov,10)
+frames(10)
 T.check(not roads.settledFor(10,20,20), 'a sign-only square is not a ready road')
 roads.onTile({anchorId=10,key='0_0',data={chunks={}}},10)
-roads.update(gov,10)
+frames(10)
 T.check(roads.settledFor(10,20,20), 'road readiness uses the road square')
-roads.transform({beamngQuat=function() return 0,0,0,1 end,
-  apply=function(_,x,y,z) return x,y,z or 0 end}, {quatMul=function(a,b,c,d) return a,b,c,d end})
+roads.transform(geodesy.transformOf({1,0,0,0,1,0,0,0,1},{0,0,0}),geodesy)
 roads.onTile({anchorId=11,key='0_0',data={chunks={}}},11)
-roads.update(gov,11)
+frames(11)
 T.check(shapes()[exitPath] ~= nil, 'new roads do not retire old signs before their sign tile comes')
 roads.onTile({anchorId=11,key='s0_0',data={chunks={}}},11)
-roads.update(gov,11)
-roads.update(gov,11)
+frames(11)
+frames(11)
 T.check(not shapes()[exitPath], 'the new sign square retires the old sign ghost')
 
 -- Railway colliders and fuel records stay the road tile's.
@@ -100,23 +103,23 @@ local railPath = '/temp/beamngEarth/signs/rail.cdae'
 roads.onTile({anchorId=20,key='0_0',data={chunks={},rail={shape=railPath,pos={0,0,0}},
   fuel={{id='station'}}}},20)
 roads.onTile({anchorId=20,key='s0_0',data={chunks={},exits={shape=exitPath,pos={20,0,0}}}},20)
-roads.update(gov,20)
+frames(20)
 local railObject = shapes()[railPath]
 T.check(railObject and railObject.fields.collisionType == 'Visible Mesh Final', 'railway still collides beside signs')
 T.check(fuelRows['20:0_0'] and not fuelRows['20:s0_0'], 'station records belong to the road tile only')
 roads.collisionRebuilt()
 local beforeToggle = S.calls.reloadCollision or 0
 settings.set('highwaySigns',false)
-roads.update(gov,20)
+frames(20)
 settings.set('highwaySigns',true)
-roads.update(gov,20)
+frames(20)
 T.check(shapes()[railPath] == railObject, 'the switch keeps the railway object')
 T.check((S.calls.reloadCollision or 0) == beforeToggle, 'the switch leaves railway collision alone')
 roads.onDrop({anchorId=20,key='s0_0'})
-roads.update(gov,20)
+frames(20)
 T.check(shapes()[railPath] == railObject and not fuelDrops['20:0_0'], 'dropping signs keeps rail and fuel')
 roads.onDrop({anchorId=20,key='0_0'})
-roads.update(gov,20)
+frames(20)
 T.check(not shapes()[railPath] and fuelDrops['20:0_0'], 'dropping the road tile still retires rail and fuel')
 gas.onRows, gas.dropKey = onRows, dropKey
 
@@ -126,13 +129,13 @@ roads.reset()
 roads.setSession('signs')
 local speedPath = '/temp/beamngEarth/signs/slot_00009.cdae'
 roads.onTile({anchorId=30,key='s1_2',data={chunks={},speeds={shape=speedPath,pos={256,512,0}}}},30)
-roads.update(gov,30)
+frames(30)
 T.check(shapes()[speedPath] and shapes()[speedPath].fields.collisionType == 'None', 'speed signs are render only')
 settings.set('highwaySigns',false)
-roads.update(gov,30)
+frames(30)
 T.check(not shapes()[speedPath], 'the switch hides speed signs')
 settings.set('highwaySigns',true)
-roads.update(gov,30)
+frames(30)
 T.check(shapes()[speedPath] ~= nil, 'and shows them again')
 T.check(not roads.settledFor(30,300,600), 'a speed-sign square is not a ready road')
 T.done('test_highway_signs')

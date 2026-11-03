@@ -90,7 +90,10 @@ BUCKET = 32.0               # m, query-point buckets
 ROAD_LIFT = 0.04            # m the physics ground is raised under roads (see Grader.apply)
 BLEND_R = 4.0               # m: roads near each other blend their targets by 1 / (1 + (d / BLEND_R)^2)
 PROFILE_ZOOM = int(os.environ.get("BNE_DEM_ZOOM", "16"))   # DEM zoom of the profiles (one zoom for every caller)
-WALL_CUT_M = 2.0            # a road cut deeper than this into the ground: a retaining wall at the core's edge
+WALL_CUT_M = 2.0 + 1e-7     # a retaining cut deeper than 2 m; allow 0.1 micrometre of height roundoff
+# Flat 10 m profiles can differ by ~1e-14 m after smoothing on Windows/Linux.
+# At an exact 2 m cut, the discontinuous wall/slope choice amplified that into
+# 21 cm of terrain disagreement. Apply the same tolerance to grading and walls.
 WALL_T_M = 0.8              # (roadmesh.retaining_walls) and the ground at its natural height right behind it, over
                             # this; on a 1:2 slope Central Park's sunken transverse was a grassy ditch between its
                             # stone walls (the user, 2026-10-17)
@@ -858,12 +861,15 @@ class _Planner:
         shared, mine = (self.shared.claim(key) if self.shared is not None else (None, False))
         try:
             import revisit
-            f0 = revisit.faults()
+            # (this thread's faults: the planning threads of a process plan cells side by side, and another's fault
+            # kept this one's complete plans from later visits and baked packs: 2026-11-02)
+            f0, l0 = revisit.thread_faults(), revisit.thread_lidar_faults()
             got = shared if shared is not None else self._make_cell(key)
             if got is None:
                 return []
             if mine:        # (kept for later visits too when complete: nothing it read failed or was missing)
-                self.shared.store(key, *got, persist=revisit.faults() == f0)
+                self.shared.store(key, *got, persist=revisit.thread_faults() == f0
+                                  and revisit.thread_lidar_faults() == l0)
         finally:
             if mine:
                 self.shared.release(key)
@@ -887,7 +893,10 @@ class _Planner:
                     log.debug("grading: walls of %s: %s: %s", key, type(e).__name__, e)
             threading.Thread(target=walls, daemon=True, name="walls-ahead").start()
         try:
-            feats = self.md.cell(key, layers=("roads",), kind="demand").layers.get("roads")
+            parking_sources = getattr(getattr(self.store, "parking", None), "road_features", {})
+            feats = parking_sources.get(str(key), _UNSET)
+            if feats is _UNSET:
+                feats = self.md.cell(key, layers=("roads",), kind="demand").layers.get("roads")
         except Exception as e:      # no road data: ungraded (asked again after RETRY_S)
             log.debug("grading: roads of %s: %s: %s", key, type(e).__name__, e)
             with self.lock:
@@ -2357,6 +2366,8 @@ class PlanStore:
         self.dem = None
         self.shared = None
         self.lock = threading.Lock()
+        import parkinggrade
+        self.parking = parkinggrade.ParkingGrader(mapdata, elev, widths)
         self.planners = OrderedDict()   # (rx, ry) -> _Planner, the least recently used first
 
     @staticmethod
@@ -2491,6 +2502,7 @@ class Grader:
         base = np.asarray(base, np.float64)
         if base.size == 0:
             return base
+        base = self.store.parking.apply(lat, lon, base, planned_only, self.shared)
         parts = self.store.planners_of(lat, lon)
         if len(parts) == 1:
             return parts[0][0].apply(lat, lon, base, lift, roads_only, planned_only)

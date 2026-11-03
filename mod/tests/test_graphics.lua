@@ -100,7 +100,12 @@ files[settings.FILE] = { version = 1, quality = 'ultra', trees = 'high', groundC
 local v = settings.load()
 T.check(v.quality == 'ultra' and v.terrainDetail == 'high' and v.treeDistance == 'far' and v.buildingDistance == 'far',
   'an old Ultra file: Ultra\'s new knobs')
-T.check(settings.matchingPreset() == 'ultra', '... and still exactly Ultra')
+T.check(v.buildingQuality == 'minimum' and settings.matchingPreset() == nil,
+  'an old Ultra file without a building choice keeps the Minimum default')
+files[settings.FILE].buildingQuality = settings.PRESETS.ultra.buildingQuality
+v = settings.load()
+T.check(v.quality == 'ultra' and v.buildingQuality == settings.PRESETS.ultra.buildingQuality
+  and settings.matchingPreset() == 'ultra', 'an explicit saved Ultra building choice is preserved and matches Ultra')
 files[settings.FILE] = { version = 1, quality = 'custom', trees = 'ultra' }
 v = settings.load()
 T.check(v.quality == 'custom' and v.trees == 'ultra' and v.treeDistance == 'farther' and v.terrainDetail == 'normal',

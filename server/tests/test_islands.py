@@ -30,6 +30,13 @@ class IslandTest(unittest.TestCase):
         self.assertTrue(np.all(np.abs(r - 13.0) < 0.8), "the curb line is the ring inset by its half width")
         self.assertTrue(islands.in_island(f, (0.0, 0.0)) and not islands.in_island(f, (40.0, 0.0)))
 
+    def test_self_crossing_loop_does_not_become_an_island(self):
+        # A graph cycle can cross itself between its connected endpoints.
+        ow = roads.Spec(6.0, "paved", True, "residential", True)
+        crossing = np.array([(0., 0., 0.), (20., 20., 0.), (0., 20., 0.),
+                             (15., 0., 0.), (0., 0., 0.)])
+        self.assertEqual(islands.find([("crossing", ow, crossing, 0.0)]), [])
+
     def test_a_road_through_the_loop_is_no_island(self):
         ow = roads.Spec(6.0, "paved", True, "residential", True)
         rs = [("r1", ow, arc(16, 0, math.pi), 0.0), ("r2", ow, arc(16, math.pi, 2 * math.pi), 0.0)]

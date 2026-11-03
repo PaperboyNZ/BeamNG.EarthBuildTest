@@ -36,10 +36,10 @@ local d = settings.defaults()
 T.check(#warn == 0, 'no file: no warnings')
 local same = true
 for k, v in pairs(d) do
-  if vals[k] ~= v and k ~= 'quality' and k ~= 'qualityDetected' then same = false end
+  if vals[k] ~= v and k ~= 'quality' and k ~= 'qualityDetected' and k ~= 'buildingQuality' then same = false end
 end
 T.check(same, 'no file: every value is its default (but the quality, picked from the hardware)')
-T.check(vals.quality == 'high', 'no file, no GPU info: the High preset (= the old defaults)')
+T.check(vals.quality == 'custom' and vals.buildingQuality == 'minimum', 'auto hardware defaults retain Minimum buildings')
 
 -- the quality presets
 T.check(settings.detectQuality({ name = 'AMD Custom GPU 0932 (RADV VANGOGH)', memoryMB = 6144 }) == 'medium',
@@ -52,7 +52,7 @@ for _, p in ipairs(settings.PRESET_ORDER) do
   end
 end
 for _, k in ipairs(settings.PRESET_KEYS) do
-  T.check(settings.PRESETS.high[k] == d[k], 'High is the old default of ' .. k)
+  T.check(settings.PRESETS.high[k] == ((k == 'buildingQuality' or k == 'groundsQuality') and 'high' or d[k]), 'High preset maps ' .. k)
 end
 T.check(d.rebaseDistance == rebase.DEFAULT_DISTANCE and d.skyMode == 'real' and d.clouds == true
   and d.viewDistanceMode == 'horizon' and d.viewDistanceKm == 100 and d.hudVisible == false,
@@ -544,5 +544,60 @@ files[settings.FILE] = { version = 1, groundCover = false, rocks = false, trees 
   groundCoverDensity = 'low', viewDistanceMode = 'fixed', viewDistanceKm = 40 }
 local v3 = settings.load()
 T.check(v3.quality == 'custom' or v3.quality == 'low', 'old knobs that match no preset stay theirs')
+files[settings.FILE] = nil
+T.check(settings.load().buildingQuality == 'minimum', 'fresh building quality defaults to Minimum')
+files[settings.FILE] = {version=1,quality='ultra'}
+T.check(settings.load().buildingQuality == 'minimum', 'missing building choice defaults to Minimum on older presets')
+files[settings.FILE] = nil
+-- Every quality mode owns its performance policy; no independent saved toggle.
+for _, q in ipairs({'minimum','very_low','low','medium','high','very_high','ultra'}) do
+  T.check(settings.set('buildingQuality', q).ok, 'accept quality ' .. q)
+  local graphics = settings.serverGraphics()
+  T.check(graphics.buildingQuality == q and graphics.buildingAdaptive == (q ~= 'minimum'), 'send tier policy ' .. q)
+end
+for _, old in ipairs({'lite','adaptive','full'}) do
+  files[settings.FILE] = {version=1,quality='custom',buildingQuality=old}
+  local migrated, warnings = settings.load()
+  T.check(#warnings == 0, 'old quality migrates ' .. old)
+  T.check(migrated.buildingQuality == (old == 'lite' and 'low' or 'ultra'), 'old quality ceiling ' .. old)
+  T.check(migrated.buildingAdaptive == nil, 'retired toggle absent after migration ' .. old)
+end
+files[settings.FILE] = {version=1,quality='custom',buildingQuality='ultra',buildingAdaptive=false}
+local migrated, warnings = settings.load()
+T.check(migrated.buildingAdaptive == nil and #warnings == 0, 'retired override ignored without warnings')
+T.check(settings.serverGraphics().buildingAdaptive == true, 'saved false cannot bypass Ultra performance policy')
+T.check(not settings.set('buildingAdaptive', false).ok, 'retired control cannot be edited')
+settings.save()
+T.check(files[settings.FILE].buildingAdaptive == nil, 'retired toggle removed on save')
+T.check(settings.get('buildingQuality') == 'ultra', 'explicit saved Ultra survives default change')
+T.check(settings.get('groundsQuality') == 'ultra', 'missing grounds quality migrates once from saved building quality')
+T.check(settings.set('groundsQuality', 'low').ok, 'independent grounds quality accepted')
+settings.set('buildingQuality', 'minimum')
+T.check(settings.get('groundsQuality') == 'low', 'building quality leaves grounds choice alone')
+T.check(settings.serverGraphics().groundsQuality == 'low', 'grounds choice reaches graphics wire')
+settings.save();settings.load()
+T.check(settings.get('groundsQuality') == 'low' and settings.get('buildingQuality') == 'minimum', 'independent saved qualities restore')
+files[settings.FILE] = nil
+-- Generation persists and switches live, independently of visual quality.
+settings.load()
+local net = require('beamngEarth/net')
+local generationMessages, priorSend = {}, net.send
+net.send = function(msg) if msg.type == 'building_generator' then generationMessages[#generationMessages+1] = msg.value end end
+T.check(settings.get('buildingGenerator') == 'legacy', 'missing generation setting defaults to Simple')
+for _, mode in ipairs({'v2', 'legacy', 'v2'}) do
+  T.check(settings.uiSet('buildingGenerator', mode).ok, 'accept generation mode ' .. mode)
+  T.check(files[settings.FILE].buildingGenerator == mode, 'save generation mode ' .. mode)
+  T.check(settings.load().buildingGenerator == mode, 'restore generation mode ' .. mode)
+  settings.setQuality('low')
+  T.check(settings.get('buildingGenerator') == mode, 'graphics preset preserves generation mode ' .. mode)
+end
+T.check(not settings.uiSet('buildingGenerator', 'invalid').ok and settings.get('buildingGenerator') == 'v2',
+  'invalid generation does not overwrite saved Advanced')
+T.check(generationMessages[#generationMessages] == 'v2', 'selector sends the live generation request')
+net.send = priorSend
+stTbl.buildingGenerator = 'legacy'
+beamngEarth_core = { _state = function() return stTbl end }
+T.check(settings.uiState().status.buildingGenerator == 'legacy' and settings.get('buildingGenerator') == 'v2',
+  'active server mode remains separate from the requested mode until acknowledged')
 files[settings.FILE] = nil
 T.done('test_settings')

@@ -193,6 +193,18 @@ class FormatTest(unittest.TestCase):
 
 
 class SplitCollisionTest(unittest.TestCase):
+    def test_split_collision_preserves_shared_building_bounds(self):
+        points = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 0]], float)
+        triangles = np.array([[0, 1, 2]])
+        bounds = [[-5, -6, -7], [8, 9, 10]]
+        decoded = cdae.decode(cdae.encode(
+            points, triangles, collisions=[(points, triangles, None)], shape_bounds=bounds))
+        self.assertEqual(decoded['bounds'], bounds[0] + bounds[1])
+        self.assertIn('Colmesh0', decoded['names'])
+        self.assertIn('Collision-1', decoded['names'])
+        meshes = [cdae.mesh_arrays(m) for m in decoded['meshes'] if m['type'] == 0]
+        self.assertEqual([len(m['indices']) for m in meshes], [3, 3])
+
     def test_drawn_mesh_and_collision_meshes(self):
         """collisions=: the drawn object and an object "Colmesh<k>" per collision mesh, in a "Collision-1" detail
         (Windows builds each collision mesh in time ~quadratic in its triangles: a big shape's collision in small
@@ -221,6 +233,24 @@ if __name__ == "__main__":
 
 
 class LodTest(unittest.TestCase):
+    def test_lod_preserves_explicit_shading_attributes(self):
+        p = np.array([[0., 0., 0.], [2., 0., 0.], [0., 2., 0.]])
+        tri = np.array([[0, 1, 2]])
+        # Deliberately different from the geometric normal and primary UVs:
+        # dropping any field must change the exported payload.
+        normals = np.tile([0., 0.6, 0.8], (3, 1))
+        uv = np.array([[0., 0.], [1., 0.], [0., 1.]])
+        uv2 = uv * 0.25 + 0.1
+        tangent_uv = uv[:, ::-1].copy()
+        attrs = dict(normals=normals, uvs=uv, uvs2=uv2, tangent_uvs=tangent_uv)
+        alone = cdae.decode(cdae.encode(p, tri, **attrs))
+        with_lod = cdae.decode(cdae.encode(p * 2, tri, uvs=uv,
+                                          lods=[(100., dict(positions=p, tris=tri, **attrs))]))
+        expected = cdae.mesh_arrays(alone["meshes"][0])
+        actual = cdae.mesh_arrays(with_lod["meshes"][1])
+        for name in ("norms", "tverts", "tverts2", "tangents"):
+            np.testing.assert_array_equal(actual[name], expected[name], err_msg=name)
+
     def test_coarser_details(self):
         # the engine's camera LOD: the full mesh from 300 px up, a coarser one below, drawn down to 2 px
         P = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 3]], float)

@@ -1,0 +1,59 @@
+{
+  "bne_sidewalk_stone": {
+    "name": "bne_sidewalk_stone",
+    "mapTo": "bne_sidewalk_stone",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "7686b2d2-04d8-5cee-89eb-cfa24c757fe1",
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/tileable/tile/t_italy_sidewalk_tiles/t_italy_sidewalk_tiles_b.color.png",
+        "normalMap": "/assets/materials/tileable/tile/t_italy_sidewalk_tiles/t_italy_sidewalk_tiles_nm.normal.png",
+        "roughnessMap": "/assets/materials/tileable/tile/t_italy_sidewalk_tiles/t_italy_sidewalk_tiles_r.data.png",
+        "metallicFactor": 0
+      }, {}, {}, {}
+    ],
+    "groundType": "CONCRETE",
+    "translucent": false
+  },
+  "bne_sidewalk_utility": {
+    "name": "bne_sidewalk_utility",
+    "mapTo": "bne_sidewalk_utility",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "f63af46e-2669-56b7-8701-53b189c41927",
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/tileable/concrete/sidewalk1/t_sidewalk1_b.color.png",
+        "normalMap": "/assets/materials/tileable/concrete/sidewalk1/t_sidewalk1_nm.normal.png",
+        "roughnessMap": "/assets/materials/tileable/concrete/sidewalk1/t_sidewalk1_r.data.png",
+        "ambientOcclusionMap": "/assets/materials/tileable/concrete/sidewalk1/t_sidewalk1_ao.data.png",
+        "metallicFactor": 0
+      }, {}, {}, {}
+    ],
+    "groundType": "CONCRETE",
+    "translucent": false
+  },
+  "bne_sidewalk_slab": {
+    "name": "bne_sidewalk_slab",
+    "mapTo": "bne_sidewalk_slab",
+    "class": "Material",
+    "version": 1.5,
+    "persistentId": "bda35b9b-107e-50bd-a087-13d3d855c526",
+    "Stages": [
+      {
+        "baseColorMap": "/assets/materials/tileable/concrete/slabs_large/t_slabs_large_b.color.png",
+        "normalMap": "/assets/materials/tileable/concrete/slabs_large/t_slabs_large_nm.normal.png",
+        "roughnessMap": "/assets/materials/tileable/concrete/slabs_large/t_slabs_large_r.data.png",
+        "ambientOcclusionMap": "/assets/materials/tileable/concrete/slabs_large/t_slabs_large_ao.data.png",
+        "metallicFactor": 0,
+        "baseColorFactor": [1, 1, 1, 1]
+      },
+      {},
+      {},
+      {}
+    ],
+    "groundType": "CONCRETE",
+    "translucent": false
+  }
+}

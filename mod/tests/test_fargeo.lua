@@ -87,8 +87,8 @@ local bdata = { v = 1, key = SK, frame = { slat, slon }, h = 'b1',
 T.check(roads.onFarTile(farMsg(SK, { slat, slon }, bdata), 1, 'B'), 'far bridge geotile accepted')
 run(1, A)
 local f1 = objsWith('bf_' .. K)
-T.check(#f1 == 1 and f1[1].hidden == false, 'far buildings made and shown (no road geotile here)')
-T.check(#objsWith('bs_' .. SK) == 1 and objsWith('bs_' .. SK)[1].hidden == false, 'skyline shown: its square incomplete')
+T.check(#f1 == 1 and f1[1].hidden == false, 'far child imported first stays visible')
+T.check(#objsWith('bs_' .. SK) == 1 and objsWith('bs_' .. SK)[1].hidden == true, 'late skyline cannot replace finer child')
 T.check(#objsWith('bb_' .. SK) == 2, 'a far bridge piece per road geotile')
 local frame = geotile.frameOf({ frame = { clat, clon } })
 do
@@ -100,7 +100,7 @@ do
   T.near(f1[1].pos.z, z, 1e-9, 'far buildings placed at their pivot: z')
 end
 T.check(#called('trees', 'onGeoRows', 'FLF' .. K) == 1, 'its lamps a trees geotile of its key')
-T.check(#called('trees', 'onGeoRows', 'FLS' .. K2) == 1, 'the skyline lamps per road geotile key')
+T.check(#called('trees', 'onGeoRows', 'FLS' .. K2) == 0, 'suppressed skyline does not expose its lamps')
 
 -- the other 15 far tiles of the square (no buildings): the skyline hides, its lamps go
 for j = 0, 3 do
@@ -113,7 +113,7 @@ for j = 0, 3 do
 end
 run(1, A)
 T.check(objsWith('bs_' .. SK)[1].hidden == true, 'skyline hidden: its square\'s far tiles all here')
-T.check(#called('trees', 'dropKey', 'g:FLS' .. K2) == 1, 'its lamps dropped')
+T.check(#called('trees', 'dropKey', 'g:FLS' .. K2) == 0, 'suppressed skyline lamps need no handoff')
 
 -- the road geotile K arrives (buildings and a deck): the far buildings of K hide once its buildings are made; the
 -- bridge piece of K once its deck and its skin's road mesh are; K2's stays
@@ -126,7 +126,7 @@ roads.onTile({ anchorId = 1, key = K, path = '/s/rg.json', n = 0, frame = { clat
 T.check(roads.nearShowsBuildings(K) == false, 'its buildings not made yet: the far ones stay')
 run(1, A)
 T.check(objsWith('bf_' .. K)[1].hidden == true, 'far buildings of K hidden: the road geotile shows its own')
-T.check(#called('trees', 'dropKey', 'g:FLF' .. K) == 1, 'their lamps dropped')
+T.check(#called('trees', 'dropKey', 'g:FLF' .. K) == 1, 'far lamps retire only when near buildings take over')
 local function piece(k)
   for _, o in ipairs(objsWith('bb_' .. SK .. '_' .. k)) do return o end
 end

@@ -1,0 +1,1305 @@
+{
+  "schema": 1,
+  "scope": "Bounded external visual priors; source footprint, heights, materials and physical routes remain authoritative. Weights are authored diversity controls, not prevalence estimates.",
+  "sources": [
+    {
+      "url": "https://machi.hitomachi-kyoto.jp/machiya_j/about",
+      "scope": "Kyoto townhouse frontage, lattice, street eaves and courtyard orientation; no invented courtyard"
+    },
+    {
+      "url": "https://hanok.seoul.go.kr/front/eng/info/infoHanok.do?tab=2",
+      "scope": "Korean timber hall, room bays, maru and climatic/layout variation; one alternative alongside modern villas"
+    },
+    {
+      "url": "https://gmmb.gov.gh/asante-traditional-buildings-2/",
+      "scope": "Ghana courtyard-facing grouped wings; motifs and sacred structures are excluded"
+    },
+    {
+      "url": "https://whc.unesco.org/en/list/1055/",
+      "scope": "Swahili courtyards and verandas as local alternatives, not a pan-African default"
+    },
+    {
+      "url": "https://coda.arq.br/projetos/Casas/casa-cobogo",
+      "scope": "Brazilian architect-authored screened room/threshold composition"
+    },
+    {
+      "url": "https://revistas.editora.ufcg.edu.br/index.php/arql/article/view/6610",
+      "scope": "Regional Brazilian cobogo geometry and environmental role"
+    },
+    {
+      "url": "https://www.patrimoniocultural.gob.cl/sites/www.patrimoniocultural.gob.cl/files/2025-05/Z%C3%BA%C3%B1iga%2C%20Pueblo%20abierto%20los%20surcos%20de%20la%20memoria.pdf",
+      "scope": "Chilean courtyard and covered corridor relationships"
+    }
+  ],
+  "families": {
+    "local_modern": {
+      "id": "local_modern",
+      "mode": "compact",
+      "window_width": 1.25,
+      "bay": 3.0,
+      "depth": 0.16,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "pattern": "regular"
+    },
+    "japanese_machiya": {
+      "id": "japanese_machiya",
+      "mode": "lattice",
+      "window_width": 1.15,
+      "bay": 2.9,
+      "depth": 0.34,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.6,
+      "window_height_override": 1.8,
+      "edge_family": "east_asian_timber",
+      "roof_variants": [
+        [
+          "standard",
+          6
+        ],
+        [
+          "broad_eave",
+          4
+        ]
+      ]
+    },
+    "japanese_engawa": {
+      "id": "japanese_engawa",
+      "mode": "gallery",
+      "window_width": 1.65,
+      "bay": 3.4,
+      "depth": 0.75,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 5.2,
+      "max_floors": 2,
+      "tall_fallback": "japanese_compact",
+      "edge_family": "east_asian_timber",
+      "roof_variants": [
+        [
+          "cross_gable",
+          3
+        ],
+        [
+          "broad_eave",
+          5
+        ],
+        [
+          "flared_hip",
+          3
+        ],
+        [
+          "standard",
+          2
+        ]
+      ]
+    },
+    "japanese_compact": {
+      "id": "japanese_compact",
+      "mode": "compact",
+      "window_width": 0.85,
+      "bay": 2.6,
+      "depth": 0.24,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "pattern": "vertical",
+      "edge_family": "plain_modern",
+      "roof_variants": [
+        [
+          "shed",
+          5
+        ],
+        [
+          "standard",
+          5
+        ]
+      ]
+    },
+    "korean_maru": {
+      "id": "korean_maru",
+      "mode": "hall",
+      "window_width": 1.4,
+      "bay": 3.1,
+      "depth": 0.7,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.2,
+      "max_floors": 2,
+      "tall_fallback": "korean_villa",
+      "edge_family": "east_asian_timber",
+      "roof_variants": [
+        [
+          "cross_gable",
+          2
+        ],
+        [
+          "flared_hip",
+          7
+        ],
+        [
+          "standard",
+          3
+        ]
+      ]
+    },
+    "korean_villa": {
+      "id": "korean_villa",
+      "mode": "villa",
+      "window_width": 1.75,
+      "bay": 3.7,
+      "depth": 0.3,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "pattern": "horizontal",
+      "edge_family": "brick_pattern",
+      "roof_variants": [
+        [
+          "standard",
+          8
+        ],
+        [
+          "shed",
+          2
+        ]
+      ]
+    },
+    "chinese_courtyard": {
+      "id": "chinese_courtyard",
+      "mode": "lattice",
+      "window_width": 1.2,
+      "bay": 3.0,
+      "depth": 0.4,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.4,
+      "edge_family": "east_asian_timber",
+      "roof_variants": [
+        [
+          "broad_eave",
+          6
+        ],
+        [
+          "standard",
+          4
+        ]
+      ]
+    },
+    "tropical_gallery": {
+      "id": "tropical_gallery",
+      "mode": "gallery",
+      "window_width": 1.45,
+      "bay": 3.2,
+      "depth": 0.85,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 4.3,
+      "edge_family": "screened_tropical"
+    },
+    "tropical_shophouse": {
+      "id": "tropical_shophouse",
+      "mode": "loggia",
+      "window_width": 1.4,
+      "bay": 3.1,
+      "depth": 0.65,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.0,
+      "edge_family": "urban_shophouse"
+    },
+    "south_asian_screen": {
+      "id": "south_asian_screen",
+      "mode": "screen",
+      "window_width": 1.35,
+      "bay": 3.2,
+      "depth": 0.4,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.4,
+      "edge_family": "arcaded_front"
+    },
+    "maghreb_courtyard": {
+      "id": "maghreb_courtyard",
+      "mode": "courtyard",
+      "window_width": 0.85,
+      "bay": 3.8,
+      "depth": 0.48,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "privacy": true,
+      "module": 3.3,
+      "edge_family": "compact_courtyard"
+    },
+    "sahel_compound": {
+      "id": "sahel_compound",
+      "mode": "courtyard",
+      "window_width": 0.8,
+      "bay": 4.0,
+      "depth": 0.5,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "privacy": true,
+      "module": 3.6,
+      "edge_family": "earthen_recess"
+    },
+    "swahili_gallery": {
+      "id": "swahili_gallery",
+      "mode": "loggia",
+      "window_width": 1.2,
+      "bay": 3.5,
+      "depth": 0.8,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.2,
+      "edge_family": "stone_loggia",
+      "arch": "segmental"
+    },
+    "west_african_gallery": {
+      "id": "west_african_gallery",
+      "mode": "gallery",
+      "window_width": 1.25,
+      "bay": 3.5,
+      "depth": 0.75,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.7,
+      "edge_family": "screened_tropical"
+    },
+    "african_urban": {
+      "id": "african_urban",
+      "mode": "screen",
+      "window_width": 1.3,
+      "bay": 3.3,
+      "depth": 0.35,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.8,
+      "edge_family": "plain_modern"
+    },
+    "southern_african_stoep": {
+      "id": "southern_african_stoep",
+      "mode": "gallery",
+      "window_width": 1.3,
+      "bay": 3.5,
+      "depth": 0.85,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 4.5,
+      "max_floors": 2,
+      "tall_fallback": "african_urban",
+      "edge_family": "timber_veranda"
+    },
+    "brazil_cobogo": {
+      "id": "brazil_cobogo",
+      "mode": "screen",
+      "window_width": 1.4,
+      "bay": 3.4,
+      "depth": 0.5,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.6,
+      "edge_family": "screened_tropical"
+    },
+    "brazil_varanda": {
+      "id": "brazil_varanda",
+      "mode": "gallery",
+      "window_width": 1.5,
+      "bay": 3.5,
+      "depth": 0.9,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 5.0,
+      "edge_family": "screened_tropical"
+    },
+    "latin_patio": {
+      "id": "latin_patio",
+      "mode": "courtyard",
+      "window_width": 1.15,
+      "bay": 3.4,
+      "depth": 0.65,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.4,
+      "edge_family": "compact_courtyard",
+      "arch": "arched"
+    },
+    "andean_frame": {
+      "id": "andean_frame",
+      "mode": "frame",
+      "window_width": 1.25,
+      "bay": 3.2,
+      "depth": 0.24,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "pattern": "horizontal",
+      "edge_family": "panel_modern"
+    },
+    "southern_cone_gallery": {
+      "id": "southern_cone_gallery",
+      "mode": "gallery",
+      "window_width": 1.4,
+      "bay": 3.3,
+      "depth": 0.7,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 4.2,
+      "edge_family": "masonry_terrace"
+    },
+    "caribbean_veranda": {
+      "id": "caribbean_veranda",
+      "mode": "gallery",
+      "window_width": 1.2,
+      "bay": 3.1,
+      "depth": 0.8,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 3.5,
+      "edge_family": "timber_veranda"
+    },
+    "alpine_gallery": {
+      "id": "alpine_gallery",
+      "mode": "gallery",
+      "window_width": 1.5,
+      "bay": 3.4,
+      "depth": 0.65,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "module": 4.0,
+      "max_floors": 3,
+      "tall_fallback": "local_modern",
+      "edge_family": "alpine_timber"
+    },
+    "atlantic_terrace": {
+      "id": "atlantic_terrace",
+      "mode": "terrace",
+      "window_width": 0.9,
+      "bay": 2.9,
+      "depth": 0.18,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "pattern": "vertical",
+      "edge_family": "masonry_terrace"
+    },
+    "northern_timber": {
+      "id": "northern_timber",
+      "mode": "compact",
+      "window_width": 1.15,
+      "bay": 3.4,
+      "depth": 0.18,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "edge_family": "timber_veranda"
+    },
+    "korean_compact": {
+      "id": "korean_compact",
+      "mode": "compact",
+      "window_width": 1.05,
+      "bay": 3.1,
+      "depth": 0.24,
+      "window_height": 1.65,
+      "sill": 0.55,
+      "pattern": "horizontal",
+      "edge_family": "plain_modern",
+      "roof_variants": [
+        [
+          "shed",
+          5
+        ],
+        [
+          "standard",
+          5
+        ]
+      ]
+    }
+  },
+  "regions": {
+    "us_northeast": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "us_southeast": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "us_midwest": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "us_southwest": [
+      [
+        "maghreb_courtyard",
+        2
+      ],
+      [
+        "local_modern",
+        5
+      ],
+      [
+        "tropical_gallery",
+        3
+      ]
+    ],
+    "us_pacific": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "canada_atlantic": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "canada_prairie": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "canada_pacific": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "arctic_north_america": [
+      [
+        "northern_timber",
+        6
+      ],
+      [
+        "local_modern",
+        4
+      ]
+    ],
+    "latin_american_local": [
+      [
+        "latin_patio",
+        4
+      ],
+      [
+        "brazil_varanda",
+        3
+      ],
+      [
+        "andean_frame",
+        3
+      ]
+    ],
+    "caribbean_creole": [
+      [
+        "caribbean_veranda",
+        5
+      ],
+      [
+        "brazil_cobogo",
+        2
+      ],
+      [
+        "latin_patio",
+        3
+      ]
+    ],
+    "central_america": [
+      [
+        "latin_patio",
+        4
+      ],
+      [
+        "brazil_varanda",
+        3
+      ],
+      [
+        "andean_frame",
+        3
+      ]
+    ],
+    "andean_highlands": [
+      [
+        "andean_frame",
+        5
+      ],
+      [
+        "latin_patio",
+        3
+      ],
+      [
+        "southern_cone_gallery",
+        2
+      ]
+    ],
+    "brazil_coastal": [
+      [
+        "brazil_cobogo",
+        4
+      ],
+      [
+        "brazil_varanda",
+        4
+      ],
+      [
+        "latin_patio",
+        2
+      ]
+    ],
+    "amazon_guianas": [
+      [
+        "tropical_gallery",
+        5
+      ],
+      [
+        "brazil_varanda",
+        3
+      ],
+      [
+        "brazil_cobogo",
+        2
+      ]
+    ],
+    "southern_cone": [
+      [
+        "southern_cone_gallery",
+        4
+      ],
+      [
+        "andean_frame",
+        3
+      ],
+      [
+        "latin_patio",
+        3
+      ]
+    ],
+    "chile_pacific": [
+      [
+        "southern_cone_gallery",
+        4
+      ],
+      [
+        "andean_frame",
+        3
+      ],
+      [
+        "latin_patio",
+        3
+      ]
+    ],
+    "nz_temperate": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "au_southeast": [
+      [
+        "northern_timber",
+        5
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "caribbean_veranda",
+        1
+      ]
+    ],
+    "au_tropical_arid": [
+      [
+        "maghreb_courtyard",
+        2
+      ],
+      [
+        "local_modern",
+        5
+      ],
+      [
+        "tropical_gallery",
+        3
+      ]
+    ],
+    "pacific_islands": [
+      [
+        "tropical_gallery",
+        5
+      ],
+      [
+        "tropical_shophouse",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "antarctic_stations": [
+      [
+        "northern_timber",
+        6
+      ],
+      [
+        "local_modern",
+        4
+      ]
+    ],
+    "eu_atlantic": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "eu_mediterranean": [
+      [
+        "latin_patio",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "nordic_cold": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "france_regional": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "low_countries": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "central_europe": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "alpine": [
+      [
+        "alpine_gallery",
+        6
+      ],
+      [
+        "northern_timber",
+        2
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "italy_regional": [
+      [
+        "latin_patio",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "adriatic_balkans": [
+      [
+        "latin_patio",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "aegean": [
+      [
+        "latin_patio",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "eastern_europe": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "russia_north": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "african_local": [
+      [
+        "west_african_gallery",
+        4
+      ],
+      [
+        "african_urban",
+        4
+      ],
+      [
+        "tropical_gallery",
+        2
+      ]
+    ],
+    "maghreb": [
+      [
+        "maghreb_courtyard",
+        5
+      ],
+      [
+        "sahel_compound",
+        2
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "sahel": [
+      [
+        "sahel_compound",
+        5
+      ],
+      [
+        "west_african_gallery",
+        2
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "nile_valley": [
+      [
+        "maghreb_courtyard",
+        5
+      ],
+      [
+        "sahel_compound",
+        2
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "horn_africa": [
+      [
+        "maghreb_courtyard",
+        3
+      ],
+      [
+        "swahili_gallery",
+        3
+      ],
+      [
+        "african_urban",
+        4
+      ]
+    ],
+    "swahili_east_africa": [
+      [
+        "swahili_gallery",
+        4
+      ],
+      [
+        "tropical_gallery",
+        3
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "central_africa": [
+      [
+        "west_african_gallery",
+        4
+      ],
+      [
+        "african_urban",
+        4
+      ],
+      [
+        "tropical_gallery",
+        2
+      ]
+    ],
+    "southern_africa": [
+      [
+        "southern_african_stoep",
+        4
+      ],
+      [
+        "african_urban",
+        4
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "indian_ocean_africa": [
+      [
+        "swahili_gallery",
+        4
+      ],
+      [
+        "tropical_gallery",
+        3
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "arid_warm": [
+      [
+        "maghreb_courtyard",
+        5
+      ],
+      [
+        "sahel_compound",
+        2
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "levant": [
+      [
+        "maghreb_courtyard",
+        4
+      ],
+      [
+        "latin_patio",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "anatolia_caucasus": [
+      [
+        "maghreb_courtyard",
+        4
+      ],
+      [
+        "latin_patio",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "iran_plateau": [
+      [
+        "maghreb_courtyard",
+        4
+      ],
+      [
+        "latin_patio",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "mesopotamia": [
+      [
+        "maghreb_courtyard",
+        5
+      ],
+      [
+        "sahel_compound",
+        2
+      ],
+      [
+        "african_urban",
+        3
+      ]
+    ],
+    "central_asia_oases": [
+      [
+        "maghreb_courtyard",
+        4
+      ],
+      [
+        "latin_patio",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "central_asia_steppe": [
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "atlantic_terrace",
+        3
+      ],
+      [
+        "northern_timber",
+        3
+      ]
+    ],
+    "indus_gangetic": [
+      [
+        "south_asian_screen",
+        4
+      ],
+      [
+        "tropical_gallery",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "india_peninsular": [
+      [
+        "south_asian_screen",
+        4
+      ],
+      [
+        "tropical_gallery",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "bengal_delta": [
+      [
+        "tropical_gallery",
+        5
+      ],
+      [
+        "south_asian_screen",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "himalayan": [
+      [
+        "chinese_courtyard",
+        4
+      ],
+      [
+        "alpine_gallery",
+        4
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "sri_lanka_maldives": [
+      [
+        "tropical_gallery",
+        5
+      ],
+      [
+        "south_asian_screen",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "jp_temperate": [
+      [
+        "japanese_machiya",
+        3
+      ],
+      [
+        "japanese_engawa",
+        3
+      ],
+      [
+        "japanese_compact",
+        4
+      ]
+    ],
+    "china_north": [
+      [
+        "chinese_courtyard",
+        4
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "tropical_shophouse",
+        2
+      ]
+    ],
+    "china_south": [
+      [
+        "chinese_courtyard",
+        4
+      ],
+      [
+        "local_modern",
+        4
+      ],
+      [
+        "tropical_shophouse",
+        2
+      ]
+    ],
+    "korea": [
+      [
+        "korean_maru",
+        3
+      ],
+      [
+        "korean_villa",
+        5
+      ],
+      [
+        "korean_compact",
+        2
+      ]
+    ],
+    "tibetan_plateau": [
+      [
+        "sahel_compound",
+        4
+      ],
+      [
+        "chinese_courtyard",
+        3
+      ],
+      [
+        "local_modern",
+        3
+      ]
+    ],
+    "tropical_humid": [
+      [
+        "tropical_shophouse",
+        5
+      ],
+      [
+        "tropical_gallery",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "mainland_southeast_asia": [
+      [
+        "tropical_shophouse",
+        5
+      ],
+      [
+        "tropical_gallery",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "indonesian_archipelago": [
+      [
+        "tropical_gallery",
+        5
+      ],
+      [
+        "tropical_shophouse",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ],
+    "philippines": [
+      [
+        "tropical_gallery",
+        5
+      ],
+      [
+        "tropical_shophouse",
+        3
+      ],
+      [
+        "local_modern",
+        2
+      ]
+    ]
+  }
+}

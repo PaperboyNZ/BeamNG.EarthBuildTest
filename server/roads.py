@@ -22,7 +22,9 @@ flagged as bridge / tunnel or off ground level are left out), the navgraph.
 import json
 import logging
 import math
+import collections
 import os
+import re
 import threading
 import time
 from collections import OrderedDict, namedtuple
@@ -145,6 +147,7 @@ ONEWAY_STYLE = {"primary": 6.5, "secondary": 6.5, "tertiary": 4.0, "residential"
 # real streets have concrete sidewalks behind a curb and a double yellow centre line). Stock West
 # Coast USA materials. renderPriority: lower draws on top (WCUSA: lines 2-6, the asphalt strip 20).
 SIDEWALK = {"m": "sidewalk_concrete", "tl": 6.0, "p": 16, "w": 2.5}      # beyond the carriageway, city streets
+WALK_SIMPLIFY_M = .015  # preserve source curvature; road decals' 0.25 m tolerance facets a raised curb
 # Storm drain inlets: a metal grate in the gutter (Driver Training's m_metal_grid_drain), DRAIN_IN m
 # before the real end of each sidewalk run (one per corner, where real inlets sit) and every
 # DRAIN_EVERY m along long runs (each is a DecalRoad: kept to ~40 per city tile)
@@ -317,7 +320,7 @@ def level_ranges(feats, i, _home=True):
             got = memo[i] = _deck_gaps(feats, i, _lidar_gaps(feats, i, rule_level_ranges(feats, i)))
     if feats.__dict__.get("_lidar_rule"):
         import revisit                      # (the rule for want of the lidar: nothing built on it is kept)
-        revisit.fault()
+        revisit.fault(lidar=True)
     return list(got)
 
 
@@ -349,6 +352,15 @@ def raw_level_ranges(feats, i):
 # process that draws or grades its roads made for itself (~0.2 s a city cell each; the terrain blocks', the road
 # tiles' and the AI graph's processes, 2026-10-25). Kept only when complete (revisit.faults unchanged).
 _FACTS_LOCK = threading.Lock()
+# A cell's facts made in this process, by its id (_bnge_cell: the cell, the layer, the map data's versions), beyond the
+# layer object they were made for: the map data's memory cache drops and reloads a city's big layers all the time,
+# and each reload made them again. On a first visit down Manhattan 89 cells' facts were made 787 times, 685 of 1081
+# CPU-s again (BNGE_FACTS_LOG, 2026-11-02): kept on disk only when complete, and almost nothing was, any fault of any
+# thread counting against them (revisit.thread_faults now).
+_FACTS_MEM = collections.OrderedDict()
+FACTS_MEM_KEPT = 640         # entries (~8 a cell: ranges, specs, bridges ...; a city cell ~0.6 MB in all; budget: fewer when small)
+FACTS_SHORT_S = 10.0        # s a cell's facts made short of something (a fault) are used before they are made again
+FACTS_LOG = bool(os.environ.get("BNGE_FACTS_LOG"))
 
 
 def _facts_key(feats, kind, extra):
@@ -365,12 +377,35 @@ def _facts_load(feats, kind, extra):
         return None
     import revisit
     got = revisit.load(revisit.CACHE_DIR, "cellfacts", k)
-    if got is None or "facts.json" not in got[0]:
+    data = got[0].get("facts.json") if got is not None else None
+    if data is None:
+        data = _facts_baked(feats, kind, extra)
+    if data is None:
         return None
     try:
-        return json.loads(got[0]["facts.json"])
+        return json.loads(data)
     except ValueError:
         return None
+
+
+# The facts' output format for baked packs (bakepack.py: read without the code hash). Bump it whenever a change makes
+# other facts; tests/test_bake_formats.py fails until it is bumped.
+FACTS_FORMAT = 1
+
+
+def _facts_baked(feats, kind, extra):
+    """A baked pack's facts of this layer's cell (bakepack.py), as JSON bytes, or None."""
+    import revisit
+    cid = feats.__dict__.get("_bnge_cell")
+    if cid is None or revisit.CACHE_DIR is None:
+        return None
+    import bakepack
+    try:
+        versions = json.loads(cid[2])
+    except (ValueError, IndexError, TypeError):
+        return None
+    return bakepack.find(revisit.CACHE_DIR, bakepack.facts_key(kind, extra, cid[0]),
+                         {"bake_format": bakepack.BAKE_FORMAT, "facts_format": FACTS_FORMAT, "versions": versions})
 
 
 def _facts_store(feats, kind, extra, data):
@@ -379,6 +414,56 @@ def _facts_store(feats, kind, extra, data):
         return
     import revisit
     revisit.store(revisit.CACHE_DIR, "cellfacts", k, {"facts.json": json.dumps(data).encode("utf-8")})
+
+
+FACTS_WAIT_S = 3.0          # s a process waits for another making a cell's facts this run before it makes them too
+# (a 30 s wait on a cell's road specs made a Steam Deck's first road tile ~30 s later, 2026-10-26: holders busy)
+
+
+def _run_facts_path(st):
+    """This server run's file of a layer's level ranges (beside its road plans: plancache.RUN_ENV), shared by its
+    processes, the lidar rule's too (a session's answer for the cell: roadz decides it once, on disk), or None."""
+    import revisit
+    cid = st.get("_bnge_cell")
+    run = os.environ.get("BNGE_PLAN_RUN")
+    if cid is None or not run or revisit.CACHE_DIR is None or not revisit.ON:
+        return None
+    import hashlib
+    h = hashlib.sha1(repr((cid, bool(LIDAR_GAPS_ON), revisit.code_key())).encode()).hexdigest()[:20]
+    return os.path.join(revisit.CACHE_DIR, "plans", run, "facts", h + ".json")
+
+
+def _run_facts_load(path, n):
+    try:
+        with open(path, encoding="utf-8") as f:
+            got = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(got, dict) or len(got.get("raw", ())) != n or len(got.get("lvl", ())) != n:
+        return None
+    return got
+
+
+def _run_facts_store(path, data):
+    import staging
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = staging.tmp_for(path)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        staging.replace(tmp, path)
+    except OSError as e:
+        log.debug("cell facts %s not kept for the run: %s", path, e)
+
+
+def _ranges_mem_key(st):
+    """_FACTS_MEM's key of a layer's level ranges: its cell id and the lidar's switch and provider (the same all along
+    in a server; tests change them)."""
+    cid = st.get("_bnge_cell")
+    if cid is None:
+        return None
+    import roadz
+    return (cid, "ranges", bool(LIDAR_GAPS_ON), id(getattr(roadz, "PROVIDER", None)))
 
 
 def _cell_ranges(feats, load_only=False):
@@ -392,6 +477,25 @@ def _cell_ranges(feats, load_only=False):
         tried = st.get("_ranges_state")
         st["_ranges_state"] = "busy"
     if tried is None:
+        mk = _ranges_mem_key(st)
+        with _FACTS_LOCK:
+            mem = _FACTS_MEM.get(mk) if mk is not None else None
+            if mem is not None:
+                _FACTS_MEM.move_to_end(mk)
+        if mem is not None and mem.get("until") is not None and time.monotonic() > mem["until"]:
+            mem = None                  # (made short of something: made again once FACTS_SHORT_S is past)
+        if mem is not None and len(mem["raw"]) == len(feats):
+            if mem.get("until") is not None:
+                import revisit
+                revisit.fault()         # (made short of something: what is built on it now is not kept either)
+            raw, lvl = st.setdefault("_raw_level_ranges", {}), st.setdefault("_level_ranges", {})
+            for i in range(len(feats)):
+                raw.setdefault(i, list(mem["raw"][i]))
+                lvl.setdefault(i, list(mem["lvl"][i]))
+            if mem["rule"]:
+                st["_lidar_rule"] = True    # (built on the rule: level_ranges says so, nothing on it kept)
+            st["_ranges_state"] = "done"
+            return
         got = _facts_load(feats, "ranges", None)
         if got is not None and len(got.get("raw", ())) == len(feats) and len(got.get("lvl", ())) == len(feats):
             raw, lvl = st.setdefault("_raw_level_ranges", {}), st.setdefault("_level_ranges", {})
@@ -404,13 +508,59 @@ def _cell_ranges(feats, load_only=False):
         st["_ranges_state"] = "loadable"        # (the eager build waits for level_ranges: road_specs reads the raw)
         return
     import revisit
-    f0 = revisit.faults()
-    raw = [raw_level_ranges(feats, i) for i in range(len(feats))]
-    lvl = [level_ranges(feats, i, _home=False) for i in range(len(feats))]
+    run_path = _run_facts_path(st)
+    mine = False
+    if run_path is not None:            # (this run's: another process's, or theirs being made, waited for briefly)
+        import xproc
+        got, mine = xproc.once(run_path + ".lock", lambda: _run_facts_load(run_path, len(feats)), FACTS_WAIT_S)
+        if got is not None:
+            raw_m, lvl_m = st.setdefault("_raw_level_ranges", {}), st.setdefault("_level_ranges", {})
+            for i in range(len(feats)):
+                raw_m.setdefault(i, [tuple(r) for r in got["raw"][i]])
+                lvl_m.setdefault(i, [tuple(r) for r in got["lvl"][i]])
+            if got.get("rule"):
+                st["_lidar_rule"] = True
+            st["_ranges_state"] = "done"
+            mk = _ranges_mem_key(st)
+            if mk is not None:
+                with _FACTS_LOCK:
+                    _FACTS_MEM[mk] = {"raw": [raw_m[i] for i in range(len(feats))],
+                                      "lvl": [lvl_m[i] for i in range(len(feats))], "rule": bool(got.get("rule")),
+                                      "until": None}
+            return
+    f0 = revisit.thread_faults()
+    t0 = time.perf_counter()
+    try:
+        raw = [raw_level_ranges(feats, i) for i in range(len(feats))]
+        lvl = [level_ranges(feats, i, _home=False) for i in range(len(feats))]
+    except BaseException:
+        if mine:
+            import xproc
+            xproc.release(run_path + ".lock")
+        raise
     st["_ranges_state"] = "done"
-    if revisit.faults() == f0:
-        _facts_store(feats, "ranges", None, {"raw": [[[float(a), float(b), k] for a, b, k in r] for r in raw],
-                                             "lvl": [[[float(a), float(b), k] for a, b, k in r] for r in lvl]})
+    if FACTS_LOG:                       # (BNGE_FACTS_LOG: which process made which cell's facts, how long)
+        log.info("cell facts %s made in %.2f s (pid %d)%s", st.get("_bnge_cell"), time.perf_counter() - t0, os.getpid(),
+                 "" if revisit.thread_faults() == f0 else " short")
+    clean = revisit.thread_faults() == f0
+    mk = _ranges_mem_key(st)
+    if mk is not None:                  # (the lidar rule's too: a cell's answer stays the same for the session)
+        with _FACTS_LOCK:
+            # (made short of something (a neighbour not downloaded yet: a first visit): kept FACTS_SHORT_S, not made
+            # again for every reload meanwhile, one cell 14 times in a process down Manhattan, 2026-11-02)
+            _FACTS_MEM[mk] = {"raw": raw, "lvl": lvl, "rule": bool(st.get("_lidar_rule")),
+                              "until": None if clean else time.monotonic() + FACTS_SHORT_S}
+            while len(_FACTS_MEM) > FACTS_MEM_KEPT:
+                _FACTS_MEM.popitem(last=False)
+    data = {"raw": [[[float(a), float(b), k] for a, b, k in r] for r in raw],
+            "lvl": [[[float(a), float(b), k] for a, b, k in r] for r in lvl]}
+    if clean and run_path is not None:
+        _run_facts_store(run_path, dict(data, rule=bool(st.get("_lidar_rule"))))
+    if mine:
+        import xproc
+        xproc.release(run_path + ".lock")
+    if clean and not st.get("_lidar_rule"):
+        _facts_store(feats, "ranges", None, data)
 
 
 # A bridge over a road spans more than its carriageway: the road's shoulders and the abutments' slopes stand under it.
@@ -1556,15 +1706,32 @@ def road_specs(feats, urban_fn=None, widths=None, left_hand=False):
     got = memo.get(k)
     if got is None:             # (the measured widths on the specs without them: those are asked for too, _bridge_reach)
         extra = (widths is not None, bool(left_hand))
-        if urban_fn is None:    # (the land cover's are the server's own: not shared, cell_facts)
+        cid = feats.__dict__.get("_bnge_cell")
+        # (the land cover's too, by this process's urban_fn: its own Surface, the same all along; a city layer's
+        # specs with its parking widths were ~0.37 s of each of its road tiles after every reload, 2026-11-02)
+        mk = None if cid is None else (cid, "specs", extra) if urban_fn is None else \
+            (cid, "specs_urban", extra, id(getattr(urban_fn, "__self__", urban_fn)), getattr(urban_fn, "__name__", ""))
+        if mk is not None:      # (_FACTS_MEM: made in this process before, for another copy of the layer)
+            with _FACTS_LOCK:
+                mem = _FACTS_MEM.get(mk)
+            if mem is not None and len(mem) == len(feats):
+                got = mem
+        if got is None and urban_fn is None:    # (the land cover's are the server's own: not shared, cell_facts)
             got = _specs_from(_facts_load(feats, "specs", extra), len(feats))
         if got is None:
             import revisit
-            f0 = revisit.faults()
+            f0 = revisit.thread_faults()
             got = (_road_specs(feats, urban_fn, left_hand) if widths is None else
                    _measured_widths(feats, road_specs(feats, urban_fn, None, left_hand), widths))
-            if urban_fn is None and revisit.faults() == f0:
+            clean = revisit.thread_faults() == f0
+            if urban_fn is None and clean:
                 _facts_store(feats, "specs", extra, [None if sp is None else _spec_json(sp) for sp in got])
+            if clean:
+                if mk is not None:
+                    with _FACTS_LOCK:
+                        _FACTS_MEM[mk] = list(got)
+                        while len(_FACTS_MEM) > FACTS_MEM_KEPT:
+                            _FACTS_MEM.popitem(last=False)
         got = memo.setdefault(k, got)
     return list(got)
 
@@ -1751,9 +1918,10 @@ def lane_flow(feats):
     cell (I-95 by the Middle Branch: 4 lanes, 20.4 m, in one and the default 11.8 m in the other, a 4.3 m step where
     their tiles met; then 24.0 m against 20.4 m where the 3 x 3 round each saw another stretch of the chain). Pure
     given the cells; remembered on feats."""
-    got = feats.__dict__.get("_lane_flow_home")
-    if got is not None:
-        return got
+    return _cell_memo(feats, "_lane_flow_home", lambda: _lane_flow_home(feats))
+
+
+def _lane_flow_home(feats):
     out = list(_lane_flow_local(feats))
     me = feats.__dict__.get("_bnge_cell")
     hook = feats.__dict__.get("_bnge_neighbours")
@@ -1778,7 +1946,6 @@ def lane_flow(feats):
                 j = pos.get(feats.ids[i])
                 if j is not None:
                     out[i] = res[j]
-    feats.__dict__["_lane_flow_home"] = out
     return out
 
 
@@ -1791,7 +1958,8 @@ def _lane_flow_rows(f):
     covers the 3 x 3 around it, so every layer's rows were made again for each of its neighbours' solves: 6 of
     lane_flow's 7 CPU-s in Manhattan's first visit, the solve itself 0.3 (2026-11-02)."""
     got = f.__dict__.get("_lane_flow_rows")
-    if got is not None:
+    lane_column = f.attrs.get("osm_lanes")
+    if got is not None and f.__dict__.get("_lane_flow_rows_column") is lane_column:
         return got
     n = len(f)
     ids = f.ids.tolist()
@@ -1818,7 +1986,35 @@ def _lane_flow_rows(f):
             _LANE_FLOW_DFLT[c] = lane_layout(Spec(carriageway(c, "paved", False, None, True, None), "paved", False, c,
                                                   True))[1]
         attrs[i, 3] = float(_LANE_FLOW_DFLT[c])
+    for a in (starts, ends, attrs):
+        a.flags.writeable = False
+    # LaneTags.join may replace the lane column after neighbour preparation.
+    f.__dict__["_lane_flow_rows_column"] = lane_column
     got = f.__dict__["_lane_flow_rows"] = (ids, starts, ends, attrs)
+    return got
+
+
+def _lane_flow_inputs(feats):
+    """Endpoint-only native inputs derived from the shared upstream rows.
+
+    The native solver reads endpoints only. Preserve 0/1-point counts so short
+    features still cannot connect or block nodes. A replaced LaneTags column
+    invalidates both caches; geometry and rules otherwise stay immutable.
+    """
+    rows = _lane_flow_rows(feats)
+    got = feats.__dict__.get("_lane_flow_inputs")
+    if got is not None and got[0] is rows:
+        return got[1]
+    _, starts, stops, attrs = rows
+    counts = np.minimum(stops - starts, 2).astype(np.int64)
+    ends = np.zeros((len(feats), 2, 2), np.float64)
+    nonempty, lines = counts > 0, counts == 2
+    ends[nonempty, 0] = feats.lonlat[starts[nonempty]]
+    ends[lines, 1] = feats.lonlat[stops[lines] - 1]
+    for a in (ends, counts):
+        a.flags.writeable = False
+    got = (ends, counts, attrs)
+    feats.__dict__["_lane_flow_inputs"] = (rows, got)
     return got
 
 
@@ -1830,6 +2026,13 @@ def _lane_flow_local(feats):
         return got
     import fast
     fast.require(118, "lane_flow")
+    _, size, at = _lane_flow_inputs(feats)
+    # Known counts, ramps and short/excluded features cannot need a solve.
+    needs = (size == 2) & (at[:, 0] != 0) & ~np.isfinite(at[:, 1]) & (at[:, 2] <= 0.5)
+    if not needs.any():
+        out = [None] * len(feats)
+        feats.__dict__["_lane_flow"] = out
+        return out
     layers = [feats]
     hook = feats.__dict__.get("_bnge_neighbours")
     if hook is not None:
@@ -1840,18 +2043,15 @@ def _lane_flow_local(feats):
     seen = set()                        # each road id once, this cell's first
     coords, lens, attrs, mine = [], [], [], None
     for f in layers:
-        ids, starts, ends, at = _lane_flow_rows(f)
+        ids, _, _, _ = _lane_flow_rows(f)
         sel = np.fromiter((i for i, fid in enumerate(ids) if fid not in seen and not seen.add(fid)), np.int64)
         if f is feats and mine is None:
             mine = sel                  # (its rows first: rows 0 .. len(mine) - 1)
         if not len(sel):
             continue
-        a, n_ = starts[sel], ends[sel] - starts[sel]
-        tot = int(n_.sum())
-        if tot:
-            # the selected features' coordinate ranges as one index array
-            first = np.concatenate([[0], np.cumsum(n_)[:-1]])
-            coords.append(f.lonlat[np.repeat(a - first, n_) + np.arange(tot)])
+        ends, size, at = _lane_flow_inputs(f)
+        n_ = size[sel]
+        coords.append(ends[sel][np.arange(2) < n_[:, None]])
         lens.append(n_)
         attrs.append(at[sel])
     out = [None] * len(feats)
@@ -2274,21 +2474,41 @@ def _measured_widths(feats, specs, widths):
     return out
 
 
+def _cell_memo(feats, name, make):
+    """make() of a layer, remembered on it and in _FACTS_MEM by its cell (another copy of the layer, after the map
+    data's memory cache reloaded it, takes it: 2026-11-02) when made with no fault of this thread."""
+    st = feats.__dict__
+    got = st.get(name)
+    if got is not None:
+        return got
+    mk = _ranges_mem_key(st)
+    mk = None if mk is None else mk[:1] + (name,) + mk[2:]
+    if mk is not None:
+        with _FACTS_LOCK:
+            got = _FACTS_MEM.get(mk)
+        if got is not None and len(got) == len(feats):
+            st[name] = got
+            return got
+    import revisit
+    f0 = revisit.thread_faults()
+    got = st[name] = make()
+    if mk is not None and revisit.thread_faults() == f0:
+        with _FACTS_LOCK:
+            _FACTS_MEM[mk] = got
+            while len(_FACTS_MEM) > FACTS_MEM_KEPT:
+                _FACTS_MEM.popitem(last=False)
+    return got
+
+
 def bridge_specs(feats):
     """Per feature: the Spec of a road bridge (flag is_bridge, or level above ground; not a tunnel), else
     None. No parking widths on bridges (urban False). Pure."""
-    got = feats.__dict__.get("_bridge_specs")      # remembered: cells stay decoded (mapdata)
-    if got is None:
-        got = feats.__dict__["_bridge_specs"] = _bridge_specs(feats)
-    return list(got)
+    return list(_cell_memo(feats, "_bridge_specs", lambda: _bridge_specs(feats)))  # (cells stay decoded: mapdata)
 
 
 def tunnel_specs(feats):
     """Per feature: the Spec of a road with a tunnel range, else None (as bridge_specs). Pure."""
-    got = feats.__dict__.get("_tunnel_specs")
-    if got is None:
-        got = feats.__dict__["_tunnel_specs"] = _bridge_specs(feats, "tunnel")
-    return list(got)
+    return list(_cell_memo(feats, "_tunnel_specs", lambda: _bridge_specs(feats, "tunnel")))
 
 
 def _bridge_specs(feats, want="bridge"):
@@ -4100,6 +4320,8 @@ def extras(spec, pts, lon, left_hand=False, country=None, osm=None, ws=None, shi
     import markings
     out = []
     st = markings.style(country, lon)
+    from streetscape import for_country
+    gutter_w = for_country(country).gutter
     w, kind, urban, cls = spec[:4]
     wv = w if ws is None else np.asarray(ws, np.float64)     # (offsets: tapered; decisions: its width)
     if kind not in BUILT:
@@ -4108,7 +4330,7 @@ def extras(spec, pts, lon, left_hand=False, country=None, osm=None, ws=None, shi
         for side in walk_sides(spec, left_hand):
             out.append(({**SIDEWALK, "side": side}, spec.walk,
                         offset_polyline(pts, side * (wv / 2 + spec.walk / 2))))
-            out.append(({**GUTTER, "side": side}, GUTTER["w"], offset_polyline(pts, side * (wv / 2 - GUTTER["w"] / 2))))
+            out.append(({**GUTTER, "side": side}, gutter_w, offset_polyline(pts, side * (wv / 2 - gutter_w / 2))))
         ms = median_side(spec, left_hand)
         if ms is not None:
             # the median: a curbed band, lawn beyond it (two sidewalks back to back made a concrete strip, the user's
@@ -4222,64 +4444,6 @@ def extras(spec, pts, lon, left_hand=False, country=None, osm=None, ws=None, shi
             mat = st.left_edge if (st.left_edge and spec.oneway and side == travel_left) else "line_white"
             mark("edge", mat, ew, offset_polyline(pts, side * (wv / 2 - inset)), side=side)
     return out
-    if has_sidewalks(spec):
-        for side in walk_sides(spec, left_hand):
-            out.append(({**SIDEWALK, "side": side}, spec.walk,
-                        offset_polyline(pts, side * (w / 2 + spec.walk / 2))))
-            out.append(({**GUTTER, "side": side}, GUTTER["w"], offset_polyline(pts, side * (w / 2 - GUTTER["w"] / 2))))
-        ms = median_side(spec, left_hand)
-        if ms is not None:
-            # the median: a curbed band, lawn beyond it (two sidewalks back to back made a concrete strip, the user's
-            # report #48 on Boston Street, 2026-10-17: "Improve how medians are made")
-            mw = median_width(spec)
-            # (each carriageway's half, a hair short of the middle: touching the other's carriageway where the gap
-            # narrows, the band was cut away)
-            band = max(0.3, mw / 2 - 0.15) if mw <= MEDIAN_SLAB_M else MEDIAN_CURB_W
-            out.append(({**SIDEWALK, "side": ms, "median": True}, band, offset_polyline(pts, ms * (w / 2 + band / 2))))
-            if kind == "paved":     # a double yellow line along it (Boston Street, Mapillary 2026-10-17) ...
-                look = {"m": centre_colour(lon), "tl": CENTRE["tl"], "p": CENTRE["p"]}
-                # ... outside the Americas one solid white edge line along the median's curb (PR #146)
-                for k in ((0,) if centre_colour(lon) == "line_white" else (0, 1)):
-                    out.append((look, CENTRE["w"], offset_polyline(
-                        pts, ms * (w / 2 - EDGE_LINE["inset"] - 2 * k * CENTRE["gap"]))))
-            out.append(({**GUTTER, "side": ms}, GUTTER["w"], offset_polyline(pts, ms * (w / 2 - GUTTER["w"] / 2))))
-    if kind == "paved" and cls in CENTRE_CLASSES and w >= 6.0 and not spec.oneway:   # no paint on cobbles
-        if centre_colour(lon) == "line_white":
-            # outside the Americas one broken white line (the Gotthard road on Mapillary, 2026-10-18: ours had the
-            # Americas' double line in white)
-            out.append((LANE_LINE, LANE_LINE["w"], pts.copy()))
-        else:
-            look = {"m": centre_colour(lon), "tl": CENTRE["tl"], "p": CENTRE["p"]}
-            for side in (1, -1):
-                out.append((look, CENTRE["w"], offset_polyline(pts, side * CENTRE["gap"])))
-    if kind == "paved" and cls in LANE_CLASSES:
-        # lane lines (white dashes) where the driving width holds two or more lanes a direction
-        parked = urban and cls in PARKING_CLASSES and not (not spec.oneway and cls in URBAN_ARTERIAL)
-        # (a rural road's edge strips counted as lanes: three on every rural Interstate, GitHub #43)
-        drive = w - ((PARKING_M if spec.oneway else 2 * PARKING_M) if parked else 2 * edge_margin(spec))
-        lanes = spec.lanes if spec.lanes else int(drive // LANE_M)      # (OpenStreetMap's count where known)
-        if spec.oneway and lanes >= 2:
-            lw = drive / lanes
-            for k in range(1, lanes):
-                out.append((LANE_LINE, LANE_LINE["w"], offset_polyline(pts, -drive / 2 + k * lw)))
-        elif not spec.oneway and lanes >= 4:
-            n = lanes // 2
-            lw = drive / 2 / n
-            for side in (1, -1):
-                for k in range(1, n):
-                    out.append((LANE_LINE, LANE_LINE["w"], offset_polyline(pts, side * k * lw)))
-    if kind == "paved" and not has_sidewalks(spec):          # no curb: the asphalt's edge
-        dw = EDGE_DECAL["w"]
-        for side in (1, -1):
-            line = offset_polyline(pts, side * (w / 2 + (EDGE_DECAL_AT - 0.5) * dw))
-            # (u runs from the ribbon's left to its right: the road is on the right of the left side's, so the right
-            # side's runs backwards)
-            out.append(({**EDGE_DECAL, "side": side}, dw, line if side > 0 else line[::-1].copy()))
-    if kind == "paved" and (not urban or not has_sidewalks(spec)) and cls in EDGE_LINE_CLASSES:   # no curb: edge lines
-        for side in (1, -1):
-            inset = motorway_shoulder(spec) if rural_motorway(spec) else EDGE_LINE["inset"]
-            out.append((EDGE_LINE, EDGE_LINE["w"], offset_polyline(pts, side * (w / 2 - inset))))
-    return out
 
 
 JOIN_GAP_M = 14.0       # sidewalk ends this close (and facing each other) are joined: a sharp corner / road merge
@@ -4314,18 +4478,28 @@ def join_walk_ends(runs, carriageways):
             ends.append((k, at_end, (p[-1] if at_end else p[0]), _end_dir(p, at_end)))
     pairs = []
     cos_t = math.cos(math.radians(JOIN_TURN_DEG))
+    bins = {}
+    for b, (_, _, point, _) in enumerate(ends):
+        cell = tuple(np.floor(point[:2] / JOIN_GAP_M).astype(int))
+        bins.setdefault(cell, []).append(b)
     for a in range(len(ends)):
-        for b in range(a + 1, len(ends)):
+        cell = np.floor(ends[a][2][:2] / JOIN_GAP_M).astype(int)
+        nearby = sorted(b for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                        for b in bins.get((cell[0] + dx, cell[1] + dy), ()) if b > a)
+        for b in nearby:
             ki, ei, qi, di = ends[a]
             kj, ej, qj, dj = ends[b]
             if ki == kj:
                 continue
             gap = qj[:2] - qi[:2]
             L = math.hypot(*gap)
-            if L < 0.3 or L > JOIN_GAP_M:
+            if L > JOIN_GAP_M:
                 continue
-            u = gap / L
-            if float(u @ di) < cos_t or float(-u @ dj) < cos_t:
+            u = gap / max(L, 1e-9)
+            if L < .001:
+                if float(di @ dj) > -cos_t:
+                    continue
+            elif float(u @ di) < cos_t or float(-u @ dj) < cos_t:
                 continue                        # each end must leave toward the other
             pairs.append((L, a, b))
     runs = [dict(r) for r in runs]
@@ -4343,6 +4517,19 @@ def join_walk_ends(runs, carriageways):
         if ki == kj:
             continue
         ri, rj = runs[ki], runs[kj]
+        # A previous merge can reverse a whole chain. Resolve the surviving
+        # endpoint from its position instead of reusing its original end flag.
+        def end_at(run, point):
+            if np.linalg.norm(run['pts'][0, :2] - point[:2]) < 1e-6:
+                return False
+            if np.linalg.norm(run['pts'][-1, :2] - point[:2]) < 1e-6:
+                return True
+            return None
+        ei, ej = end_at(ri, qi), end_at(rj, qj)
+        if ei is None or ej is None or bool(ri.get('median')) != bool(rj.get('median')):
+            continue
+        if abs(float(qi[2] - qj[2])) > max(.03, L * .15):
+            continue  # a plan-view match does not join different levels
         # the pieces in travel order: ri toward its joined end, then rj away from its joined end
         pi_ = ri["pts"] if ei else ri["pts"][::-1]
         pj_ = rj["pts"] if not ej else rj["pts"][::-1]
@@ -4350,17 +4537,26 @@ def join_walk_ends(runs, carriageways):
         sj = rj["side"] if not ej else -rj["side"]
         if si != sj:
             continue                            # opposite sides of the streets: not one sidewalk
-        gap_pts = np.linspace(pi_[-1], pj_[0], max(2, int(L / 2.0) + 2))[1:-1]
+        if abs(ri['w']-rj['w']) > .05:
+            continue                            # a join cannot silently change the receiving width
+        # Tangent-continuous bridge, sampled only in the gap; no roundoff of
+        # surveyed endpoints and no dense subdivision of the straight runs.
+        t = np.linspace(0.,1.,min(65,max(3,int(np.ceil(L/.35))+1)))[1:-1,None]
+        p0,p3 = pi_[-1],pj_[0]
+        p1,p2 = p0.copy(),p3.copy()
+        p1[:2] += di*L/3.; p2[:2] += dj*L/3.
+        p1[2] += (p3[2]-p0[2])/3.; p2[2] -= (p3[2]-p0[2])/3.
+        gap_pts = (1-t)**3*p0+3*(1-t)**2*t*p1+3*(1-t)*t*t*p2+t**3*p3
         hw = 0.25 * (ri["w"] + rj["w"])
-        if any(_seg_dist_min(cl, q[:2]) < h + hw * 0.5 for cl, h in carriageways for q in gap_pts):
+        if any(_seg_dist_min(cl, q[:2]) < h + hw for cl, h in carriageways for q in gap_pts):
             continue                            # the gap would cross a road
         used.update((a, b))
-        pts = np.vstack([pi_, gap_pts, pj_]) if len(gap_pts) else np.vstack([pi_, pj_])
+        pts = np.vstack([pi_, gap_pts, pj_]) if L >= .001 else np.vstack([pi_, pj_[1:]])
         j0 = ri["j"][0] if ei else ri["j"][1]
         j1 = rj["j"][1] if not ej else rj["j"][0]
         o0 = ri["open"][0] if ei else ri["open"][1]
         o1 = rj["open"][1] if not ej else rj["open"][0]
-        runs[ki] = {"pts": densify(simplify(pts)), "side": si, "w": ri["w"], "fid": ri["fid"], "j": (j0, j1),
+        runs[ki] = {**ri, "pts": densify(simplify(pts, tol=.008)), "side": si, "w": ri["w"], "fid": ri["fid"], "j": (j0, j1),
                     "open": (o0, o1), "ramp_keys": sorted(set(ri.get("ramp_keys", [(ri["fid"], ri["side"])])
                                                                + rj.get("ramp_keys", [(rj["fid"], rj["side"])])))}
         runs[kj] = None
@@ -4486,7 +4682,14 @@ def drape_walks(frame, elev, walks, ground=None):
             # the outer corners: the ends at the ends of the arc (where the runs' slabs end), the rest between
             zo = 0.5 * (z[0] + z[-1])
             outer = [tuple(q) for q in c["outer"]]
-            outer = [(*outer[0][:2], z[-1])] + [(*q[:2], zo) for q in outer[1:-1]] + [(*outer[-1][:2], z[0])]
+            if c.get('outer_stations') is not None:
+                stations = np.r_[0., np.cumsum(np.linalg.norm(np.diff(arc[:, :2], axis=0), axis=1))]
+                heights = np.interp(c['outer_stations'], stations, z)
+                outer = [(*q[:2], height) for q, height in zip(outer, heights)]
+            elif len(outer) == 1:
+                outer = [(*outer[0][:2], zo)]
+            else:
+                outer = [(*outer[0][:2], z[-1])] + [(*q[:2], zo) for q in outer[1:-1]] + [(*outer[-1][:2], z[0])]
             wk["corner"] = {**c, "arc": arc, "outer": outer}
             continue
         pts = pts.copy()
@@ -4643,7 +4846,9 @@ def tile_needs(frame, tx, ty, buildings=True, widths=True, water_ring=0):
                if 0 <= y < n]
         return sorted(out, key=lambda k: (abs((k.x - cx + n / 2) % n - n / 2) + abs(k.y - cy), k))
     own = set(keys)
-    tile = ("roads", "infrastructure") + (TILE_BUILDING_LAYERS if buildings else ())
+    # (land use too: industry._named_plants reads it for every tile; asked for alone after the rest it was ~5 s of a
+    # first visit's Manhattan road tile, 2026-11-02)
+    tile = ("roads", "infrastructure", "land_use") + (TILE_BUILDING_LAYERS if buildings else ())
     needs = [(k, ly) for k in sorted(keys) for ly in tile]
     needs += [(k, "roads") for k in ring(1) if k not in own]
     # (and the ring past that: gradesep reads the neighbours of every cell whose level ranges are asked, the ring's too)
@@ -7496,6 +7701,31 @@ def _deck_frame(spec, walk):
     return float(spec.width) + wm * len(sides), wm / 2 * float(sum(sides))
 
 
+def _deck_walk_graph(feats):
+    """Endpoint adjacency shared by bridge sidewalk lookups on an immutable decoded cell.
+
+    Only geometry is cached: widths, land cover and driving side still come from
+    each call's specs. The graph dies with the cell, like its other source caches.
+    Publish after construction so concurrent readers never see a partial graph.
+    """
+    got = feats.__dict__.get("_deck_walk_graph")
+    if got is not None:
+        return got
+    nodes = {}                                  # rounded end point -> [(feature, 0 | 1)]
+    for j in range(len(feats)):
+        a = feats.coord_off[feats.ring_off[feats.part_off[j]]]
+        b = feats.coord_off[feats.ring_off[feats.part_off[j + 1]]]
+        if b - a < 2:
+            continue
+        for e, k in ((0, a), (1, b - 1)):
+            nodes.setdefault((round(float(feats.lonlat[k, 0]), 6), round(float(feats.lonlat[k, 1]), 6)), []).append((j, e))
+    ends = {}
+    for key, lst in nodes.items():
+        for j, e in lst:
+            ends[(j, e)] = key
+    return feats.__dict__.setdefault("_deck_walk_graph", (nodes, ends))
+
+
 def deck_walks(feats, i, ground_specs, left_hand=False):
     """(sidewalk width m, sides) a deck of feature i carries, or None: its own ground part's (ground_specs[i]: the
     tile's road_specs, land cover and all) where that has sidewalks, else those of the nearest road of its class with
@@ -7509,18 +7739,7 @@ def deck_walks(feats, i, ground_specs, left_hand=False):
     if bridge[i] is None:
         return None
     cls = bridge[i].cls
-    nodes = {}                                  # rounded end point -> [(feature, 0 | 1)]
-    for j in range(len(feats)):
-        a = feats.coord_off[feats.ring_off[feats.part_off[j]]]
-        b = feats.coord_off[feats.ring_off[feats.part_off[j + 1]]]
-        if b - a < 2:
-            continue
-        for e, k in ((0, a), (1, b - 1)):
-            nodes.setdefault((round(float(feats.lonlat[k, 0]), 6), round(float(feats.lonlat[k, 1]), 6)), []).append((j, e))
-    ends = {}
-    for key, lst in nodes.items():
-        for j, e in lst:
-            ends[(j, e)] = key
+    nodes, ends = _deck_walk_graph(feats)
     seen, frontier = {i}, [(i, False)]          # (feature, whether its direction runs against i's)
     for _ in range(DECK_WALK_CHAIN):
         nxt, best = [], None
@@ -7640,7 +7859,7 @@ def _on_box(p, box, eps=1e-6):
     return abs(p[0] - x0) < eps or abs(p[0] - x1) < eps or abs(p[1] - y0) < eps or abs(p[1] - y1) < eps
 
 
-def drains(run, side, caps, walk_w=None):
+def drains(run, side, caps, walk_w=None, gutter_w=None):
     """The storm drain chunks along a sidewalk run (k, 3) on `side` of its road: DRAIN_IN m before its
     end if that is a real end (caps: (start, end) real) and every DRAIN_EVERY m along it. Pure."""
     import sidewalks
@@ -7663,8 +7882,8 @@ def drains(run, side, caps, walk_w=None):
             z = np.interp(d, s, curb[:, 2])
             k = min(int(np.searchsorted(s, d)), len(s) - 1)
             o = out[k] / max(np.hypot(*out[k]), 1e-9)
-            pts.append([x - o[0] * (GUTTER["w"] / 2), y - o[1] * (GUTTER["w"] / 2), z])
-        res.append(_chunk(DRAIN, DRAIN["w"], np.array(pts)))
+            pts.append([x - o[0] * ((gutter_w or GUTTER["w"]) / 2), y - o[1] * ((gutter_w or GUTTER["w"]) / 2), z])
+        res.append(_chunk(DRAIN, min(DRAIN["w"], (gutter_w or GUTTER["w"])-.04), np.array(pts)))
     return res
 
 
@@ -7754,12 +7973,16 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
                 continue
             seen[str(feats.ids[i])] = (feats, i, specs[i])
     rings = []                                  # (fid, spec, lon/lat ring) near the tile (xy at h = 0)
+    curb_locations = {}                         # stable source point, never a tile-clipped midpoint
     for fid in sorted(seen):
         feats, i, spec = seen[fid]
         fb = feats.boxes(frame)[i]          # (the whole feature far from the tile: none of its parts is near)
         if fb[2] < near[0] or fb[0] > near[2] or fb[3] < near[1] or fb[1] > near[3]:
             continue
-        for ring in ground_parts(feats, i):
+        parts = list(ground_parts(feats, i))
+        if parts:
+            curb_locations[fid] = (float(parts[0][0,1]),float(parts[0][0,0]))
+        for ring in parts:
             e, n = mapgeom.enu_xy(feats, frame, ring)
             if (e.max() < near[0] or e.min() > near[2] or n.max() < near[1] or n.min() > near[3]):
                 continue
@@ -7889,17 +8112,20 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
                 continue
             # (from its south-west-most point: each tile finds the loop from its own roads, starting anywhere)
             ring = np.roll(f["ring"], -int(np.lexsort((f["ring"][:, 1], f["ring"][:, 0]))[0]), axis=0)
+            from sidewalk_outline import island_ring
+            from buildgen.grounds_quality import current as grounds_quality
+            ring = island_ring(ring, islands.ISLAND_BAND_M, grounds_quality())
             # (closed: offset with a vertex either side of its start, so its ends meet mitred, not 5 cm apart)
             band = offset_polyline(np.vstack([ring[-1:], ring, ring[:2]]), islands.ISLAND_BAND_M / 2)[1:-1]
             # tight simplify + denser nodes: the default 0.25 m / 12 m spacing faceted the curb into a hexagon (PR
             # #468). The whole ring simplified before it is clipped, so neighbouring tiles' pieces (each to its box and
             # the skin margin, the skin cutting them exactly at the tile's quad) share its vertices and meet
-            band = simplify(band, tol=0.08)
+            band = simplify(band, tol=0.015)
             for piece in clip_polyline(band, *wexact):
                 run = densify(piece, spacing=3.0)
                 if len(run) >= 2:
                     walks.append({"pts": run, "side": 1, "caps": (False, False), "ramps": [],
-                                  "w": islands.ISLAND_BAND_M, "fid": "island"})
+                                  "w": islands.ISLAND_BAND_M, "fid": "island", "median": True})
     cornered = set()                            # road pairs whose sidewalks meet at a curb return
     if walks is not None:
         for (fid, side), cl in jcuts.items():
@@ -8017,7 +8243,8 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
                 for piece in clip_polyline(line, *near):
                     for cpiece, (j0, j1) in junctions.apply_cuts(piece, jcuts.get((fid, side), [])):
                         for run in [r for r0 in cut_outside(cpiece, wb, 0.5)
-                                    for r in _on_level(frame, elev, densify(simplify(r0)))]:
+                                    for r in _on_level(frame, elev, densify(simplify(r0, tol=WALK_SIMPLIFY_M,
+                                                                                ztol=WALK_DRAPE_TOL_M)))]:
                             if len(run) < 2:
                                 continue
                             at_j0 = j0 and np.hypot(*(run[0, :2] - cpiece[0, :2])) < 0.6
@@ -8048,6 +8275,9 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
     if walks is not None:
         runs_near = join_walk_ends(runs_near, [(p2[:, :2], s2.width / 2) for _, s2, p2, _ in roads]
                                    + list(walk_cuts))       # (a cut's gap stays open: a driveway crosses it)
+        from sidewalk_layout import CarriagewayGuard
+        guard = CarriagewayGuard([(p[:, :2], sp.width / 2) for _, sp, p, _ in roads] + list(walk_cuts))
+        runs_near = [safe for run in runs_near for safe in guard.trim(run)]
         drain_runs = []                         # (walks entry, side, real ends, width): drains once on the ground
         for rn in runs_near:
             fid, side, w, run0 = rn["fid"], rn["side"], rn["w"], rn["pts"]
@@ -8066,12 +8296,14 @@ def build_tile(frame, tx, ty, cells, elev, urban_fn=None, walks=None, bridges=No
                               "median": rn.get("median", False)})
                 if not rn.get("median"):                # (a median: a bare curb, no storm drains)
                     drain_runs.append((walks[-1], side, (caps[0] or at_j0, caps[1] or at_j1), w))
+        import streetscape
+        streetscape.annotate(walks, frame, country, {fid: spec.cls for fid, spec, _, _ in roads},curb_locations)
         if walks_raw is not None:               # (the skin's: put on its anchor's ground there)
             import copy
             walks_raw.extend(copy.deepcopy(walks))
         drape_walks(frame, elev, walks, ground)
         for wk, side, ends, w in drain_runs:
-            chunks.extend(drains(wk["pts"], side, ends, w))
+            chunks.extend(drains(wk["pts"], side, ends, w, wk.get("gutter_w")))
     if lines is not None:                           # the centrelines near the tile (buildings' front doors)
         lines.extend((pts[:, :2], spec.width / 2, spec.cls, spec.urban) for _, spec, pts, _ in roads)
     if props is not None and walks is not None:     # street lights and utility poles (furniture.py)
@@ -8225,7 +8457,7 @@ class Tracker:
             m["data"] = data
         pool = getattr(getattr(conn, "s", None), "pool_shapes", None)
         if pool is not None:                # its meshes at pooled shape paths (matslots.py)
-            slots = pool(conn, shape_files(aid, *key))
+            slots = pool(conn, shape_files(aid, *key, data=data))
             if slots:
                 m["slots"] = slots
         conn.send(m)
@@ -8236,6 +8468,7 @@ TILE_STUCK_S = 90.0             # s a road tile's build may take before the log 
 TILE_FAILS_WARN = 5             # a tile's builds failed in a row before an expected kind of failure is logged as a warning
 _FAILS_SEEN = set()             # the kinds of road tile failures logged in full (Tracker._built)
 BLD_PARTS_MAX = 4               # building meshes per road tile ("bld", "bld2".."bld4": the mod's list)
+BUILDING_CHUNKS = 1            # v2: explicit, complete visual/collision chunk lists
 
 
 # --- road geotiles (phase 1c, .claude/work/geotiles_plan.md) -------------------------------------------------------
@@ -8275,6 +8508,7 @@ class GeoTracker:
     blockworker.roads_geo's result."""
 
     geo = True
+    PLAN_REFS_KEPT = 2048
 
     def __init__(self):
         self.aid = None
@@ -8282,6 +8516,7 @@ class GeoTracker:
         self.frames = {}        # anchor id -> its frame (the exact variants' error: _shown_err)
         self.sent = set()       # (gx, gy) whose content the mod has
         self.info = {}          # (gx, gy) -> its content's {"h", "parts": {what: {pivot, relief, col}}}
+        self.plan_refs = OrderedDict()  # compact accepted references beyond near residency
         self.skins = set()      # (gx, gy) with self.aid's skin sent
         self.shown = {}         # (gx, gy) -> {what: anchor id of the exact variant the mod shows}
         self.need = {}          # ((gx, gy), aid) -> {what: pivot} its exact variants due (exact_need, cached)
@@ -8296,8 +8531,67 @@ class GeoTracker:
         self.empty = set()      # (anchor tiles' interface: progress)
         self.stats = {"content": 0, "skins": 0, "exact": 0, "exact_base": 0, "anchors": 0,
                       "content_cpu": 0.0, "skin_cpu": 0.0}
+        self._progress_out_dir = None
+        self.fast_buildings = False
+        self.obsolete_buildings = set()
+        self.building_demand = {}
+        self.generation_epoch = 0
+        self.regenerate = set()
+
+    def change_generator(self, conn):
+        """Keep accepted coverage; replace only tiles whose building mode changed."""
+        from buildgen import progressive
+        self.generation_epoch += 1
+        self.regenerate.update(self.sent | self.building)
+        self.plan_refs.clear()
+        self.retry.clear()
+        for key in list(getattr(self, '_building_progress', {})):
+            progressive.finish(self, conn, self.aid, key, False)
+
+    def remember_plan(self,key,reference):
+        from buildgen.products import valid_reference
+        self.plan_refs.pop(key,None)
+        if valid_reference(reference):
+            self.plan_refs[key]=dict(reference)
+            while len(self.plan_refs)>self.PLAN_REFS_KEPT:self.plan_refs.popitem(last=False)
+
+    def plan_reference(self,key):
+        if key in self.regenerate:return None
+        reference=self.info.get(key,{}).get('acceptedPlan') or self.plan_refs.get(key)
+        return dict(reference) if reference is not None else None
+
+    def sky_references(self,gx,gy):
+        import geotiles
+        from buildgen.products import valid_reference
+        result={}
+        for key in geotiles.children(gx,gy,geotiles.SKY_Z,geotiles.Z):
+            ref=self.plan_reference(key)
+            if valid_reference(ref):result[key]=ref
+        return result
+
+    def building_detail(self, conn, speed):
+        """Hysteresis prevents rebuild churn near the fast-travel threshold.
+
+        Already-complete full tiles are never downgraded. This selects new work
+        only; full quality resumes below 27 mph, lite starts above 49 mph.
+        """
+        if not math.isfinite(speed):speed=0.0
+        if speed >= 22.0:self.fast_buildings=True
+        elif speed <= 12.0:self.fast_buildings=False
+        mode=getattr(conn,'building_quality','full')
+        from buildgen.quality import PROFILES
+        # Six-tier pressure also needs coverage and free-camera state, resolved
+        # once below in on_pose. Do not arm recovery twice on the same pose.
+        if mode in PROFILES:return mode
+        return 'lite' if mode=='lite' or (mode=='adaptive' and self.fast_buildings) else 'full'
 
     def close(self):
+        from buildgen import progressive
+        jobs = getattr(self, '_building_progress', {})
+        if self._progress_out_dir is not None:
+            for job in jobs.values():
+                progressive.cancel(self._progress_out_dir, job['token'])
+        jobs.clear()
         if self.pool is not None:
             self.pool.shutdown(wait=False, cancel_futures=True)
 
@@ -8368,7 +8662,11 @@ class GeoTracker:
         import geotiles
         if frame is None:
             return
+        self._progress_out_dir = getattr(getattr(conn, 's', None), 'out_dir', None)
         if aid != self.aid:
+            from buildgen import progressive
+            for progress_key in list(getattr(self, '_building_progress', {})):
+                progressive.finish(self,conn,self.aid,progress_key,False)
             for f in self.futs.values():
                 f.cancel()
             self.aid, self.frame, self.building, self.futs = aid, frame, set(), {}
@@ -8378,6 +8676,7 @@ class GeoTracker:
                 del self.frames[old]
             self.skins, self.retry, self.fails, self.started, self.stuck_said = set(), {}, {}, {}, set()
             self.need = {}
+            self.building_demand = {}
             self.stats["anchors"] += 1
         if self.pool is None:
             from runtimeprofiler import ThreadPoolExecutor
@@ -8385,6 +8684,7 @@ class GeoTracker:
         vx, vy = (float(vel[0]), float(vel[1])) if vel else (0.0, 0.0)
         s = math.hypot(vx, vy)
         car = geo_wanted(frame, x, y, vx, vy)
+        detail=self.building_detail(conn,s)
         self.car = set(car)
         seen = {(a, b): d for a, b, d in geotiles.tiles_near(frame, *view, SEND_M)} if view else {}
         others = {}
@@ -8392,13 +8692,53 @@ class GeoTracker:
             for a, b, d in geotiles.tiles_near(frame, f[0], f[1], min(SEND_M, f[2] + TILE / 2)):
                 others.setdefault((a, b), d)
         wanted = set(car) | set(seen) | set(others)
+        demand={}
+        from buildgen import quality as building_quality
+        ceiling=getattr(conn,'building_quality','full')
+        profile=building_quality.PROFILES.get(ceiling)
+        adaptive=profile is not None and ceiling!='minimum'
+        if profile:
+            # Reserve capacity for physical coverage and stalled work. Optional
+            # visual jobs by themselves must not keep the recovery timer armed.
+            busy=ground_busy or bool(wanted-self.sent) or any(
+                time.monotonic()-self.started.get(k,time.monotonic())>5. for k in self.building)
+            detail=building_quality.adaptive_target(self,conn,s,busy=busy,
+                now=time.monotonic(),free_camera=view is not None)
+        if ceiling=='adaptive' or adaptive:
+            from buildgen import detail_demand
+            camera=detail_demand.camera(getattr(conn,'cam',None),aid,getattr(conn,'cam_aid',None))
+            reach=min(getattr(conn,'building_detail_m',350.),profile.reach) if profile else getattr(conn,'building_detail_m',350.)
+            for k in wanted:
+                close=min(car.get(k,1e9),seen.get(k,1e9))<=reach
+                if camera is not None:
+                    cx,cy,cz,fov,height=camera
+                    distance=geotiles.quad_dist(geotiles.quad(frame,*k),cx,cy)
+                    parts=self.info.get(k,{}).get('parts',{})
+                    spans=[(v['pivot']-v['relief'],v['pivot']+v['relief']) for w,v in parts.items()
+                           if w.startswith('bld') and 'pivot' in v and 'relief' in v]
+                    # Unknown vertical extent stays conservative. Known bounds
+                    # also suppress unseen detail far below a free aerial camera.
+                    if spans:
+                        low=min(v[0] for v in spans);high=max(v[1] for v in spans)
+                        distance=math.hypot(distance,max(0.,low-cz,cz-high))
+                    close=detail_demand.wanted(distance,self.building_demand.get(k,False),fov=fov,height=height,
+                        reach=reach,fast=self.quality_fast if profile else self.fast_buildings,
+                        free_camera=view is not None,feature=profile.feature_m if profile else detail_demand.FEATURE_M)
+                elif detail=='lite':close=False
+                if profile:
+                    close=close and detail==ceiling
+                    demand[k]=ceiling if close else profile.fallback
+                else:demand[k]='full' if close else 'lite'
+            self.building_demand={k:q==(ceiling if profile else 'full') for k,q in demand.items()}
+        else:
+            demand={k:detail for k in wanted};self.building_demand={}
         start = {(a, b) for a, b, _ in geotiles.tiles_near(frame, x, y, SEND_M)} if ground_busy else wanted
         now = time.monotonic()
         jobs = []
         for k in start:
             if k in self.building or self.retry.get(k, 0.0) > now:
                 continue
-            if k not in self.sent:
+            if k not in self.sent or k in self.regenerate:
                 jobs.append((k, True, True, "auto"))
                 continue
             make = None
@@ -8410,10 +8750,19 @@ class GeoTracker:
                         self.shown.get(k, {}).pop(w, None)
                     self.stats["exact_base"] += len(base)
                     conn.send({"type": "roads_exact", "anchorId": aid, "key": geotiles.key(*k),
+                               "contentHash": self.info.get(k,{}).get('h'),
                                "parts": {w: False for w in base}})
             make = self.need.get((k, self.aid)) or None
             if k not in self.skins or make:
                 jobs.append((k, False, k not in self.skins, make))
+            elif (profile is not None and getattr(conn,'building_progress',False)
+                  and building_quality.needs_rebuild(self.info.get(k,{}).get('buildingDetail'),demand.get(k,detail),ceiling)):
+                jobs.append((k, True, True, 'auto'))
+            elif (profile is None and getattr(conn,'building_progress',False) and demand.get(k,detail)=='full'
+                  and self.info.get(k,{}).get('buildingDetail')=='lite'
+                  and (getattr(conn,'building_quality','full')=='adaptive' or
+                       min(car.get(k,1e9),seen.get(k,1e9)) <= getattr(conn,'building_detail_m',350.0))):
+                jobs.append((k, True, True, 'auto'))
 
         def order(job):
             k = job[0]
@@ -8435,13 +8784,40 @@ class GeoTracker:
             if k in seen:
                 return (1, seen[k])
             return (2, others.get(k, 1e9))
-        jobs.sort(key=order)
+        # Missing road/collision coverage always precedes optional refinement.
+        jobs.sort(key=lambda job:(job[1] and job[0] in self.sent,order(job)))
+        from buildgen import progressive
+        for progress_key,job in list(getattr(self, '_building_progress', {}).items()):
+            limited=demand.get(progress_key,detail) in ('minimum','lite','very_low','low')
+            if limited and not job.get('limited') and self._progress_out_dir:
+                job['limited']=progressive.limit_detail(self._progress_out_dir,job['token'])
+            progressive.poll(self, conn, aid, progress_key)
         for k, content, skin, make in jobs[:max(0, BUILD_PER_POSE - len(self.building))]:
             self.building.add(k)
             self.started[k] = now
-            fut = self.futs[k] = loop.run_in_executor(self.pool, build, aid, k[0], k[1], content, skin, make)
-            fut.add_done_callback(lambda f, kk=k, a=aid, c=content, sk=skin, m=make:
-                                  self._built(conn, a, kk, f, c, sk, m))
+            builder = build
+            progress_token = ''
+            if content and k in self.regenerate and getattr(conn, 'building_progress', False):
+                import functools
+                builder = functools.partial(build, building_detail=demand.get(k,detail))
+            if content and k not in self.regenerate and getattr(conn, 'building_progress', False):
+                import functools
+                progress_token = progressive.begin(self,k)
+                job_detail=demand.get(k,detail)
+                camera=getattr(conn,'cam',None) if getattr(conn,'cam_aid',None)==aid else None
+                focus=view if view is not None else (x,y)
+                hint=progressive.local_view(frame,geotiles.geobox(*k),*focus,camera)
+                builder = functools.partial(build, progress_token=progress_token,building_detail=job_detail,building_view=hint)
+            import building_settings, functools
+            mode, epoch = building_settings.current(), self.generation_epoch
+            if isinstance(builder, functools.partial):
+                builder = functools.partial(building_settings.run, mode, builder.func, *builder.args, **builder.keywords)
+            else:
+                builder = functools.partial(building_settings.run, mode, builder)
+            fut = self.futs[k] = loop.run_in_executor(self.pool, builder, aid, k[0], k[1], content, skin, make)
+            fut.add_done_callback(lambda f, kk=k, a=aid, c=content, sk=skin, m=make, pt=progress_token, md=mode, ep=epoch:
+                                  building_settings.run(md, self._built, conn, a, kk, f, c, sk, m,
+                                                        progress_token=pt, generation_epoch=ep))
         for k in self.building:
             t0 = self.started.get(k)
             if t0 is not None and now - t0 > TILE_STUCK_S and k not in self.stuck_said:
@@ -8456,6 +8832,13 @@ class GeoTracker:
             if view and geotiles.quad_dist(q, *view) <= DROP_M:
                 return False
             return all(geotiles.quad_dist(q, f[0], f[1]) > f[2] + TILE for f in foci)
+        # Stop optional previews outside the retained view, while the shared road,
+        # building collision and fuel content job still completes normally.
+        self.obsolete_buildings={k for k in self.building if k not in wanted and far(k)}
+        for k, job in list(getattr(self, '_building_progress', {}).items()):
+            if k in self.obsolete_buildings:
+                if self._progress_out_dir:progressive.limit_detail(self._progress_out_dir,job['token'])
+                progressive.finish(self, conn, aid, k, False, token=job['token'])
         for k in [k for k in self.sent if k not in wanted and k not in self.building and far(k)]:
             self.sent.discard(k)
             self.skins.discard(k)
@@ -8466,17 +8849,24 @@ class GeoTracker:
         if self.retry:
             self.retry = {k: t for k, t in self.retry.items() if t > now}
 
-    def _built(self, conn, aid, key, fut, content, skin, make):
+    def _built(self, conn, aid, key, fut, content, skin, make, progress_token=None, generation_epoch=None):
         import geotiles
+        from buildgen import progressive
         if self.futs.get(key) is fut:
             self.building.discard(key)
             self.futs.pop(key, None)
             self.started.pop(key, None)
+        if generation_epoch is not None and generation_epoch != self.generation_epoch:
+            if not fut.cancelled():fut.exception()  # consume failed obsolete jobs without delivering their geometry
+            progressive.finish(self,conn,aid,key,False,token=progress_token)
+            return
         if fut.cancelled():
+            progressive.finish(self,conn,aid,key,False,token=progress_token)
             return
         try:
             res = fut.result()
         except Exception as e:
+            progressive.finish(self,conn,aid,key,False,token=progress_token)
             kind = f"{type(e).__name__}: {e}"[:200]
             fails = self.fails[key] = self.fails.get(key, 0) + 1
             if kind not in _FAILS_SEEN and not isinstance(e, (OSError, TimeoutError)):
@@ -8490,6 +8880,7 @@ class GeoTracker:
                 self.retry[key] = time.monotonic() + TILE_RETRY_S
             return
         if res is None:
+            progressive.finish(self,conn,aid,key,False,token=progress_token)
             self.retry[key] = time.monotonic() + TILE_RETRY_S
             return
         self.fails.pop(key, None)
@@ -8501,15 +8892,37 @@ class GeoTracker:
         self.stats["content_cpu"] += float(tm.get("content_cpu", 0.0))
         self.stats["skin_cpu"] += float(tm.get("skin_cpu", 0.0))
         c = res.get("content")
+        progress_token = progressive.finish(self,conn,aid,key,True,token=progress_token)
+        if key in self.obsolete_buildings or (aid!=self.aid and key in self.sent):
+            # Completed physical content remains in the revisit cache. Do not
+            # allocate/import objects the car has already left behind, nor let
+            # an older anchor's callback replace a newer content revision.
+            return
         ex = (res.get("exact") or {}) if aid == self.aid else {}
         if c is not None:
             path, n, info = c[0], c[1], c[2]
+            self.regenerate.discard(key)
             self.sent.add(key)
             self.info[key] = info
+            self.remember_plan(key,info.get('acceptedPlan'))
+            # A previously sent or in-flight distant tile can now use the same
+            # accepted plan. Coalesce a refresh without dropping its coverage.
+            far=getattr(conn,'bldfar',None)
+            if far is not None and getattr(far,'geo',False):
+                from buildgen.products import valid_reference
+                ref=info.get('acceptedPlan')
+                far.refine(key,ref['revision'] if valid_reference(ref) else 'source-plan')
+            sky=getattr(conn,'bldsky',None)
+            if sky is not None and getattr(sky,'geo',False):
+                from buildgen.distant import reference_revision
+                parent=geotiles.parent(*key,geotiles.Z,geotiles.SKY_Z)
+                sky.refine(parent,reference_revision(self.sky_references(*parent)))
             self.shown.pop(key, None)
             self.stats["content"] += 1
             m = {"type": "roads_tile", "anchorId": aid, "key": gkey, "path": path, "n": n,
                  "frame": list(geotiles.centre(*key)), "h": info.get("h")}
+            if progress_token:
+                m['buildingProgressToken'] = progress_token
             data = staging.inline_json(out_dir, path) if out_dir else None
             if data is not None:
                 m["data"] = data
@@ -8517,7 +8930,7 @@ class GeoTracker:
                 m["exact"] = dict(ex)
             if pool is not None:
                 import blockworker
-                names = blockworker.geo_names(gkey)
+                names = blockworker.geo_names(gkey, parts=info.get("parts"))
                 files = {w: n_ for w, n_ in names.items() if w not in ("json", "inputs") and w not in ex}
                 files.update({f"x:{w}": os.path.basename(p) for w, p in ex.items()})
                 slots = pool(conn, files)
@@ -8548,7 +8961,7 @@ class GeoTracker:
             mk, _base = self.exact_need(key)
             self.need[(key, aid)] = mk
         elif ex:
-            m = {"type": "roads_exact", "anchorId": aid, "key": gkey, "parts": dict(ex)}
+            m = {"type": "roads_exact", "anchorId": aid, "key": gkey, "contentHash": self.info.get(key,{}).get('h'), "parts": dict(ex)}
             if pool is not None:
                 slots = pool(conn, {w: os.path.basename(p) for w, p in ex.items()})
                 if slots:
@@ -8572,7 +8985,7 @@ def geo_exact_auto(tile_frame, frame, parts):
     return out
 
 
-def shape_files(aid, tx, ty):
+def shape_files(aid, tx, ty, data=None):
     """The shape files write_tile may write for a tile, by the field naming them in the tile ({what: file name})."""
     out = {"road": f"road_{aid}_{tx}_{ty}.cdae", "deck": f"deck_{aid}_{tx}_{ty}.cdae",
            "walk": f"walks_{aid}_{tx}_{ty}.cdae", "walkcol": f"walkcol_{aid}_{tx}_{ty}.cdae",
@@ -8581,7 +8994,24 @@ def shape_files(aid, tx, ty):
            "rail": f"rail_{aid}_{tx}_{ty}.cdae", "railcol": f"railcol_{aid}_{tx}_{ty}.cdae"}
     for k in range(2, BLD_PARTS_MAX + 1):
         out[f"bld{k}"] = f"bld_{aid}_{tx}_{ty}_{k}.cdae"
+    if data is not None:
+        for what in building_chunk_names(data):
+            # Names come from this versioned manifest, never from a filename.
+            out[what] = os.path.basename(data[what]["shape"])
     return out
+
+
+def building_chunk_names(data):
+    manifest = (data or {}).get("buildingChunks") or {}
+    if manifest.get("v") != BUILDING_CHUNKS:
+        return ()
+    names = tuple(manifest.get("visual", ())) + tuple(manifest.get("collision", ()))
+    if any(not isinstance(w, str) for w in names):
+        raise ValueError("building chunk names must be strings")
+    if len(set(names)) != len(names) or any(not re.fullmatch(r"bld(?:col)?(?:[2-9]|[1-9][0-9]+)?", w)
+                                           or not isinstance(data.get(w), dict) or not data[w].get("shape") for w in names):
+        raise ValueError("invalid building chunk manifest")
+    return names
 
 
 # Sound spaces (the mod's ambience.lua makes them SFXSpaces: the stock maps' tunnel reverb in a tube, the one under a
@@ -8649,7 +9079,8 @@ def sound_boxes(chunks):
 
 def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None, deck_mesh=None, bld=None,
                props=None, wires=None, park=None, tunnel_mesh=None, fuel=None,
-               rail_mesh=None, garage_sound=(), wells=(), guardrail_rows=None, decals=True):
+               rail_mesh=None, garage_sound=(), wells=(), guardrail_rows=None, decals=True,
+               vegetation_exclusions=None, sidewalk_ground=None):
     """Write a tile's chunks (atomically), its sidewalk mesh (walks: build_tile's runs, if any:
     `walks_<a>_<tx>_<ty>.cdae`, announced in the tile as "walk": {shape, pos}) and its road mesh
     (road_mesh: roadmesh.build's result: `road_<a>_<tx>_<ty>.cdae`, "road": {shape, pos}; the mod then
@@ -8663,6 +9094,8 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
     # parses on its main thread
     data = {"v": VERSION, "chunks": [] if road_mesh is not None or not decals else
             [c for c in chunks if not c.get("tube_only")]}
+    if vegetation_exclusions is not None:
+        data['vegetationExclusions'] = vegetation_exclusions
     sound = sound_boxes(chunks) + list(garage_sound)      # (garage_sound: buildings.garage_sound_boxes)
     if sound:
         data["sound"] = sound
@@ -8701,16 +9134,17 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
             data["railcol"] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
     if walks:
         x0, y0, _, _ = tile_bbox(tx, ty)
-        b = sidewalks.Builder((x0, y0, 0.0), collision=True)
+        from buildgen.grounds_quality import current as grounds_quality
+        b = sidewalks.Builder((x0, y0, 0.0), collision=True, ground=sidewalk_ground, quality=grounds_quality())
         for wk in walks:
             if "corner" in wk:
                 c = wk["corner"]
-                b.add_corner(c["arc"], c["inward"], c["outer"], ramps=c.get("ramps", ()))
+                b.add_corner(c["arc"], c["inward"], sidewalks.corner_outer(c), h=wk.get("curb_h", sidewalks.CURB_H), ramps=c.get("ramps", ()), slab=sidewalks.slab_material(wk), outer_stations=c.get('outer_stations'))
                 continue
             ww = wk.get("w", SIDEWALK["w"])
             curb, out = sidewalks.run_geometry(wk["pts"], wk["side"], ww)
-            b.add_run(curb, out, ww, caps=wk["caps"], ramps=wk.get("ramps", ()),
-                      slab=sidewalks.BRICK if wk.get("brick") else 1)
+            b.add_run(curb, out, ww, h=wk.get("curb_h", sidewalks.CURB_H), caps=wk["caps"], ramps=wk.get("ramps", ()),
+                      slab=sidewalks.slab_material(wk),driveways=wk.get('driveways',()), verge=wk.get('verge',False),gardens=wk.get('tree_gardens',()))
         if not b.empty():
             shape = f"walks_{aid}_{tx}_{ty}.cdae"
             b.write(os.path.join(out_dir, shape))
@@ -8719,23 +9153,53 @@ def write_tile(out_dir, vfs_dir, aid, tx, ty, chunks, walks=None, road_mesh=None
             b.write_collision(os.path.join(out_dir, shape))
             data["walkcol"] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
     boxes = collider_boxes(walks if data.get("walk") else None, chunks if data.get("deck") else None)
+    if boxes.get("walk"):
+        sidewalks.extend_collider_heights(boxes["walk"], b.arrays(), b.origin)
     if "walk" in boxes and data.get("walkcol"):
         boxes["walkcol"] = boxes["walk"]
     if bld is not None:             # buildings.road_tile: the tile's buildings, colliding ("bld")
         import buildings
         x0, y0, _, _ = tile_bbox(tx, ty)
         meshes = bld[0] if isinstance(bld[0], list) else [bld[0]]
-        for k, mesh in enumerate(meshes[:BLD_PARTS_MAX]):   # under the engine's 16-bit index limit each
+        from buildgen.ingest import enabled as building_v2
+        manifest = {"v": BUILDING_CHUNKS, "visual": [], "collision": []} if building_v2() else None
+        for k, mesh in enumerate(meshes if manifest is not None else meshes[:BLD_PARTS_MAX]):
             what = "bld" if k == 0 else f"bld{k + 1}"
             shape = f"bld_{aid}_{tx}_{ty}.cdae" if k == 0 else f"bld_{aid}_{tx}_{ty}_{k + 1}.cdae"
-            buildings.write(os.path.join(out_dir, shape), mesh)
+            ready = bld[4].get(what) if len(bld)>4 else None
+            if ready:
+                import shutil
+                destination = os.path.join(out_dir,shape)
+                temporary = staging.tmp_for(destination)
+                try:
+                    shutil.copyfile(ready,temporary)
+                    staging.replace(temporary,destination)
+                except OSError:
+                    # A transient preview may disappear or be locked. The final
+                    # mesh remains authoritative and can be encoded independently.
+                    try:os.remove(temporary)
+                    except OSError:pass
+                    buildings.write(destination,mesh)
+            else:
+                buildings.write(os.path.join(out_dir, shape), mesh)
             data[what] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
             boxes[what] = bld[1]
+            if manifest is not None:
+                manifest["visual"].append(what)
         if len(bld) > 2 and bld[2] is not None:     # the lean physics-only mesh (the drawn ones then only render)
-            shape = f"bldcol_{aid}_{tx}_{ty}.cdae"
-            buildings.write(os.path.join(out_dir, shape), bld[2], collision_only=True)
-            data["bldcol"] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
-            boxes["bldcol"] = bld[1]
+            collision = buildings.split_mesh(bld[2]) if manifest is not None else [bld[2]]
+            for k, mesh in enumerate(collision):
+                what = "bldcol" if k == 0 else f"bldcol{k + 1}"
+                shape = f"{what}_{aid}_{tx}_{ty}.cdae"
+                buildings.write(os.path.join(out_dir, shape), mesh, collision_only=True)
+                data[what] = {"shape": f"{vfs_dir}/{shape}", "pos": [x0, y0, 0.0]}
+                boxes[what] = bld[1]
+                if manifest is not None:
+                    manifest["collision"].append(what)
+        if manifest is not None:
+            data["buildingChunks"] = manifest
+            if len(bld) > 3 and bld[3] is not None:
+                data['buildingGroups'] = bld[3]
     if boxes:
         data["colliders"] = boxes
     if wires:                       # utility pole wires (furniture.wire_mesh), render-only

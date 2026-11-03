@@ -1,0 +1,1067 @@
+Embedded copyright and license metadata for bundled fonts. Full license texts are in this directory.
+
+Amiri-Regular.ttf
+  0: Copyright 2010-2022 The Amiri Project Authors (https://github.com/aliftype/amiri).
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://openfontlicense.org
+  14: https://openfontlicense.org
+
+BarlowCondensed.ttf
+  0: Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+LibreFranklin.ttf
+  0: Copyright 2020 The Libre Franklin Project Authors (https://github.com/googlefonts/Libre-Franklin)
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://openfontlicense.org
+  14: https://openfontlicense.org
+
+Lora.ttf
+  0: Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name "Lora".
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+  14: https://scripts.sil.org/OFL
+
+NotoKufiArabic-Bold.ttf
+  0: Copyright 2019-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+  14: https://scripts.sil.org/OFL
+
+NotoKufiArabic-Regular.ttf
+  0: Copyright 2019-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+  14: https://scripts.sil.org/OFL
+
+NotoNaskhArabic-Bold.ttf
+  0: Copyright 2019-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+NotoNaskhArabic-Regular.ttf
+  0: Copyright 2019-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+NotoSans-Bold.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSans-BoldItalic.ttf
+  0: Copyright 2015-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSans-Italic.ttf
+  0: Copyright 2015-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSans-Regular.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansAdlam-Regular.ttf
+  0: Copyright 2017-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansAdlamUnjoined-Regular.ttf
+  0: Copyright 2017-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansAnatolianHieroglyphs-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansArabic-Bold.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansArabic-Regular.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansArabicUI-Regular.ttf
+  0: Copyright 2016-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansArmenian-Bold.ttf
+  0: Copyright 2015-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansArmenian-Regular.ttf
+  0: Copyright 2015-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansAvestan-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBalinese-Regular.ttf
+  0: Copyright 2020 Google LLC. All rights reserved
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+NotoSansBamum-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBassaVah-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBatak-Regular.ttf
+  0: Copyright 2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBengali-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBengali.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBengaliUI-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBhaiksuki-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBrahmi-Regular.ttf
+  0: Copyright 2018-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBuginese-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansBuhid-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCanadianAboriginal-Regular.ttf
+  0: Copyright 2018-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCarian-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCaucasianAlbanian-Regular.ttf
+  0: Copyright 2018-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansChakma-Regular.ttf
+  0: Copyright 2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCham-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCherokee-Regular.ttf
+  0: Copyright 2016 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansChorasmian-Regular.ttf
+  0: Copyright 2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCJKjp.otf
+  0: © 2014-2021 Adobe (http://www.adobe.com/).
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCJKkr.otf
+  0: © 2014-2021 Adobe (http://www.adobe.com/).
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCJKsc.otf
+  0: © 2014-2021 Adobe (http://www.adobe.com/).
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCJKtc.otf
+  0: © 2014-2021 Adobe (http://www.adobe.com/).
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCoptic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCuneiform-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCypriot-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansCyproMinoan-Regular.ttf
+  0: Copyright 2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+NotoSansDeseret-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansDevanagari-Regular.ttf
+  0: Copyright 2015-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansDevanagari.ttf
+  0: Copyright 2015-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansDevanagariUI-Regular.ttf
+  0: Copyright 2015-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansDisplay-Regular.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansDuployan-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansEgyptianHieroglyphs-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansElbasan-Regular.ttf
+  0: Copyright 2018-2022 The Noto Project Authors (https://github.com/googlefonts/noto-source/)
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansElymaic-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansEthiopic-Regular.ttf
+  0: Copyright 2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGeorgian-Bold.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGeorgian-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGlagolitic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGothic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGrantha-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGujarati-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGujaratiUI-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGunjalaGondi-Regular.ttf
+  0: Copyright 2019-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGurmukhi-Regular.ttf
+  0: Copyright 2019-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansGurmukhiUI-Regular.ttf
+  0: Copyright 2019-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansHanifiRohingya-Regular.ttf
+  0: Copyright 2020 Google LLC. All Rights Reserved.
+
+NotoSansHanunoo-Regular.ttf
+  0: Copyright 2017-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansHatran-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansHebrew-Bold.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansHebrew-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansHebrewDroid-Regular.ttf
+  0: Copyright 2012-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansHebrewNew-Regular.ttf
+  0: Copyright 2019-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansImperialAramaic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansIndicSiyaqNumbers-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansInscriptionalPahlavi-Regular.ttf
+  0: Copyright 2017-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansInscriptionalParthian-Regular.ttf
+  0: Copyright 2017-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansJavanese-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKaithi-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKannada-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKannadaUI-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKayahLi-Regular.ttf
+  0: Copyright 2017-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKharoshthi-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKhmer-Regular.ttf
+  0: Copyright 2016-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKhmerUI-Regular.ttf
+  0: Copyright 2016-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKhojki-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansKhudawadi-Regular.ttf
+  0: Copyright 2018-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLao-Bold.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLao-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLaoUI-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLepcha-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLimbu-Regular.ttf
+  0: Copyright 2017-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLinearA-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLinearB-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLisu-Bold.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved. NotoSansLisu.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLisu-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved. NotoSansLisu.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLycian-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansLydian-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMahajani-Regular.ttf
+  0: Copyright 2018-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMalayalam-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMalayalamUI-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMandaic-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansManichaean-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMarchen-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMasaramGondi-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMath-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMayanNumerals-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMedefaidrin-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMeeteiMayek-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMendeKikakui-Regular.ttf
+  0: Copyright 2017-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMeroitic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMiao-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansModi-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMongolian-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMono-Regular.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMro-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMultani-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMyanmar-Regular.ttf
+  0: Copyright 2015-2002 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansMyanmarUI-Regular.ttf
+  0: Copyright 2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansNabataean-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansNandinagari-Regular.ttf
+  0: Copyright 2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansNewa-Regular.ttf
+  0: Copyright 2018-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansNewTaiLue-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansNKo-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansNushu-Regular.ttf
+  0: Copyright 2020 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOgham-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOlChiki-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldHungarian-Regular.ttf
+  0: Copyright 2018-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldItalic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldNorthArabian-Regular.ttf
+  0: Copyright 2018 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldPermic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldPersian-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldSogdian-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldSouthArabian-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOldTurkic-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOriya-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOriyaUI-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOsage-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansOsmanya-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansPahawhHmong-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansPalmyrene-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansPauCinHau-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansPhagsPa-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansPhoenician-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansPsalterPahlavi-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansRejang-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansRunic-Regular.ttf
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSamaritan-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSaurashtra-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSharada-Regular.ttf
+  0: Copyright 2018-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansShavian-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSiddham-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSignWriting-Regular.ttf
+  0: Copyright 2020-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSinhala-Regular.ttf
+  0: Copyright 2016-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSinhalaUI-Regular.ttf
+  0: Copyright 2016-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSogdian-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSoraSompeng-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSoyombo-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSundanese-Regular.ttf
+  0: Copyright 2017 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSylotiNagri-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSymbols-Regular.ttf
+  0: Copyright 2016 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSymbols2-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansSyriac-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTagalog-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTagbanwa-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTaiLe-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTaiTham-Regular.ttf
+  0: Copyright 2020 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+NotoSansTaiViet-Regular.ttf
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTakri-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTamil-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTamilSupplement-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTamilUI-Regular.ttf
+  0: Copyright 2017-2022 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTangsa-Regular.ttf
+  0: Copyright 2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL
+  14: http://scripts.sil.org/OFL
+
+NotoSansTelugu-Regular.ttf
+  0: Copyright 2019-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTeluguUI-Regular.ttf
+  0: Copyright 2019-2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansThaana-Regular.ttf
+  0: Copyright 2018 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansThai-Regular.ttf
+  0: Copyright 2016 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansThai.ttf
+  0: Copyright 2016 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansThaiUI-Regular.ttf
+  0: Copyright 2016 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinagh-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghAdrar-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghAgrawImazighen-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghAhaggar-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghAir-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghAPT-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghAzawagh-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghGhat-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghHawad-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghRhissaIxa-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghSIL-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTifinaghTawellemmet-Regular.ttf
+  0: Copyright 2019 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansTirhuta-Regular.ttf
+  0: Copyright 2018-2021 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansUgaritic-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansVai-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansVithkuqi-Regular.ttf
+  0: Copyright 2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansWancho-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansWarangCiti-Regular.ttf
+  0: Copyright 2020 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansYi-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSansZanabazarSquare-Regular.ttf
+  0: Copyright 2020 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerif-Bold.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerif-BoldItalic.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerif-Italic.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerif-Regular.ttf
+  0: Copyright 2015-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifArmenian-Bold.ttf
+  0: Copyright 2015-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifArmenian-Regular.ttf
+  0: Copyright 2015-2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifGeorgian-Bold.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifGeorgian-Regular.ttf
+  0: Copyright 2019 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifHebrew-Bold.ttf
+  0: Copyright 2016-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifHebrew-Regular.ttf
+  0: Copyright 2016-2021 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifLao-Bold.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifLao-Regular.ttf
+  0: Copyright 2017 Google Inc. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+NotoSerifTibetan-Regular.ttf
+  0: Copyright 2022 Google LLC. All Rights Reserved.
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font License for the specific language, permissions and limitations governing your use of this Font Software.
+  14: http://scripts.sil.org/OFL
+
+Oswald.ttf
+  0: Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)
+  13: This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+  14: https://scripts.sil.org/OFL

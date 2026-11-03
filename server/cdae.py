@@ -47,6 +47,8 @@ import staging
 SHAPE_VERSION = 31
 EXPORTER_VERSION = 0x7C
 VERSION_WORD = (EXPORTER_VERSION << 16) | SHAPE_VERSION        # 0x007C001F
+# The file stores u32 indices, but engine draw buffers use u16 indices.
+MAX_MESH_VERTS = 60000
 INFO = ("\r\n\r\n\r\nWelcome! This is a binary file :D\r\nPlease read the docs at "
         "https://go.beamng.com/shapeMessagepackFileformat\r\n\r\n\r\n")
 
@@ -381,6 +383,8 @@ def _mesh_data(P, T, TM, nmat, normals, uvs, uvs2, tangent_uvs, colors):
     TTV = np.stack([TUV[order, 0], 1.0 - TUV[order, 1]], 1)
     TG = tangents(V.astype(np.float64), TTV, NN.astype(np.float64), idx).astype(np.float32)
     nv = len(V)
+    if nv > MAX_MESH_VERTS:
+        raise CdaeError('mesh exceeds the engine vertex budget')
     ntri = len(idx)
 
     lo, hi = V.min(0), V.max(0)
@@ -413,6 +417,22 @@ def _mesh_data(P, T, TM, nmat, normals, uvs, uvs2, tangent_uvs, colors):
     return bytes(out), lo, hi, ntri
 
 
+def _mesh_parts(P, T, TM, nmat, normals, uvs, uvs2, tangent_uvs, colors):
+    """Lossless draw objects, retaining original normals at partition seams."""
+    if len(P) <= MAX_MESH_VERTS:
+        return [_mesh_data(P,T,TM,nmat,normals,uvs,uvs2,tangent_uvs,colors)]
+    normals = face_normal_sum(P,T) if normals is None else np.asarray(normals).reshape(-1,3)
+    attributes=[normals,uvs,uvs2,tangent_uvs,colors]
+    attributes=[None if a is None else np.asarray(a).reshape(len(P),-1) for a in attributes]
+    result=[]
+    for start in range(0,len(T),MAX_MESH_VERTS//3):
+        tris=T[start:start+MAX_MESH_VERTS//3]
+        vertices,indices=np.unique(tris,return_inverse=True)
+        attrs=[None if a is None else a[vertices] for a in attributes]
+        result.append(_mesh_data(P[vertices],indices.reshape(-1,3),TM[start:start+len(tris)],nmat,*attrs))
+    return result
+
+
 def _sorted_tris(tris, tri_materials, nmat):
     T = np.asarray(tris, np.int64).reshape(-1, 3)
     if len(T) == 0:
@@ -424,7 +444,8 @@ def _sorted_tris(tris, tri_materials, nmat):
     TM = np.asarray(tri_materials, np.int64).reshape(-1)
     if len(TM) != len(T) or TM.min() < 0 or TM.max() >= nmat:
         raise CdaeError("tri_materials: one index into material per triangle")
-    return T[np.argsort(TM, kind="stable")], np.sort(TM, kind="stable")
+    order = np.argsort(TM, kind="stable")
+    return T[order], TM[order]
 
 
 LOD_TOP_SIZE = 2.0          # px: the size of the one (or the last, coarsest) detail level, as the engine's own files
@@ -433,7 +454,7 @@ LOD_TOP_SIZE = 2.0          # px: the size of the one (or the last, coarsest) de
 @profile_step('Native shape encoding')
 def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2=None,
            tangent_uvs=None, object_name="tile", tri_materials=None, colors=None, collision_only=False, lods=None,
-           collisions=None):
+           collisions=None, shape_bounds=None):
     """Shape bytes for one static mesh, laid out exactly as the engine writes a compiled
     Collada file with the same geometry.
 
@@ -451,14 +472,17 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
     2026-10-16: cars drove through every building since 2026-10-15).
     lods: coarser detail levels of the same object, the engine's own camera LOD (TSShapeInstance picks the finest
     detail whose size is at most the shape's projected size in pixels): a list of (size_px, dict of positions, tris
-    and optional uvs / tri_materials / colors, same material list), sizes falling, the last one drawn down to
+    and optional normals / uvs / uvs2 / tangent_uvs / tri_materials / colors, same material list), sizes falling,
+    the last one drawn down to
     LOD_TOP_SIZE px. The main mesh is drawn from lods[0]'s size up: lods=[(300, lite)] draws the full mesh while the
     shape spans 300 px or more, the lite one below.
     collisions: the shape's collision as separate meshes beside the drawn one, [(positions, tris, tri_materials or
     None)] (the same material list): objects "Colmesh<k>" in a "Collision-1" detail (each a null mesh in the drawn
     detail), for a TSStatic with collisionType "Collision Mesh". Windows builds each collision mesh in time ~quadratic
     in its triangles (collision-engine-facts: 51.2k tris 3.8 s, as 16 meshes 0.09 s): a big piece's collision in small
-    meshes. Not with collision_only or lods."""
+    meshes. Not with collision_only or lods.
+    shape_bounds: optional conservative (lo, hi) for parts of one logical shape
+    to share projected-size LOD selection. Mesh bounds remain local to each part."""
     if collision_only:
         object_name = "Colmesh"
         lods = None
@@ -486,25 +510,40 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
     nmat = len(materials)
     P = np.asarray(positions, np.float64).reshape(-1, 3)
     T, TM = _sorted_tris(tris, tri_materials, nmat)
-    body0, lo, hi, ntri = _mesh_data(P, T, TM, nmat, normals, uvs, uvs2, tangent_uvs, colors)
-    levels = [(None, body0, ntri)]
+    primary = _mesh_parts(P,T,TM,nmat,normals,uvs,uvs2,tangent_uvs,colors)
+    lo=np.minimum.reduce([p[1] for p in primary]);hi=np.maximum.reduce([p[2] for p in primary])
+    ntri=sum(p[3] for p in primary)
+    levels = [(None, [p[0] for p in primary], ntri)]
     for size, d in (lods or []):
         Pl = np.asarray(d["positions"], np.float64).reshape(-1, 3)
+        if not len(d['tris']):
+            # A detail-only chunk disappears at distance while its neighbours
+            # carry the disjoint coarse shell. Native null mesh, as used by
+            # collision-only shapes; never fabricate a degenerate triangle.
+            levels.append((float(size), [], 0))
+            continue
         Tl, TMl = _sorted_tris(d["tris"], d.get("tri_materials"), nmat)
-        bl, lol, hil, ntl = _mesh_data(Pl, Tl, TMl, nmat, None, d.get("uvs"), None, None, d.get("colors"))
-        lo, hi = np.minimum(lo, lol), np.maximum(hi, hil)
-        levels.append((float(size), bl, ntl))
+        pieces = _mesh_parts(Pl,Tl,TMl,nmat,d.get("normals"),d.get("uvs"),d.get("uvs2"),
+                             d.get("tangent_uvs"),d.get("colors"))
+        for _,lol,hil,_ in pieces:lo,hi=np.minimum(lo,lol),np.maximum(hi,hil)
+        levels.append((float(size),[p[0] for p in pieces],sum(p[3] for p in pieces)))
     cols = []
     for Pc, Tc, TMc in (collisions or []):
         Pc = np.asarray(Pc, np.float64).reshape(-1, 3)
         Tc, TMc = _sorted_tris(Tc, TMc, nmat)
-        bc, loc, hic, ntc = _mesh_data(Pc, Tc, TMc, nmat, None, None, None, None, None)
-        lo, hi = np.minimum(lo, loc), np.maximum(hi, hic)
-        cols.append((bc, ntc))
+        for bc,loc,hic,ntc in _mesh_parts(Pc,Tc,TMc,nmat,None,None,None,None,None):
+            lo,hi=np.minimum(lo,loc),np.maximum(hi,hic)
+            cols.append((bc,ntc))
     if cols and (collision_only or lods):
         raise CdaeError("collisions: not with collision_only or lods")
     # each level is drawn from the next coarser level's size up: the finest from lods[0]'s size, the last from 2 px
     sizes = [float(lv[0]) for lv in levels[1:]] + [LOD_TOP_SIZE]
+
+    if shape_bounds is not None:
+        shared=np.asarray(shape_bounds,np.float32)
+        if shared.shape!=(2,3) or not np.isfinite(shared).all() or (shared[0]>shared[1]).any():
+            raise ValueError('invalid shared shape bounds')
+        lo,hi=np.minimum(lo,shared[0]),np.maximum(hi,shared[1])
 
     center = ((lo + hi) * np.float32(0.5)).astype(np.float32)
     half = ((hi - lo) * np.float32(0.5)).astype(np.float32)
@@ -515,22 +554,24 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
     # collision only: a visible detail "detail2" whose mesh is a null mesh (draws nothing), then "Collision-1": with the
     # collision detail alone the engine logged "Shape with invalid detail levels" for every such shape (2026-10-17;
     # the buildings' lean collision meshes filled players' logs)
-    nobj = 1 + len(cols)
+    nrender=max(len(level[1]) for level in levels)
+    object_names=[object_name if k==0 else f'{object_name}_part{k}' for k in range(nrender)]
+    nobj = nrender + len(cols)
     if cols:
         # the drawn object, then the collision objects; the drawn detail, then the collision detail
-        names = [object_name] + [f"Colmesh{k}" for k in range(len(cols))] + [f"detail{int(sizes[0])}", "Collision-1"]
+        names = object_names + [f"Colmesh{k}" for k in range(len(cols))] + [f"detail{int(sizes[0])}", "Collision-1"]
         details = _vec(struct.pack("<3i3fi2i2IfI", nobj, 0, 0, sizes[0], -1.0, -1.0, levels[0][2], 0, 0, 0, 0, 0.0, 0)
                        + struct.pack("<3i3fi2i2IfI", nobj + 1, 0, 1, -1.0, -1.0, -1.0, sum(n for _b, n in cols),
                                      0, 0, 0, 0, 0.0, 0), 2, 52)
     elif collision_only:
-        names = [object_name, "detail2", "Collision-1"]
-        details = (_vec(struct.pack("<3i3fi2i2IfI", 1, 0, 0, 2.0, -1.0, -1.0, 0, 0, 0, 0, 0, 0.0, 0)
-                        + struct.pack("<3i3fi2i2IfI", 2, 0, 1, -1.0, -1.0, -1.0, ntri, 0, 0, 0, 0, 0.0, 0), 2, 52))
+        names = object_names + ["detail2", "Collision-1"]
+        details = (_vec(struct.pack("<3i3fi2i2IfI", nobj, 0, 0, 2.0, -1.0, -1.0, 0, 0, 0, 0, 0, 0.0, 0)
+                        + struct.pack("<3i3fi2i2IfI", nobj+1, 0, 1, -1.0, -1.0, -1.0, ntri, 0, 0, 0, 0, 0.0, 0), 2, 52))
     else:
-        names = [object_name] + [f"detail{int(sz)}" for sz in sizes]
+        names = object_names + [f"detail{int(sz)}" for sz in sizes]
         # detail: name, subShape, objectDetail, size, avgError, maxError, polyCount,
         # billboard dimension/detailLevel/equatorSteps/polarSteps/polarAngle/includePoles
-        details = _vec(b"".join(struct.pack("<3i3fi2i2IfI", 1 + k, 0, k, sizes[k], -1.0, -1.0, levels[k][2],
+        details = _vec(b"".join(struct.pack("<3i3fi2i2IfI", nobj + k, 0, k, sizes[k], -1.0, -1.0, levels[k][2],
                                             0, 0, 0, 0, 0.0, 0) for k in range(len(levels))), len(levels), 52)
     nmesh = 2 if (collision_only or cols) else len(levels)
     # object: name, numMeshes, startMeshIndex, node, nextSibling, firstDecal (each object a mesh per detail)
@@ -559,18 +600,19 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
     for s_ in names:
         _pack(out, s_)
     if cols:
-        _pack(out, nmesh * nobj)                           # meshes: the drawn one and a null one, then each collision
-        out += levels[0][1]                                # object's null one and its own
-        _pack(out, 4)
+        _pack(out, nmesh * nobj)
+        for body in levels[0][1]:
+            out += body
+            _pack(out, 4)
         for body, _n in cols:
             _pack(out, 4)
             out += body
     else:
-        _pack(out, nmesh)                                  # meshes (collision only: first the null mesh, type 4)
-        if collision_only:
-            _pack(out, 4)
-        for _, body, _ in levels:
-            out += body
+        _pack(out, nmesh*nobj)
+        for part in range(nrender):
+            if collision_only:_pack(out,4)
+            for _,bodies,_ in levels:
+                out += bodies[part] if part<len(bodies) else packb(4)
     _pack(out, 0)                                          # sequences
     _pack(out, len(materials))                             # materials
     for name in materials:
@@ -578,24 +620,27 @@ def encode(positions, tris, normals=None, uvs=None, material="bngEarthDae", uvs2
             _pack(out, v)
 
     header = packb({"info": INFO, "compression": False, "bodysize": len(out),
-                    "objectNames": [object_name] + [f"Colmesh{k}" for k in range(len(cols))]})
+                    "objectNames": object_names + [f"Colmesh{k}" for k in range(len(cols))]})
     return struct.pack("<II", VERSION_WORD, len(header)) + header + bytes(out)
 
 
 def _primitives(TM, nmat):
     """One indexed-triangle primitive per material present (start, count in indices, matIndex)."""
-    out, n = b"", 0
-    for k in range(nmat):
-        idx = np.nonzero(TM == k)[0]
-        if len(idx):
-            out += struct.pack("<3i", int(idx[0]) * 3, len(idx) * 3, PRIM_TRIANGLES | PRIM_INDEXED | k)
+    # _sorted_tris already groups the triangles. Count once instead of scanning
+    # the complete index stream separately for every material.
+    out, n, start = b"", 0, 0
+    for k, count in enumerate(np.bincount(TM, minlength=nmat)):
+        if count:
+            out += struct.pack("<3i", start * 3, int(count) * 3, PRIM_TRIANGLES | PRIM_INDEXED | k)
             n += 1
+            start += int(count)
     return _vec(out, n, 12)
 
 
-def write(path, positions, tris, **kw):
+def write(path, positions, tris, *, encoded_callback=None, **kw):
     """encode() to path atomically (tmp + rename: the engine never sees a partial file)."""
     data = encode(positions, tris, **kw)
+    if encoded_callback is not None:encoded_callback(data)
     tmp = staging.tmp_for(path)
     with open(tmp, "wb") as f:
         f.write(data)
